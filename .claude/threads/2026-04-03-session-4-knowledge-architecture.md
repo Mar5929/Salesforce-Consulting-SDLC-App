@@ -1,7 +1,7 @@
 # Session 4: Knowledge Architecture Gap Analysis
 
-**Date:** 2026-04-03 (continued 2026-04-03, Sessions 4-5)
-**Status:** All high-priority gaps resolved. Ready to update PRD and tech spec.
+**Date:** 2026-04-03 (continued 2026-04-03, Sessions 4-7)
+**Status:** All high-priority gaps resolved. PRD updated to v2.3. Tech spec needs minor updates for Session 7 additions.
 **Context:** Before starting Phase 1 construction, we paused to poke holes in the PRD, specifically around the knowledge base architecture.
 
 ---
@@ -392,9 +392,52 @@ Added a "Usage & Costs" tab in project settings. Visible to SA and PM only.
 
 None are blocking for V1. All are captured in V2-ROADMAP.md.
 
+## Session 7 (2026-04-03): Workflow Sanity Check + PRD Fixes
+
+### What We Did
+Traced every persona's (SA, Developer, PM, BA, QA) daily workflows end-to-end through the system. Checked for workflow dead ends, broken handoffs, missing RBAC permissions, data flow gaps, and chicken-and-egg problems. Found 20 issues across 4 severity levels.
+
+### Issues Found and Resolved (PRD updated to v2.3)
+
+**Critical (3):**
+1. **PM can't update story status but manages sprints.** Fixed: Split status transitions into management (Draft/Ready/Sprint Planned) and execution (In Progress/In Review/QA/Done). Auto-transition to Sprint Planned on sprint assignment. Updated RBAC table.
+2. **Impacted Components mandatory but org not connected until Phase 3.** Fixed: Field now supports two modes: free-text entries (always available) and linked OrgComponent references (Phase 3+). Section 10.3 updated.
+3. **No QA handoff notification.** Fixed: Added testAssigneeId to Story entity. Added "Story moved to QA" notification (HIGH) to Section 17.8.
+
+**High (5):**
+4. **No milestone management in RBAC.** Fixed: Added "Create/manage milestones" row (SA, PM).
+5. **No requirement/risk manual CRUD in RBAC.** Fixed: Added "Create/edit requirements" and "Create/edit risks" rows.
+6. **No decision/risk notification events.** Fixed: Added "New decision recorded" (MEDIUM) and "Risk created or severity changed" (HIGH) to notification table.
+7. **QA too restricted.** Fixed (partial): QA can now raise/answer questions and create Draft stories. Chat, decisions, transcripts remain V2.
+8. **EpicPhase stored vs. computed contradiction.** Fixed: Clarified in Section 5.2.2 that EpicPhase is a stored entity with AI-driven updates.
+
+**Medium (7) - resolved in PRD:**
+9. No chat message notification: deferred to Phase 1 build (batched activity notification).
+10. Business context annotation RBAC: added row (SA, BA).
+11. Attachment upload RBAC: added row (all roles).
+12. Defect lifecycle roles: added assigneeId to Defect entity, documented lifecycle roles.
+13. Sprint FK edit restriction: separated "Assign stories to sprints" from story content editing.
+14. Greenfield business process creation: note to add during Phase 3 build.
+15. Epic prefix uniqueness: added validation constraint in Section 9.2.
+
+**Low (5) - accepted or deferred to build:**
+16. Milestone progress timing: resolve during Phase 1 build (it's instant/DB query).
+17. General chat growth: accept for V1, revisit if projects exceed 6 months.
+18. Developer can't process transcripts: accept for V1.
+19. Story reassignment notification: added to notification table (MEDIUM).
+20. Real-time updates TBD: resolve during Phase 1 build (recommendation: polling in V1).
+
+### PRD Sections Modified
+- Section 5.2.1: Added testAssigneeId on Story, assigneeId + lifecycle on Defect
+- Section 5.2.2: Clarified EpicPhase is stored (AI-maintained), not purely computed
+- Section 9.2: Added epic prefix uniqueness constraint
+- Section 10.3: Impacted components supports free-text + linked modes
+- Section 17.8: Added 4 notification events (QA handoff, decision, risk, reassignment)
+- Section 19.1: Expanded RBAC table with 7 new rows, status transition permissions, sprint assignment separation, QA question/story access, annotations, attachments, milestones, requirements, risks
+
 ## How To Continue (Next Session)
 
 1. Read this thread file to restore full context.
-2. PRD and tech spec are fully updated and ready for Phase 1 construction.
+2. PRD is updated (v2.3) with all workflow sanity check fixes. Tech spec still needs corresponding updates for: testAssigneeId on Story, assigneeId on Defect, epic prefix unique constraint, StoryComponent free-text mode.
 3. Proceed to Phase 1 build: Discovery and Knowledge Brain.
 4. Phase 1 scope: PostgreSQL schema (all entities), pgvector + tsvector setup, Clerk auth, project creation, question CRUD with confidence/review fields, AI transcript processing, AI question answering, chat interface (general + task sessions), Inngest job infrastructure, in-app notifications, global search, discovery dashboard.

@@ -1,9 +1,9 @@
 # Session 3 Technical Specification
 # Salesforce Consulting AI Framework
 
-**Date:** April 3, 2026 (updated Sessions 4-5)
-**Companion to:** SF-Consulting-AI-Framework-PRD-v2.2.md
-**Purpose:** Detailed technical specifications for database schema, AI agent harness architecture, context window budget strategy, dashboard implementation, knowledge architecture, background jobs, search infrastructure, and notification system. Produced during Sessions 3-5.
+**Date:** April 3, 2026 (updated Sessions 4-7)
+**Companion to:** SF-Consulting-AI-Framework-PRD-v2.3.md
+**Purpose:** Detailed technical specifications for database schema, AI agent harness architecture, context window budget strategy, dashboard implementation, knowledge architecture, background jobs, search infrastructure, and notification system. Produced during Sessions 3-7.
 
 ---
 
@@ -54,7 +54,7 @@ Project
   │     ├── Feature
   │     │     └── Story
   │     └── Story (can belong to epic directly, without feature)
-  │           ├── StoryComponent → OrgComponent
+  │           ├── StoryComponent → OrgComponent (nullable, supports free-text)
   │           ├── TestCase
   │           │     └── TestExecution
   │           └── Defect
@@ -149,12 +149,14 @@ Unique constraint: (projectId, clerkUserId) — one role per user per project.
 | id | UUID | PK | |
 | projectId | UUID | FK → Project | |
 | name | String | Required | e.g., "Field Mapping", "Data Migration" |
-| prefix | String | Required, unique within project | 2-4 letter code for ID generation (e.g., "FM", "DM") |
+| prefix | String | Required | 2-4 letter code for ID generation (e.g., "FM", "DM") |
 | description | Text | Nullable | |
 | status | Enum | NOT_STARTED, IN_PROGRESS, COMPLETE | Overall epic status |
 | sortOrder | Int | Required | Display ordering |
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
+
+Unique constraint: (projectId, prefix) — prevents duplicate epic prefixes within a project, which would cause question ID collisions in the Q-{SCOPE}-{NUMBER} scheme.
 
 ---
 
@@ -197,7 +199,8 @@ Unique constraint: (epicId, phase) — one record per phase per epic.
 | epicId | UUID | FK → Epic | |
 | featureId | UUID | Nullable FK → Feature | Optional grouping |
 | sprintId | UUID | Nullable FK → Sprint | Assigned when sprint-planned |
-| assigneeId | UUID | Nullable FK → ProjectMember | |
+| assigneeId | UUID | Nullable FK → ProjectMember | Developer assigned to build |
+| testAssigneeId | UUID | Nullable FK → ProjectMember | QA member assigned to test. Used for QA handoff notifications when story moves to QA status. If null, notification goes to all project members with QA role. |
 | displayId | String | Auto-generated, unique within project | e.g., "STORY-FM-001" using epic prefix |
 | title | String | Required | |
 | persona | Text | Nullable | "As a [role]..." — required for Ready status |
@@ -386,9 +389,16 @@ Progress is computed at query time from MilestoneStory join table — percentage
 | actualBehavior | Text | Required | |
 | environment | String | Nullable | |
 | status | Enum | OPEN, ASSIGNED, FIXED, VERIFIED, CLOSED | |
-| assigneeId | UUID | Nullable FK → ProjectMember | |
+| assigneeId | UUID | Nullable FK → ProjectMember | Developer assigned to fix the defect |
+| createdById | UUID | FK → ProjectMember | QA member who reported the defect |
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
+
+**Defect lifecycle role rules (enforced by application):**
+- **QA** creates defects and sets assigneeId (the developer responsible for the fix).
+- **Developer** transitions status to FIXED when the fix is complete.
+- **QA** transitions to VERIFIED (fix confirmed) or reopens to OPEN (fix rejected).
+- **SA/PM** can transition to CLOSED (accepted, won't-fix, or duplicate).
 
 ---
 
@@ -743,11 +753,17 @@ All join tables follow the same pattern: composite unique constraint on the two 
 #### StoryComponent
 | Field | Type | Notes |
 |---|---|---|
+| id | UUID | PK |
 | storyId | UUID FK → Story | |
-| orgComponentId | UUID FK → OrgComponent | |
+| orgComponentId | UUID Nullable FK → OrgComponent | Linked org component. Null when the component is free-text (planned/new). |
+| componentName | String Nullable | Free-text component name. Required when orgComponentId is null. Used for planned or new components that don't yet exist in the org metadata. |
 | impactType | Enum: CREATE, MODIFY, DELETE | What the story does to this component |
 
-This table is the foundation of sprint intelligence — conflict detection queries join on orgComponentId to find overlapping stories.
+**Free-text mode:** Stories often reference components that are planned but don't exist in the org yet (e.g., a new Flow or custom object). When `orgComponentId` is null, `componentName` holds the free-text description. When the component is later synced from the org, `orgComponentId` can be backfilled and `componentName` cleared.
+
+**Validation rule (enforced by application):** Exactly one of `orgComponentId` or `componentName` must be non-null.
+
+This table is the foundation of sprint intelligence. Conflict detection queries join on `orgComponentId` to find overlapping stories. Free-text entries (null `orgComponentId`) are excluded from conflict detection until linked.
 
 #### MilestoneStory
 | Field | Type |

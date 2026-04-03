@@ -1,9 +1,9 @@
 # Product Requirements Document: Salesforce Consulting AI Framework
 
-**Document Version:** 2.2
+**Document Version:** 2.3
 **Date:** April 3, 2026
 **Author:** Michael Rihm
-**Status:** Draft — In Progress (Sessions 3-5 complete, pre-build)
+**Status:** Draft — In Progress (Sessions 3-7 complete, pre-build)
 
 ---
 
@@ -165,7 +165,7 @@ All structured data lives in PostgreSQL. The core entities, their relationships,
 
 **Feature.** An optional grouping within an epic. Contains user stories. Some epics may have stories directly without features.
 
-**User Story.** The atomic unit of work. Contains all mandatory fields (Section 10): persona, description, acceptance criteria (Given/When/Then), linked epic/feature, estimated story points, impacted Salesforce components. Also tracks status, sprint assignment (simple FK to Sprint), assignee, and priority. During discovery and design phases, stories may exist in Draft status with incomplete mandatory fields — validation only enforces on transition to "Ready." When a developer picks up a story in Claude Code, the AI may break it into atomic implementation steps within the Claude Code session; these ephemeral developer tasks are not persisted in the web application.
+**User Story.** The atomic unit of work. Contains all mandatory fields (Section 10): persona, description, acceptance criteria (Given/When/Then), linked epic/feature, estimated story points, impacted Salesforce components. Also tracks status, sprint assignment (simple FK to Sprint), assignee, test assignee (nullable FK to ProjectMember for QA handoff; if null, "Story moved to QA" notifications go to all QA members on the project), and priority. During discovery and design phases, stories may exist in Draft status with incomplete mandatory fields — validation only enforces on transition to "Ready." When a developer picks up a story in Claude Code, the AI may break it into atomic implementation steps within the Claude Code session; these ephemeral developer tasks are not persisted in the web application.
 
 **Question.** The atomic unit of discovery (Section 9). Contains question text, scope (engagement-wide, epic, or feature), owner, status (Open/Answered/Parked), and when answered: answer text, answer date, and impact assessment. Blocking relationships to Stories, Epics, and Features are tracked via join tables (see Section 5.2.3). Cross-cutting questions that affect multiple epics use the QuestionAffects join table.
 
@@ -183,7 +183,7 @@ All structured data lives in PostgreSQL. The core entities, their relationships,
 
 **TestExecution.** A record of a single test run against a test case. Contains the test case reference, who executed it, when, result (PASS, FAIL, BLOCKED), notes, and an optional link to the defect it exposed. The same test case may be executed multiple times across sprints and regression cycles.
 
-**Defect.** A bug or issue logged by QA with severity, steps to reproduce, expected vs. actual behavior, linked story, linked test case, status (OPEN, ASSIGNED, FIXED, VERIFIED, CLOSED), and the environment where the defect was observed.
+**Defect.** A bug or issue logged by QA with severity, steps to reproduce, expected vs. actual behavior, linked story, linked test case, status (OPEN, ASSIGNED, FIXED, VERIFIED, CLOSED), assignee (the developer responsible for fixing it), and the environment where the defect was observed. Lifecycle: QA creates (Open) and assigns to a developer; developer marks Fixed; QA verifies and marks Verified or reopens; SA or PM can Close.
 
 **Org Component.** A Salesforce metadata component parsed from the shared sandbox. Stores API name, label, component type (object, field, class, trigger, flow, etc.), parent component (for fields: the parent object), namespace (for managed packages), API version, status (active/inactive), domain grouping, and timestamps.
 
@@ -218,7 +218,7 @@ All structured data lives in PostgreSQL. The core entities, their relationships,
 The following data is synthesized by the AI from the underlying entities and not stored as static fields. The AI computes these on demand or on a cached refresh cycle (see Section 6.4):
 
 - **Milestone progress percentage** — derived from linked story completion and blocking question resolution.
-- **Epic phase status transitions** — the AI updates EpicPhase records as stories within the epic progress through statuses.
+- **Epic phase status transitions** — the AI updates EpicPhase records (a stored entity, see Section 5.2.1) as stories within the epic progress through statuses. EpicPhase is listed here because the transitions are AI-driven, but the records themselves are persisted in the database, not computed on the fly.
 - **Project health score** — computed from stale questions, blocked items, and risk thresholds (Section 17.4).
 - **Current Focus narrative** — AI-generated synthesis of what the team should focus on right now.
 - **Recommended Focus prioritization** — AI-ranked list of questions to follow up on, based on what they block.
@@ -393,10 +393,10 @@ Every project, regardless of engagement type, progresses through these phases. T
 
 ### 7.3 Engagement Types
 
-The engagement type selected at project creation affects which phases are emphasized, which default epics are created, and how the AI prioritizes its assistance:
+The engagement type selected at project creation affects which phases are emphasized, which default epics are created, and how the AI prioritizes its assistance. These types describe **how the consulting team enters the project**, not the state of the client's Salesforce org. A "Greenfield" engagement means the team runs discovery from scratch; the client's org may already have extensive customization.
 
-- **Greenfield:** Full lifecycle. All phases active. Discovery starts from zero.
-- **Build Phase:** Client has completed discovery externally. The team imports or recreates key requirements and decisions in the application. Story definition and solution design are the entry points.
+- **Greenfield:** Full lifecycle. All phases active. Discovery starts from zero. Use this for any engagement where the consulting team owns discovery through deployment, regardless of whether the client's org is new or mature.
+- **Build Phase:** Client or another firm has already completed discovery. The team imports or recreates key requirements and decisions in the application. Story definition and solution design are the entry points.
 - **Managed Services:** Ongoing support of an existing org. Emphasis on org ingestion, continuous enhancement requests, and SLA tracking rather than a single discovery-to-deployment arc.
 - **Rescue/Takeover:** Inheriting a troubled project. The org knowledge base includes an Org Health Assessment (code quality, security analysis, technical debt inventory) and the discovery phase focuses on understanding what exists and what's broken before planning remediation.
 
@@ -511,7 +511,7 @@ RAISED -> SCOPED -> OWNED -> ANSWERED -> IMPACT ASSESSED
 
 Format: `Q-{SCOPE}-{NUMBER}`
 
-- `{SCOPE}` is a short prefix: `ENG` for engagement-wide, an epic's 2-4 letter prefix for epic-scoped (e.g., `DM` for Data Migration), or `{EPIC}-{FEATURE}` for feature-scoped.
+- `{SCOPE}` is a short prefix: `ENG` for engagement-wide, an epic's 2-4 letter prefix for epic-scoped (e.g., `DM` for Data Migration), or `{EPIC}-{FEATURE}` for feature-scoped. Epic prefixes must be unique within a project; the application validates uniqueness on epic create and edit.
 - `{NUMBER}` is a zero-padded incrementing number (e.g., `001`).
 
 Examples: `Q-ENG-001`, `Q-DM-001`, `Q-DM-LRT-001`.
@@ -567,7 +567,7 @@ Every user story must have the following fields populated before it can be marke
 - **Linked Epic or Feature.** Every story must reference its parent.
 - **Estimated Story Points.** Must be populated before sprint entry. The AI can suggest an estimate based on complexity analysis, but a human must confirm.
 - **Test Case(s).** At least one test case defined. The AI generates test case stubs from the acceptance criteria.
-- **Impacted Salesforce Components.** A list of which objects, fields, classes, flows, or other metadata this story will create or modify. Cross-referenced against the org knowledge base.
+- **Impacted Salesforce Components.** A list of which objects, fields, classes, flows, or other metadata this story will create or modify. Supports two modes: (1) free-text entries for planned or new components that do not yet exist in the org (always available, used in Phase 2 before org connectivity), and (2) linked references to existing OrgComponent records (available once the org knowledge base is populated in Phase 3). The "Ready" validation accepts either mode. When org connectivity is established, the AI can suggest linking free-text entries to matching OrgComponents.
 
 ### 10.4 Story Generation Workflow
 
@@ -986,6 +986,10 @@ V1 provides in-app notifications only. A notification bell in the application he
 | Question aging past threshold | Question owner + PM | MEDIUM |
 | Health score changed | PM + architect | MEDIUM |
 | New question assigned | Assigned owner | MEDIUM |
+| Story moved to QA | Test assignee (or all QA members if none assigned) | HIGH |
+| New decision recorded | PM + SA + affected epic owners | MEDIUM |
+| Risk created or severity changed | PM + SA | HIGH |
+| Story reassigned | Old assignee + new assignee | MEDIUM |
 | Story status changed | Assignee, PM (if sprint-active) | LOW |
 | Knowledge article flagged stale | Architect | LOW |
 | Metadata sync complete | Architect | LOW |
@@ -1033,21 +1037,37 @@ Every user has exactly one role per project. Roles determine what they can see a
 | Trigger org metadata sync | Yes | No | No | No | No |
 | Chat with AI (discovery) | Yes | Yes | Yes | Yes | No |
 | Process transcripts | Yes | No | Yes | Yes | No |
-| Raise/answer questions | Yes | Yes | Yes | Yes | No |
+| Raise/answer questions | Yes | Yes | Yes | Yes | Yes |
 | Create/edit epics and features | Yes | No | Yes | Yes | No |
-| Create/edit user stories | Yes | Yes | Yes | Yes | No |
+| Create/edit user stories (content) | Yes | Yes | Yes | Yes | Yes (Draft only) |
 | Mark stories as "Ready" | Yes | No | Yes | Yes | No |
+| Assign stories to sprints | Yes | No | Yes | No | No |
 | Manage sprints | Yes | No | Yes | No | No |
+| Transition story status (management) | Yes | No | Yes | Yes | No |
+| Transition story status (execution) | Yes | Yes | No | No | No |
 | Pick up tickets (Claude Code) | Yes | Yes | No | No | No |
-| Update story status | Yes | Yes | No | No | No |
+| Create/manage milestones | Yes | No | Yes | No | No |
+| Create/edit requirements | Yes | No | Yes | Yes | No |
+| Create/edit risks | Yes | No | Yes | Yes | No |
+| Record decisions | Yes | Yes | Yes | Yes | No |
 | Generate deliverables | Yes | No | Yes | Yes | No |
 | View dashboards | Yes | Yes | Yes | Yes | Yes |
 | View org knowledge (read-only) | Yes | Yes | Yes | Yes | Yes |
+| Create/edit business context annotations | Yes | No | No | Yes | No |
+| Upload attachments | Yes | Yes | Yes | Yes | Yes |
 | Log defects | Yes | Yes | Yes | Yes | Yes |
 | Execute tests / record results | Yes | No | No | No | Yes |
 | View/manage defects | Yes | Yes | Yes | Yes | Yes |
-| Record decisions | Yes | Yes | Yes | Yes | No |
 | View usage & costs | Yes | No | Yes | No | No |
+
+**Story status transition permissions.** The "Update story status" capability from prior versions is replaced by two rows that distinguish management transitions from execution transitions:
+
+- **Management transitions** (Draft, Ready, Sprint Planned): SA, PM, and BA can move stories through these statuses. Assigning a story to a sprint auto-transitions the status to "Sprint Planned."
+- **Execution transitions** (In Progress, In Review, QA, Done): SA and Developer can move stories through these statuses. These transitions happen during active development and code review.
+
+**QA story creation restriction.** QA engineers can create user stories but only in Draft status. This supports the workflow where QA discovers gaps or regression needs during testing and logs them for BA/PM review. QA cannot transition stories past Draft.
+
+**Sprint assignment vs. story editing.** Editing a story's content (description, acceptance criteria, etc.) is separate from assigning it to a sprint. The "Assign stories to sprints" row controls who can modify the sprint FK on a story. Users with "Create/edit user stories" but not "Assign stories to sprints" can edit story content without accidentally changing sprint assignment.
 
 ### 19.2 Concurrent Editing
 
