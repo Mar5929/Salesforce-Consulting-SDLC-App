@@ -1,9 +1,9 @@
 # Product Requirements Document: Salesforce Consulting AI Framework
 
-**Document Version:** 2.1
+**Document Version:** 2.2
 **Date:** April 3, 2026
 **Author:** Michael Rihm
-**Status:** Draft — In Progress (Session 3 of N)
+**Status:** Draft — In Progress (Sessions 3-5 complete, pre-build)
 
 ---
 
@@ -143,6 +143,8 @@ In V1, this is the application owner (Michael). Firm-level settings — Salesfor
 
 **AI Agent Harness.** A server-side module within the Next.js application that manages all AI interactions. It handles prompt construction (injecting project context, guardrails, role-appropriate constraints), tool definitions (what the AI can read/write/query for each task type), execution management (single-turn vs. multi-step agent loops), and output validation. Detailed in Section 6.
 
+**Background Job Infrastructure (Inngest).** An event-driven job system running on Vercel serverless functions via Inngest. Handles all asynchronous work: knowledge article refresh, dashboard synthesis cache, transcript processing, embedding generation, metadata sync, and notification dispatch. All state changes in the app emit Inngest events; job handlers subscribe to relevant events. Step functions with checkpoints allow long-running jobs (like metadata sync) to resume from the last successful step on failure. V1 runs entirely on Vercel serverless; a scaling path to dedicated workers (Railway/Fly.io with BullMQ + Redis) is documented in V2-ROADMAP.md for when V1 constraints are hit.
+
 **Claude Code Skills (External).** Custom Claude Code skills maintained separately from the web application. These skills call the web application's REST API to fetch context packages and report back status. They enforce the six Salesforce development guardrails. The web application does not manage or deploy these skills.
 
 **Salesforce Org Connection.** A read-only connection to one shared team sandbox per project. The web application periodically retrieves metadata from this sandbox and stores parsed results in PostgreSQL. Detailed in Section 13.
@@ -201,6 +203,16 @@ All structured data lives in PostgreSQL. The core entities, their relationships,
 
 **VersionHistory.** An audit record capturing the previous state of an entity before modification. Stores entity type, entity ID, version number, a JSON snapshot of the previous state, who modified it, and when. Used to support the optimistic concurrency conflict resolution described in Section 19.2, where the previous version is preserved when a conflict occurs.
 
+**Business Process.** A logical business capability composed of multiple technical components working together (e.g., "Account Onboarding," "Renewal Pipeline"). Stores name, description, domain grouping reference, status (DISCOVERED, DOCUMENTED, CONFIRMED, DEPRECATED), complexity rating (LOW/MEDIUM/HIGH/CRITICAL), and flags for AI suggestion and human confirmation. Business processes are the structural skeleton of the knowledge architecture (Section 13.7): they answer "which components participate in this business capability?" through queryable SQL joins. Initially suggested by the AI during brownfield org ingestion (Section 13.6) and confirmed by the architect.
+
+**Knowledge Article.** An AI-curated, versioned, natural-language synthesis of understanding about a topic. Articles are the persistent memory of the AI: instead of re-deriving understanding from raw database rows every session, the AI reads its own previous synthesis and builds on it. Each article has a type (BUSINESS_PROCESS, INTEGRATION, ARCHITECTURE_DECISION, DOMAIN_OVERVIEW, CROSS_CUTTING_CONCERN, STAKEHOLDER_CONTEXT), a title, markdown content, a one-line summary (for two-pass context loading), a confidence rating (LOW/MEDIUM/HIGH), a version number incremented on each refresh, staleness tracking fields, author type (AI_GENERATED, HUMAN_AUTHORED, AI_GENERATED_HUMAN_EDITED), and a vector embedding for semantic retrieval. Articles reference multiple entities (business processes, org components, epics, stories, questions, decisions) via a polymorphic join table. See Section 13.7 for the full knowledge architecture.
+
+**Conversation.** A container for chat interactions within a project. Two types: (1) general project chat, one per project, auto-created, for quick conversational discovery; (2) task-specific sessions for discrete heavy-lift operations (transcript processing, story generation, briefings). Each task session maps to one SessionLog for cost tracking. All conversations are visible to project members with chat permission, persist permanently, and are browsable for audit trail and context continuity. The AI can reference previous conversations to maintain coherence across sessions.
+
+**Chat Message.** An individual message within a Conversation. Stores the role (USER, ASSISTANT, SYSTEM), content text, sender reference (null for AI messages), optional tool call metadata (for AI transparency), and timestamp. Messages are append-only.
+
+**Notification.** An in-app notification delivered to a specific project member. Stores the notification type (from a defined set of event types), title, optional body, a reference to the entity that triggered it (entityType + entityId), and read status. Notifications are dispatched by Inngest event handlers subscribing to existing app events. V1 is in-app only (notification bell with unread count); email and push notifications are deferred to V2.
+
 #### 5.2.2 Computed Views (AI-Derived, Not Stored)
 
 The following data is synthesized by the AI from the underlying entities and not stored as static fields. The AI computes these on demand or on a cached refresh cycle (see Section 6.4):
@@ -229,6 +241,9 @@ The following many-to-many relationships are modeled as explicit join tables:
 | RiskEpic | Risk | Epic | — |
 | StoryComponent | Story | OrgComponent | impactType: CREATE, MODIFY, DELETE |
 | MilestoneStory | Milestone | Story | — |
+| BusinessProcessComponent | BusinessProcess | OrgComponent | role (string: component's function in the process), isRequired (boolean) |
+| BusinessProcessDependency | BusinessProcess | BusinessProcess | dependencyType: TRIGGERS, FEEDS_DATA, REQUIRES_COMPLETION, SHARED_COMPONENTS; description |
+| KnowledgeArticleReference | KnowledgeArticle | (polymorphic) | entityType (BUSINESS_PROCESS, ORG_COMPONENT, EPIC, STORY, QUESTION, DECISION), entityId. No true FK: articles can reference many entity types. |
 
 The StoryComponent join table is the foundation of sprint intelligence (Section 11). It enables conflict detection, dependency ordering, and parallelization analysis by querying which stories share impacted components.
 
@@ -324,6 +339,26 @@ Dashboard content follows a hybrid approach for performance and cost management:
 
 **Cached AI synthesis (generated on trigger, not on page load).** Qualitative content — the "Current Focus" narrative, "Recommended Focus" prioritization, and briefing summaries — is generated by the AI and cached. Generation is triggered by meaningful state changes (question answered, story status changed, milestone reached) or by the user clicking "Refresh Briefing." The cached result includes a generation timestamp so users know how fresh it is. This avoids burning tokens on every dashboard page load while keeping the AI-synthesized content reasonably current.
 
+### 6.6 AI Ambiguity Handling (Session 5)
+
+When the AI extracts or generates entities and is uncertain about the correct interpretation, it follows a context-dependent approach:
+
+**General chat (user present).** The AI asks an inline clarifying question, then proceeds once the user responds.
+
+**Task sessions (transcript processing, bulk operations).** The AI makes its best guess and attaches a confidence flag. Uncertain items are surfaced at the end of the session as a review list. The task session completion UX shows a summary of created entities, count by confidence level, and a "Needs Review" section listing flagged items with reasons. The user can click into each to confirm, edit, or discard.
+
+**Background jobs (article refresh, embedding generation).** The AI makes its best guess and flags the item. No user to ask.
+
+**Schema additions for AI-created entities.** The following fields are added to Question, Decision, Requirement, and Risk (entities that are typically AI-extracted):
+
+| Field | Type | Default | Purpose |
+|---|---|---|---|
+| confidence | Enum: HIGH, MEDIUM, LOW | HIGH | AI's certainty about the extraction |
+| needsReview | Boolean | false | Set true when AI is uncertain |
+| reviewReason | String (nullable) | null | Why the AI flagged it (e.g., "Could not determine scope: mentioned both Data Migration and Sales Process epics") |
+
+These fields are not added to BusinessProcess, KnowledgeArticle, or DomainGrouping, which already have their own confirmation flows (isAiSuggested/isConfirmed or confidence/staleness mechanisms).
+
 ---
 
 ## 7. Project Lifecycle
@@ -397,7 +432,14 @@ The AI's job during discovery is to receive unstructured information and organiz
 
 ### 8.2 Information Input Methods
 
-**Chat with the AI.** The primary input method. Users type or paste information in a conversational interface. The AI extracts structured data (questions, answers, decisions, requirements, action items) and files them appropriately. Examples:
+**Chat with the AI.** The primary input method. The chat interface follows a hybrid model with two conversation types:
+
+- **General project chat.** One per project, auto-created. A persistent, shared conversation for quick conversational discovery. All project members with chat permission can see it. Each message triggers an independent harness call. Interleaved messages from multiple users are handled as independent interactions, with conflict detection catching contradictory information across conversations.
+- **Task sessions.** Discrete, scoped conversations for heavy-lift tasks (transcript processing, story generation, briefings). Each session maps to one SessionLog for cost tracking. Simultaneous task sessions are independent of each other and of the general chat.
+
+All conversations persist permanently. Nothing is ephemeral. The AI can reference previous conversations for context continuity. Session history is browsable for audit trail purposes.
+
+Users type or paste information in either conversation type. The AI extracts structured data (questions, answers, decisions, requirements, action items) and files them appropriately. Examples:
 - "The client confirmed that they use Pardot for email marketing and it's integrated through the standard Salesforce connector."
 - "Sarah from the client's IT team said they have 3 million Account records and about 12 million Contacts."
 - "Decision: we're going to use a custom object for the renewal tracking instead of modifying the existing Opportunity process."
@@ -589,35 +631,55 @@ The AI tracks which developers are working on which stories and their impacted c
 
 Developers use the web application to view their assigned tickets and sprint plans. When they pick up a ticket, they work in Claude Code. Claude Code skills call back to the web application's API to get everything they need.
 
-### 12.2 Three-Tier Context Architecture
+### 12.2 Context Architecture
 
-The context architecture ensures Claude Code has the right information for every task without overloading the context window.
+The context architecture ensures Claude Code has the right information for every task without overloading the context window. Claude Code draws from two distinct sources: the **web application** (business intelligence, project knowledge, cross-team context) and the **Salesforce CLI** (live technical reality from the developer's authenticated sandbox).
 
-**Tier 1 — Project Summary (Always Loaded).** A compact project summary (1-2 pages) that lives in every Claude Code session. It covers the project's architectural patterns, naming conventions, key decisions, the six guardrails, current sprint focus, and a "map" of how to request more detail from the web application's API. This is generated and kept current by the web application.
+**Tier 1 — Project Summary (Always Loaded).** A compact project summary (1-2 pages) that lives in every Claude Code session. It covers the project's architectural patterns, naming conventions, key decisions, the six guardrails, current sprint focus, and a "map" of how to request more detail from the web application's API and from the local SF CLI. This is generated and kept current by the web application.
 
 **Tier 2 — Ticket Context Package (Assembled on Pickup).** When a developer picks up a ticket, Claude Code calls the web application's Context Package API (`GET /api/projects/:projectId/context-package/:storyId`). The web application assembles a scoped package containing:
 
 - The full user story, acceptance criteria, and test case stubs.
 - The parent epic/feature and its business context.
-- Only the org metadata relevant to this story — if the story touches Account and Opportunity, the package includes those object definitions, their fields, existing triggers, related flows, and validation rules. Not the entire org.
+- Business processes that involve components this story touches, with role descriptions explaining what each component does in the process.
+- Top relevant knowledge articles (full content) providing the AI's synthesized understanding of the business domain.
 - Related discovery notes and decisions.
 - Other in-flight stories that touch overlapping components (the sprint intelligence flag).
 
-The web application does the filtering. It knows what's relevant because the story has an "impacted components" field. It traverses relationships one or two hops out. The result is a focused context package — targeted and token-efficient rather than exhaustive.
+The web application does the filtering. It knows what's relevant because the story has an "impacted components" field. It traverses relationships one or two hops out and uses semantic search to find the most relevant knowledge articles. The result is a focused context package: business intelligence and project knowledge that the developer's local environment cannot provide.
 
-**Tier 3 — On-Demand Queries (Mid-Task Lookups).** During execution, Claude Code can call the Org Knowledge API (`GET /api/projects/:projectId/org/query`) for information not in the initial package. "What fields exist on Custom_Object__c?" "Show me the business context for the Renewal process." "Are there any existing triggers on Case?"
+**Tier 3a — Business Intelligence Lookups (Web App API).** During execution, Claude Code can call the web application's API for business context not in the initial package:
+
+- `GET /api/projects/:projectId/org/query` for enriched org knowledge with business context annotations, domain groupings, and process relationships.
+- Knowledge article queries: "Show me the business context for the Renewal process" returns the AI-curated synthesis of that process, not just raw metadata.
+- Cross-story context: "Are there other stories touching this component?" for real-time sprint conflict awareness.
+
+This channel provides the *why* and *how it fits together*: business processes, knowledge articles, decisions, cross-team dependencies.
+
+**Tier 3b — Live Org Inspection (SF CLI).** Claude Code runs SF CLI commands directly against the developer's authenticated Salesforce sandbox to inspect the actual current state of the org:
+
+- `sf org list metadata` to see what metadata types exist.
+- `sf project retrieve start` to pull current source for specific components.
+- Direct inspection of Apex classes, triggers, flows, field definitions, permission sets, and any other metadata the developer's sandbox contains.
+
+This channel provides the *what exists right now*: actual source code, current field definitions, live object schemas. It is the technical ground truth. The developer must be authenticated to their sandbox via SF CLI for this to work (standard SF development setup).
+
+**Why both channels exist:** The web app knows things the SF CLI cannot: which business process a trigger supports, what the client said about renewal logic in a discovery meeting, which other developer is modifying the same class. The SF CLI knows things the web app cannot: the exact current source code in the developer's sandbox, fields added since the last metadata sync, the developer's local customizations. Claude Code merges both to plan and execute effectively.
 
 ### 12.3 Developer Workflow Steps
 
 1. Developer views assigned tickets in the web application.
-2. Developer opens Claude Code and invokes the ticket start skill (e.g., `sf-ticket start STORY-42`).
-3. Claude Code calls the web application's Context Package API and loads the response.
-4. The developer and AI break the story into atomic implementation steps within the Claude Code session. These ephemeral task breakdowns are optimized for AI agent execution and are not persisted back to the web application. The web application tracks work at the story level only.
-5. The AI executes — generating Salesforce metadata and code with all six guardrails enforced.
-6. The developer reviews, tests, and deploys to their development environment.
-7. The developer updates the story status in the web application (or Claude Code does it via the Status API).
-8. The developer goes through the team's Git and code review process.
-9. When the code is merged and deployed to the shared team sandbox, the web application picks it up on the next org sync.
+2. Developer opens VS Code with Claude Code and the Salesforce Extension Pack. They are authenticated to their development sandbox via SF CLI.
+3. Developer invokes the ticket start skill (e.g., `sf-ticket start STORY-42`).
+4. Claude Code calls the web application's Context Package API and loads the business context: story details, acceptance criteria, business processes, knowledge articles, related decisions, sprint conflicts.
+5. Claude Code inspects the developer's authenticated sandbox via SF CLI to understand what currently exists: pulls relevant component source, checks field definitions, reviews existing triggers and flows that the story touches. Example: "Based on the story requirements, this touches AccountTriggerHandler and 3 custom fields on Account. Let me pull the current source from your org... here's what exists."
+6. Claude Code cross-references the business intelligence (from the web app) with the technical reality (from the SF CLI) and architects the implementation: identifies what needs to be created vs. modified, flags any discrepancies between the story's impacted components list and what actually exists in the org, and proposes a plan.
+7. Claude Code breaks the story into atomic implementation tasks optimized for AI execution. The developer reviews and approves the plan. These ephemeral task breakdowns are not persisted to the web application; the web app tracks work at the story level only.
+8. The AI executes each task: generating Salesforce metadata and code with all six guardrails enforced.
+9. The developer reviews, tests locally, and deploys to their development environment.
+10. The developer updates the story status in the web application (or Claude Code does it via the Status API).
+11. The developer goes through the team's Git and code review process.
+12. When the code is merged and deployed to the shared team sandbox, the web application picks it up on the next org sync.
 
 ### 12.4 What Claude Code Can Build
 
@@ -677,9 +739,50 @@ The org knowledge base is progressively updated:
 
 ### 13.6 Brownfield Org Ingestion
 
-For brownfield and managed services engagements, the initial sync performs a comprehensive metadata pull. After the raw metadata is parsed into the knowledge base, the AI performs domain discovery — analyzing relationships between objects, automations, and integrations to propose business domain groupings. The architect reviews and approves the groupings.
+For brownfield and managed services engagements, the initial sync performs a comprehensive metadata pull. The ingestion runs in four phases:
+
+```
+Phase 1: Parse    -> OrgComponent + OrgRelationship rows
+Phase 2: Classify -> DomainGrouping suggestions
+Phase 3: Synthesize -> BusinessProcess + BusinessProcessComponent suggestions (NEW)
+Phase 4: Articulate -> KnowledgeArticle drafts, one per process + one per domain (NEW)
+```
+
+**Phases 1-2** are unchanged from the original design: raw metadata is parsed into normalized component and relationship rows, then the AI proposes business domain groupings.
+
+**Phases 3-4** run as a single AI call (they need the same context; splitting them would re-derive understanding twice). The AI analyzes the parsed components and their relationships to identify logical business processes ("Account Onboarding," "Renewal Pipeline"), creates BusinessProcess and BusinessProcessComponent records linking processes to their constituent components, then writes initial KnowledgeArticle drafts synthesizing its understanding of each process and each domain.
+
+**Confirmation model:** All AI-generated entities from ingestion require human review before being treated as trusted context:
+- BusinessProcess: `isAiSuggested = true`, `isConfirmed = false`, `status = DISCOVERED`
+- KnowledgeArticle: `authorType = AI_GENERATED`, `confidence = LOW` or `MEDIUM`
+- The architect reviews and confirms all AI suggestions through the web application UI.
 
 For rescue/takeover engagements, the AI also generates an Org Health Assessment: code quality analysis (test coverage, code complexity, governor limit risk areas), security analysis (sharing model review, FLS compliance, hardcoded IDs), technical debt inventory, and a recommended remediation backlog. This assessment is stored as a project artifact and informs the discovery and planning phases.
+
+### 13.7 Three-Layer Knowledge Architecture (Session 4-5)
+
+The org knowledge base uses a three-layer architecture to support both queryable structure and persistent AI understanding:
+
+**Layer 1: Structured Relationships (queryable, in Postgres).** BusinessProcess entities linked to OrgComponents via BusinessProcessComponent join tables, with BusinessProcessDependency for process-to-process relationships. This layer answers questions like "Which components participate in Account Onboarding?" and "This story modifies a component that participates in 3 business processes." It powers dashboards, sprint intelligence impact analysis, and conflict detection through standard SQL joins.
+
+**Layer 2: Synthesized Understanding (AI-curated, in Postgres).** KnowledgeArticle entities containing AI-maintained, versioned, natural-language synthesis of understanding about topics. Articles are the AI's persistent memory. Instead of re-deriving understanding from raw rows every session, the AI reads its own previous synthesis and builds on it. Articles cover business processes, integrations, architecture decisions, domain overviews, cross-cutting concerns, and stakeholder context. Articles reference multiple entities via KnowledgeArticleReference, enabling retrieval like "give me all articles that reference any component this story touches."
+
+**Layer 3: Semantic Retrieval (pgvector embeddings).** Vector embeddings on KnowledgeArticle.content, OrgComponent fields, and other searchable entities. This layer is the retrieval mechanism for finding relevant articles and components to load into AI context. It answers fuzzy queries like "find anything related to account creation" where exact keyword matching would miss results. The tech spec already has `embedding` columns on OrgComponent; this extends to KnowledgeArticle and other entities that need semantic search.
+
+**Layer 1 is the skeleton (structure). Layer 2 is the muscle and memory (understanding). Layer 3 is the nervous system (retrieval).**
+
+**Article update triggers (hybrid model):**
+- During agent interactions, the AI flags articles as "potentially stale" inline (cheap DB update: `staleReason`, `staleSince` timestamp). No synthesis during the agent loop.
+- A background Inngest job performs deep refresh: re-reads referenced entities, rewrites article content, updates version and embedding.
+- Trigger conditions for flagging: the agent touches a component referenced by an article, the agent answers a question that changes understanding of a topic, or a user confirms/corrects a domain grouping or business process.
+- End of every agent loop, the execution engine queries which articles reference entities the agent modified and sets `isStale = true` + `staleReason`. This is a DB query only, no AI call.
+
+**Two-pass context retrieval pattern:**
+1. Load article summaries for the relevant scope (~50 tokens each).
+2. Embed the task/query and find top-N articles by cosine similarity.
+3. Load full content of only the top-N articles.
+
+This keeps token costs low while giving the AI access to the most relevant synthesized knowledge.
 
 ---
 
@@ -846,6 +949,49 @@ The project health score is computed from:
 
 Score: Green (0 signals), Yellow (1-3 signals), Red (4+ signals). Thresholds are configurable per project. Displayed in the Briefing header.
 
+### 17.7 Search Architecture (Session 5)
+
+The application provides three layers of search, each serving a different use case:
+
+**Layer 1: Filtered Search (Prisma where clauses).** Per-entity list views with entity-specific filters: status, scope, owner, epic, domain, sprint, etc. Always available on every list view. No AI cost.
+
+**Layer 2: Full-Text Search (PostgreSQL tsvector/tsquery).** A global search bar that returns grouped results across all entity types. Fast exact matching using Postgres built-in full-text search. `tsvector` columns are auto-maintained by Postgres triggers on insert/update. Prisma uses raw SQL for search queries. No AI cost.
+
+Full-text indexed entities and fields:
+- Question: questionText, answer
+- Decision: decisionText, rationale
+- Requirement: description
+- Story: title, description, acceptanceCriteria
+- OrgComponent: apiName, label
+- KnowledgeArticle: title, content, summary
+- BusinessProcess: name, description
+- Risk: description, mitigationStrategy
+
+**Layer 3: Semantic Search (pgvector cosine similarity).** "Smart search" for meaning-based matching. Activated when full-text search returns few or no results, or when the user explicitly chooses semantic mode. Uses the same embedding infrastructure as the knowledge article retrieval system (Section 13.7).
+
+**UX:** The global search bar returns grouped results across all entity types (questions, stories, articles, components, decisions, etc.). Each entity list view also has its own filtered search with entity-specific facets.
+
+### 17.8 Notification System (Session 5)
+
+V1 provides in-app notifications only. A notification bell in the application header shows unread count. Email and push notifications are deferred to V2.
+
+**Notification events and priority:**
+
+| Event | Recipients | Priority |
+|---|---|---|
+| Question answered | Question owner + blocking stakeholders | HIGH |
+| Work item unblocked | Story assignee, sprint PM | HIGH |
+| Sprint conflict detected | Affected developers + PM | HIGH |
+| AI processing complete | Triggering user | MEDIUM |
+| Question aging past threshold | Question owner + PM | MEDIUM |
+| Health score changed | PM + architect | MEDIUM |
+| New question assigned | Assigned owner | MEDIUM |
+| Story status changed | Assignee, PM (if sprint-active) | LOW |
+| Knowledge article flagged stale | Architect | LOW |
+| Metadata sync complete | Architect | LOW |
+
+**Implementation:** Notifications are Inngest event handlers subscribing to existing app events. No new infrastructure beyond the Notification entity. The dispatch job determines recipients from project membership and entity relationships, then writes Notification rows. Notifications link to the source entity for one-click navigation.
+
 ---
 
 ## 18. QA Workflow
@@ -901,6 +1047,7 @@ Every user has exactly one role per project. Roles determine what they can see a
 | Execute tests / record results | Yes | No | No | No | Yes |
 | View/manage defects | Yes | Yes | Yes | Yes | Yes |
 | Record decisions | Yes | Yes | Yes | Yes | No |
+| View usage & costs | Yes | No | Yes | No | No |
 
 ### 19.2 Concurrent Editing
 
@@ -992,6 +1139,32 @@ The firm absorbs all AI API costs as overhead. Costs are not billed back to clie
 
 To prevent runaway costs, the application implements configurable rate limits: per-consultant daily request limits, per-project monthly cost caps (soft limit with alerts), and firm-wide monthly cost threshold with alerts. These are configured in the application's settings (not through a UI in V1).
 
+### 23.4 Usage and Cost Dashboard (Session 6)
+
+Each project has a "Usage & Costs" tab in project settings, visible to Solution Architects and PMs only. This surfaces the token consumption and estimated dollar cost that SessionLog already tracks.
+
+**What it shows:**
+
+- **Project totals:** Total tokens (input + output), estimated cost, number of AI sessions. Filterable by date range (last 7 days, last 30 days, current sprint, custom range).
+- **Breakdown by task type:** Token usage and cost per task type (transcript processing, story generation, briefing generation, etc.). Shows which activities consume the most budget. Displayed as a table with percentage-of-total column.
+- **Breakdown by team member:** Token usage and cost per project member. Visible to SA and PM only; individual users do not see other users' consumption. Purpose is capacity planning and identifying if one workflow is disproportionately expensive, not performance monitoring.
+- **Trend chart:** Daily or weekly token usage over the selected date range. Simple line chart to spot spikes or trends.
+
+**Cost calculation:**
+
+The application stores AI model pricing as a configuration object (TypeScript constants in V1, admin UI in V2):
+
+```
+{
+  "claude-sonnet": { inputPer1KTokens: 0.003, outputPer1KTokens: 0.015 },
+  "claude-opus":   { inputPer1KTokens: 0.015, outputPer1KTokens: 0.075 }
+}
+```
+
+Cost per session = (inputTokens * inputRate) + (outputTokens * outputRate). Aggregated from SessionLog records. Pricing config requires manual update when Anthropic changes rates.
+
+**RBAC:** Solution Architect and PM can view the full dashboard (project totals + per-user breakdown). Other roles cannot access this tab.
+
 ---
 
 ## 24. What This Product Is Not
@@ -1020,6 +1193,9 @@ To prevent runaway costs, the application implements configurable rate limits: p
 | Authentication | Clerk | Clerk Cloud |
 | File Storage | S3 or Cloudflare R2 | AWS or Cloudflare |
 | AI Provider | Claude API (Anthropic) | Anthropic Cloud |
+| Background Jobs | Inngest | Vercel (serverless functions) |
+| Vector Search | pgvector (PostgreSQL extension) | Neon or Supabase |
+| Full-Text Search | PostgreSQL tsvector/tsquery | Neon or Supabase |
 | Real-Time Updates | WebSocket or polling | Vercel |
 | Developer Execution | Claude Code + custom skills | Local (developer machine) |
 
@@ -1041,9 +1217,9 @@ The application is built by one person (the firm owner) using Claude Code. Every
 
 ### Phase 1: Discovery and Knowledge Brain
 
-The foundation. Build the project data model, the question system, the AI agent harness for transcript processing and question/answer workflows, and the discovery dashboard. At the end of this phase, a user can create a project, chat with the AI to log discovery findings, process transcripts, track questions through their lifecycle, and view a discovery dashboard with outstanding questions, blocked items, and health scores.
+The foundation. Build the project data model (including the knowledge architecture entities), the question system, the AI agent harness for transcript processing and question/answer workflows, the chat/conversation interface, the notification system, the Inngest background job infrastructure, search, and the discovery dashboard. At the end of this phase, a user can create a project, chat with the AI to log discovery findings, process transcripts, track questions through their lifecycle, receive in-app notifications, search across all entities, and view a discovery dashboard with outstanding questions, blocked items, and health scores.
 
-Key deliverables: PostgreSQL schema, Clerk authentication, project creation flow, question CRUD, AI transcript processing, AI question answering with impact assessment, discovery dashboard.
+Key deliverables: PostgreSQL schema (all entities including BusinessProcess, KnowledgeArticle, Conversation, ChatMessage, Notification), pgvector and tsvector setup, Clerk authentication, project creation flow, question CRUD with confidence/review fields, AI transcript processing, AI question answering with impact assessment, chat interface (general + task sessions), Inngest job infrastructure (article refresh, dashboard synthesis, embedding generation, notification dispatch), in-app notification system, global search (filtered + full-text + semantic), discovery dashboard.
 
 ### Phase 2: Story Management and Sprint Intelligence
 
@@ -1067,32 +1243,58 @@ Key deliverables: Document generation engine, template system, S3 file storage, 
 
 ## 27. Open Questions and Future Considerations
 
-The following items were identified during requirements gathering but are not fully resolved. They should be addressed before or during implementation of the relevant phase.
+The following items were identified during requirements gathering. Items resolved during Sessions 3-5 are marked as such; remaining items should be addressed before or during implementation of the relevant phase.
 
-1. **AI context window management.** As project knowledge grows over months, the AI's working context must be managed. Strategies include summarization of older context, relevance-based retrieval, and tiered loading. The specific approach should be determined during Phase 1 when the agent harness is built.
+### Resolved in Sessions 3-5
 
-2. **Org metadata sync performance.** The periodic metadata sync for large orgs (3,000+ custom fields, 200+ objects) may take significant time. The sync should run as a background job with progress tracking. The specific performance characteristics should be measured during Phase 3.
+1. **~~AI context window management.~~** Resolved: three-layer knowledge architecture (Section 13.7) with two-pass retrieval, per-task-type context budgets (Tech Spec Section 4), and scoped loading strategies. Knowledge articles provide pre-computed summaries to reduce token cost.
 
-3. **Stale context gap.** Between when a developer deploys to the shared sandbox and when the web application's next sync picks up the changes, other developers may receive slightly stale context packages. This is acceptable for V1 but could be addressed in V2 with webhooks or event-driven sync.
+2. **~~Org metadata sync performance.~~** Resolved: Inngest step functions with checkpoints (Section 5.1). Sync runs as a background job with automatic retry and progress tracking. V2 scaling path documented in V2-ROADMAP.md.
 
-4. **Provider-agnostic abstraction layer.** V1 is optimized for Claude. If the firm needs to support a second AI provider, a provider abstraction layer should be built at that time. The current architecture keeps the Claude integration in a cleanly separated module to facilitate this.
+3. **Stale context gap.** Accepted for V1. Between developer deploy and next sync, context packages may be slightly stale. V2 solution (webhooks/event-driven sync) documented in V2-ROADMAP.md Section 1.4.
 
-5. **Firm administrator UI.** V1 hardcodes firm-level settings. When additional administrators need to manage guardrails, branding, or templates, a dedicated admin interface should be built.
+4. **Provider-agnostic abstraction layer.** Deferred to V2. Claude integration in a cleanly separated module. V2 path documented in V2-ROADMAP.md Section 2.2.
 
-6. **Playwright test integration.** V1 has manual test result recording. A future enhancement could ingest Playwright test run output and automatically update test case statuses.
+5. **Firm administrator UI.** Deferred to V2. V1 hardcodes firm-level settings. V2 path documented in V2-ROADMAP.md Section 3.1.
 
-7. **Real-time collaborative editing.** V1 uses optimistic concurrency control. If the team finds that simultaneous editing of the same entity causes friction, real-time collaboration (operational transforms or CRDTs) could be added.
+6. **Playwright test integration.** Deferred to V2. V2 path documented in V2-ROADMAP.md Section 4.1.
 
-8. **AI output quality benchmarking.** How does the firm measure whether AI-generated artifacts are better, faster, or more consistent than manual work? A baseline measurement approach should be defined.
+7. **Real-time collaborative editing.** Deferred to V2. V2 path documented in V2-ROADMAP.md Section 1.2.
 
-9. **Regulatory and contractual review.** Client contracts may have clauses about AI tool usage. The firm's legal team should review the application's data handling posture before client engagement rollout.
+8. **AI output quality benchmarking.** Deferred to V2. V2 path documented in V2-ROADMAP.md Section 2.3.
 
-10. **Mobile access.** V1 assumes desktop/laptop access. If consultants need mobile access to dashboards or story management, responsive design requirements should be defined.
+9. **Regulatory and contractual review.** Deferred to V2. V2 path documented in V2-ROADMAP.md Section 5.4.
 
-11. **Salesforce org credential rotation.** For long-running engagements, org credentials may expire. A credential refresh workflow is needed.
+10. **Mobile access.** Deferred to V2. V2 path documented in V2-ROADMAP.md Section 3.3.
 
-12. **Git repository management.** The web application does not manage Git repos in V1. If the team finds that creating repos, setting up branch protection, and configuring CODEOWNERS is a bottleneck in project setup, the application could automate this through the GitHub API in a future version.
+11. **Salesforce org credential rotation.** Deferred to V2. V2 path documented in V2-ROADMAP.md Section 5.2.
 
-13. **Framework updates to active projects.** When firm-level rules or templates change, how do active projects receive those updates? Options: automatic propagation (risky mid-sprint), manual pull by the project lead, or update at next milestone. To be determined based on operational experience.
+12. **Git repository management.** Deferred to V2. V2 path documented in V2-ROADMAP.md Section 4.2.
 
-14. **Project home page.** A landing page within the application for each project that summarizes key metrics, recent activity, and quick actions. Deferred to post-V1 based on prior decision.
+13. **Framework updates to active projects.** Deferred to V2. V2 path documented in V2-ROADMAP.md Section 5.3.
+
+14. **Project home page.** Deferred to V2. V2 path documented in V2-ROADMAP.md Section 3.2.
+
+### Resolved via Sessions 4-5 Decisions (now in PRD/Tech Spec)
+
+15. **Knowledge architecture.** Resolved: three-layer design (structured relationships + AI-curated articles + semantic retrieval). See Section 13.7.
+
+16. **Chat/conversation interface.** Resolved: hybrid model (general project chat + task-specific sessions). See Section 8.2.
+
+17. **Background job infrastructure.** Resolved: Inngest on Vercel serverless. See Section 5.1.
+
+18. **AI ambiguity handling.** Resolved: context-dependent approach (ask inline, best-guess + flag, background flag). See Section 6.6.
+
+19. **Search architecture.** Resolved: three-layer (filtered + full-text + semantic). See Section 17.7.
+
+20. **Notification system.** Resolved: in-app notifications via Inngest events. See Section 17.8.
+
+### Remaining Open (to address during build)
+
+21. **Firm-level rules configuration format.** Typographic rules, naming conventions, and terminology are "hardcoded in V1." The specific format (TypeScript constants, JSON config file, or database seeds) should be decided during Phase 1 setup.
+
+22. **Sprint intelligence scoring algorithm.** How to rank severity of overlapping components in conflict detection. Address during Phase 2 when sprint management is built.
+
+23. **Org metadata parsing pipeline.** Translating raw SF CLI JSON output into normalized OrgComponent/OrgRelationship rows. Address during Phase 3 when org connectivity is built.
+
+24. **Document generation library choices.** Candidates: `docx-templater` or `python-docx` for Word, `pptxgenjs` for PowerPoint, `pdf-lib` for PDF. Address during Phase 4.

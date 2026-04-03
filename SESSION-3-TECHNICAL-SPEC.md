@@ -1,9 +1,9 @@
 # Session 3 Technical Specification
 # Salesforce Consulting AI Framework
 
-**Date:** April 3, 2026
-**Companion to:** SF-Consulting-AI-Framework-PRD-v2.1.md
-**Purpose:** Detailed technical specifications for database schema, AI agent harness architecture, context window budget strategy, and dashboard implementation. Produced during Session 3 PRD deep-dive.
+**Date:** April 3, 2026 (updated Sessions 4-5)
+**Companion to:** SF-Consulting-AI-Framework-PRD-v2.2.md
+**Purpose:** Detailed technical specifications for database schema, AI agent harness architecture, context window budget strategy, dashboard implementation, knowledge architecture, background jobs, search infrastructure, and notification system. Produced during Sessions 3-5.
 
 ---
 
@@ -14,7 +14,10 @@
 3. [AI Agent Harness — Implementation Architecture](#3-ai-agent-harness)
 4. [Context Window Budget Strategy](#4-context-window-budget-strategy)
 5. [Dashboard Architecture](#5-dashboard-architecture)
-6. [Remaining Tier 2 Items for Future Sessions](#6-remaining-items)
+6. [Brownfield Org Ingestion Pipeline](#6-brownfield-org-ingestion-pipeline)
+7. [Background Job Infrastructure (Inngest)](#7-background-job-infrastructure)
+8. [Search Infrastructure](#8-search-infrastructure)
+9. [Remaining Items for Future Sessions](#9-remaining-items)
 
 ---
 
@@ -55,26 +58,34 @@ Project
   │           ├── TestCase
   │           │     └── TestExecution
   │           └── Defect
-  ├── Question
+  ├── Question (+ confidence, needsReview, reviewReason)
   │     ├── QuestionBlocksStory → Story
   │     ├── QuestionBlocksEpic → Epic
   │     ├── QuestionBlocksFeature → Feature
   │     └── QuestionAffects → Epic/Feature (cross-cutting)
-  ├── Decision
+  ├── Decision (+ confidence, needsReview, reviewReason)
   │     ├── DecisionQuestion → Question
   │     └── DecisionScope → Epic/Feature
-  ├── Requirement
+  ├── Requirement (+ confidence, needsReview, reviewReason)
   │     ├── RequirementEpic → Epic
   │     └── RequirementStory → Story
-  ├── Risk
+  ├── Risk (+ confidence, needsReview, reviewReason)
   │     └── RiskEpic → Epic
   ├── Milestone
   │     └── MilestoneStory → Story
   ├── Sprint
-  ├── OrgComponent
+  ├── OrgComponent (+ embedding vector)
   │     ├── OrgRelationship
   │     ├── DomainGrouping
   │     └── BusinessContextAnnotation
+  ├── BusinessProcess (NEW - Session 4)
+  │     ├── BusinessProcessComponent → OrgComponent (role, isRequired)
+  │     └── BusinessProcessDependency → BusinessProcess (dependencyType)
+  ├── KnowledgeArticle (NEW - Session 4)
+  │     └── KnowledgeArticleReference → (polymorphic: BP, OrgComponent, Epic, Story, Question, Decision)
+  ├── Conversation (NEW - Session 5)
+  │     └── ChatMessage (role, content, senderId, toolCalls)
+  ├── Notification (NEW - Session 5)
   ├── Transcript
   ├── SessionLog
   ├── GeneratedDocument
@@ -225,6 +236,9 @@ Unique constraint: (epicId, phase) — one record per phase per epic.
 | answeredById | UUID | Nullable FK → ProjectMember | Who provided/recorded the answer |
 | impactAssessment | Text | Nullable | AI-generated: what changed as a result |
 | parkedReason | Text | Nullable | Why deferred |
+| confidence | Enum | HIGH, MEDIUM, LOW. Default: HIGH | AI's certainty about the extraction |
+| needsReview | Boolean | Default: false | Set true when AI is uncertain |
+| reviewReason | String | Nullable | Why the AI flagged it |
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
 
@@ -241,6 +255,9 @@ Unique constraint: (epicId, phase) — one record per phase per epic.
 | rationale | Text | Required | Why this decision was made |
 | decisionDate | DateTime | Required | |
 | madeById | UUID | Nullable FK → ProjectMember | |
+| confidence | Enum | HIGH, MEDIUM, LOW. Default: HIGH | AI's certainty about the extraction |
+| needsReview | Boolean | Default: false | Set true when AI is uncertain |
+| reviewReason | String | Nullable | Why the AI flagged it |
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
 
@@ -257,6 +274,9 @@ Unique constraint: (epicId, phase) — one record per phase per epic.
 | source | String | Nullable | Where/who this requirement came from |
 | priority | Enum | LOW, MEDIUM, HIGH, CRITICAL | Default: MEDIUM |
 | status | Enum | CAPTURED, MAPPED, DEFERRED | Mapped = linked to at least one epic or story |
+| confidence | Enum | HIGH, MEDIUM, LOW. Default: HIGH | AI's certainty about the extraction |
+| needsReview | Boolean | Default: false | Set true when AI is uncertain |
+| reviewReason | String | Nullable | Why the AI flagged it |
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
 
@@ -276,6 +296,9 @@ Unique constraint: (epicId, phase) — one record per phase per epic.
 | mitigationStrategy | Text | Nullable | |
 | status | Enum | OPEN, MITIGATED, CLOSED, ACCEPTED | |
 | ownerId | UUID | Nullable FK → ProjectMember | |
+| confidence | Enum | HIGH, MEDIUM, LOW. Default: HIGH | AI's certainty about the extraction |
+| needsReview | Boolean | Default: false | Set true when AI is uncertain |
+| reviewReason | String | Nullable | Why the AI flagged it |
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
 
@@ -387,6 +410,7 @@ Progress is computed at query time from MilestoneStory join table — percentage
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
 | lastSyncedAt | DateTime | Nullable | When last seen in a metadata sync |
+| embedding | Vector(1536) | Nullable | pgvector embedding for semantic search |
 
 Unique constraint: (projectId, apiName, componentType) — one record per component per project.
 
@@ -456,6 +480,7 @@ Unique constraint: (projectId, apiName, componentType) — one record per compon
 | status | Enum | RUNNING, COMPLETE, FAILED, PARTIAL | PARTIAL = agent loop stopped early with some results |
 | startedAt | DateTime | Auto-set | |
 | completedAt | DateTime | Nullable | |
+| model | String | Nullable, default: "claude-sonnet-4-20250514" | AI model used; drives cost calculation |
 | inputTokens | Int | Default: 0 | |
 | outputTokens | Int | Default: 0 | |
 | totalIterations | Int | Default: 1 | Number of agent loop iterations |
@@ -511,6 +536,147 @@ Unique constraint: (projectId, apiName, componentType) — one record per compon
 | previousState | JSON | Required | Full snapshot of the entity before modification |
 | modifiedById | UUID | FK → ProjectMember | |
 | modifiedAt | DateTime | Auto-set | |
+
+---
+
+#### BusinessProcess (NEW - Session 4)
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| id | UUID | PK | |
+| projectId | UUID | FK → Project | |
+| name | String | Required | e.g., "Account Onboarding", "Renewal Pipeline" |
+| description | Text | Nullable | What this business process does |
+| domainGroupingId | UUID | Nullable FK → DomainGrouping | Business domain this process belongs to |
+| status | Enum | DISCOVERED, DOCUMENTED, CONFIRMED, DEPRECATED | Lifecycle status |
+| complexity | Enum | Nullable. LOW, MEDIUM, HIGH, CRITICAL | Used for sprint intelligence impact analysis |
+| isAiSuggested | Boolean | Default: true | True if AI proposed during ingestion |
+| isConfirmed | Boolean | Default: false | Architect confirms AI suggestions |
+| createdAt | DateTime | Auto-set | |
+| updatedAt | DateTime | Auto-updated | |
+
+Unique constraint: (projectId, name)
+
+---
+
+#### BusinessProcessComponent (NEW - Session 4)
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| id | UUID | PK | |
+| businessProcessId | UUID | FK → BusinessProcess | |
+| orgComponentId | UUID | FK → OrgComponent | |
+| role | String | Required | Component's function in the process (e.g., "Triggers onboarding workflow", "Stores renewal status") |
+| isRequired | Boolean | Default: true | Whether this component is essential to the process |
+
+Unique constraint: (businessProcessId, orgComponentId)
+
+---
+
+#### BusinessProcessDependency (NEW - Session 4)
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| id | UUID | PK | |
+| sourceProcessId | UUID | FK → BusinessProcess | |
+| targetProcessId | UUID | FK → BusinessProcess | |
+| dependencyType | Enum | TRIGGERS, FEEDS_DATA, REQUIRES_COMPLETION, SHARED_COMPONENTS | How the source depends on the target |
+| description | Text | Nullable | Human-readable description of the dependency |
+
+Unique constraint: (sourceProcessId, targetProcessId)
+
+---
+
+#### KnowledgeArticle (NEW - Session 4)
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| id | UUID | PK | |
+| projectId | UUID | FK → Project | |
+| articleType | Enum | BUSINESS_PROCESS, INTEGRATION, ARCHITECTURE_DECISION, DOMAIN_OVERVIEW, CROSS_CUTTING_CONCERN, STAKEHOLDER_CONTEXT | What the article covers |
+| title | String | Required | |
+| content | Text | Required | Markdown. The AI's synthesized understanding. |
+| summary | String | Required | One-liner for two-pass context assembly (~50 tokens) |
+| confidence | Enum | LOW, MEDIUM, HIGH | AI's confidence in the synthesis |
+| version | Int | Default: 1 | Incremented on each refresh |
+| isStale | Boolean | Default: false | Flagged by agent loop when referenced entities change |
+| staleReason | String | Nullable | Why the article was flagged (e.g., "Component Account_Trigger modified") |
+| staleSince | DateTime | Nullable | When the stale flag was set |
+| lastRefreshedAt | DateTime | Nullable | Last time the article content was regenerated |
+| authorType | Enum | AI_GENERATED, HUMAN_AUTHORED, AI_GENERATED_HUMAN_EDITED | |
+| embedding | Vector(1536) | Nullable | pgvector embedding of content for semantic retrieval |
+| createdAt | DateTime | Auto-set | |
+| updatedAt | DateTime | Auto-updated | |
+
+Unique constraint: (projectId, articleType, title)
+
+---
+
+#### KnowledgeArticleReference (NEW - Session 4)
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| id | UUID | PK | |
+| articleId | UUID | FK → KnowledgeArticle | |
+| entityType | Enum | BUSINESS_PROCESS, ORG_COMPONENT, EPIC, STORY, QUESTION, DECISION | Polymorphic: what type of entity is referenced |
+| entityId | UUID | Required | ID of the referenced entity (no true FK due to polymorphic design) |
+
+Unique constraint: (articleId, entityType, entityId)
+
+Note: Polymorphic join table. No database-level foreign key on entityId because it references different tables depending on entityType. Application-level validation ensures referential integrity. This is cleaner than N nullable FK columns and is the standard pattern for this type of cross-entity reference.
+
+---
+
+#### Conversation (NEW - Session 5)
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| id | UUID | PK | |
+| projectId | UUID | FK → Project | |
+| conversationType | Enum | GENERAL_CHAT, TRANSCRIPT_SESSION, STORY_SESSION, BRIEFING_SESSION, QUESTION_SESSION, ENRICHMENT_SESSION | |
+| title | String | Nullable | Auto-generated for task sessions; null for general chat |
+| status | Enum | ACTIVE, COMPLETE, FAILED | |
+| createdById | UUID | FK → ProjectMember | |
+| sessionLogId | UUID | Nullable FK → SessionLog | Links task sessions to cost tracking |
+| createdAt | DateTime | Auto-set | |
+| updatedAt | DateTime | Auto-updated | |
+
+Notes: One GENERAL_CHAT conversation per project, auto-created. Task sessions are created on demand per harness invocation.
+
+---
+
+#### ChatMessage (NEW - Session 5)
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| id | UUID | PK | |
+| conversationId | UUID | FK → Conversation | |
+| role | Enum | USER, ASSISTANT, SYSTEM | |
+| content | Text | Required | Message content |
+| senderId | UUID | Nullable FK → ProjectMember | Null for AI (ASSISTANT) and SYSTEM messages |
+| toolCalls | JSON | Nullable | AI tool call metadata for transparency |
+| createdAt | DateTime | Auto-set | |
+
+Messages are append-only. No edits, no deletes.
+
+---
+
+#### Notification (NEW - Session 5)
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| id | UUID | PK | |
+| projectId | UUID | FK → Project | |
+| recipientId | UUID | FK → ProjectMember | |
+| type | Enum | QUESTION_ANSWERED, WORK_ITEM_UNBLOCKED, SPRINT_CONFLICT_DETECTED, AI_PROCESSING_COMPLETE, QUESTION_AGING, HEALTH_SCORE_CHANGED, QUESTION_ASSIGNED, STORY_STATUS_CHANGED, ARTICLE_FLAGGED_STALE, METADATA_SYNC_COMPLETE | |
+| title | String | Required | Short notification title |
+| body | Text | Nullable | Additional detail |
+| entityType | Enum | QUESTION, STORY, SPRINT, PROJECT, ARTICLE, BUSINESS_PROCESS | What entity triggered the notification |
+| entityId | UUID | Required | For one-click navigation to the source entity |
+| isRead | Boolean | Default: false | |
+| createdAt | DateTime | Auto-set | |
+
+Index on (recipientId, isRead, createdAt) for the notification bell query.
 
 ---
 
@@ -650,6 +816,12 @@ This table is the foundation of sprint intelligence — conflict detection queri
 │  - getStoryWithContext(storyId)                   │
 │  - getSprintStories(sprintId)                     │
 │                                                   │
+│  Knowledge layer functions (Session 4-5):         │
+│  - getRelevantArticles(projectId, scope)          │
+│  - getArticleSummaries(projectId, scope)          │
+│  - getBusinessProcesses(projectId, scope)         │
+│  - getBusinessProcessForStory(storyId)            │
+│                                                   │
 │  Each task's contextLoader composes these         │
 │  differently based on what the task needs.        │
 └─────────────────────────────────────────────────┘
@@ -725,16 +897,18 @@ const transcriptProcessingContextLoader = async (
   // - Recent decisions (to detect contradictions)
   // - Epic/feature structure (to scope extracted items)
   // - Recent sessions (for continuity)
+  // - Article summaries for mentioned domains (to flag stale articles)
   // Does NOT need: org components, sprint data, test cases
 
-  const [questions, decisions, epics, sessions] = await Promise.all([
+  const [questions, decisions, epics, sessions, articleSummaries] = await Promise.all([
     getOpenQuestions(projectId),
     getRecentDecisions(projectId, 20),
     getEpicStructure(projectId),  // Just names, prefixes, and feature names — not full context
     getRecentSessions(projectId, 5),
+    getArticleSummaries(projectId),  // +1-2K tokens; AI flags stale articles inline
   ]);
 
-  return { questions, decisions, epics, sessions };
+  return { questions, decisions, epics, sessions, articleSummaries };
 };
 ```
 
@@ -754,15 +928,21 @@ const storyGenerationContextLoader = async (
 
   const epicId = input.metadata?.epicId as string;
 
-  const [epicContext, relatedQuestions, relatedDecisions, orgComponents] =
+  const [epicContext, relatedQuestions, relatedDecisions, orgComponents,
+         businessProcesses, relevantArticles] =
     await Promise.all([
       getEpicContext(epicId),
       getAnsweredQuestions(projectId, { scopeEpicId: epicId }),
       getDecisionsForEpic(epicId),
       getOrgComponentsForEpic(epicId),  // Components referenced by this epic's stories
+      getBusinessProcesses(projectId, { epicId }), // Processes in this epic's domain (+2-4K)
+      getRelevantArticles(projectId, { epicId, limit: 3 }), // Top 3 articles for epic domain
     ]);
 
-  return { epics: [epicContext], questions: relatedQuestions, decisions: relatedDecisions, orgComponents };
+  return {
+    epics: [epicContext], questions: relatedQuestions, decisions: relatedDecisions,
+    orgComponents, businessProcesses, relevantArticles,
+  };
 };
 ```
 
@@ -774,22 +954,29 @@ const contextPackageContextLoader = async (
   input: TaskInput,
   projectId: string
 ): Promise<ProjectContext> => {
-  // Context package for a developer picking up a ticket:
+  // Context package for a developer picking up a ticket.
+  // Provides BUSINESS INTELLIGENCE that Claude Code cannot get from SF CLI:
   // - Full story details with acceptance criteria
   // - Parent epic/feature business context
-  // - ONLY org components relevant to this story (from StoryComponent join)
+  // - Business processes for story components (what business capability they serve)
+  // - Top relevant knowledge articles (AI-synthesized understanding)
   // - Related decisions and answered discovery questions
   // - Other in-flight stories with overlapping components (sprint conflict info)
+  // NOTE: Raw org metadata (source code, field definitions) comes from SF CLI directly.
+  // The web app provides enriched context: business processes, articles, decisions, cross-team awareness.
 
   const storyId = input.entityId!;
 
-  const [story, storyComponents, relatedStories, relatedDecisions, relatedQuestions] =
+  const [story, storyComponents, relatedStories, relatedDecisions, relatedQuestions,
+         businessProcesses, relevantArticles] =
     await Promise.all([
       getStoryWithContext(storyId),          // Includes epic and feature context
       getStoryOrgComponents(storyId),        // Traverses StoryComponent join
       getOverlappingStories(storyId),        // Stories sharing impacted components
       getDecisionsForStory(storyId),         // Decisions linked to this story's epic/feature
       getAnsweredQuestionsForStory(storyId), // Questions scoped to this story's epic/feature
+      getBusinessProcessForStory(storyId),   // Story's components -> their business processes (+3-5K)
+      getRelevantArticles(projectId, { storyId, limit: 3 }), // Top 3 semantically relevant articles full content
     ]);
 
   return {
@@ -798,6 +985,8 @@ const contextPackageContextLoader = async (
     relatedStories,
     decisions: relatedDecisions,
     questions: relatedQuestions,
+    businessProcesses,
+    relevantArticles,
   };
 };
 ```
@@ -1232,18 +1421,18 @@ As a project grows over months, the total knowledge base can become very large. 
 
 Each task type has a target context budget. These are approximate guidelines, not hard limits:
 
-| Task Type | Target Context Budget | What Gets Loaded |
-|---|---|---|
-| Transcript Processing | 15-20K tokens | Open questions, recent decisions (last 20), epic/feature structure (names only), recent sessions (last 5) |
-| Question Answering | 8-12K tokens | The specific question + its blocking relationships, related epic context, recent decisions affecting that scope |
-| Story Generation | 10-15K tokens | Parent epic full context, related answered questions, org components for that epic's domain |
-| Story Enrichment | 8-12K tokens | The story + its epic context + impacted org components |
-| Briefing Generation | 20-30K tokens | Full project summary, all open questions, all milestones, active risks, recent session summaries, epic phase statuses |
-| Document Generation | 15-25K tokens | Varies by document type; the context loader for each document template defines what's needed |
-| Sprint Analysis | 15-20K tokens | All stories in the candidate sprint, their impacted components, blocking questions, dependency chains |
-| Context Package Assembly | 10-15K tokens | Story details, parent epic, scoped org components, related decisions and questions, overlapping stories |
-| Org Query | 5-10K tokens | Filtered org components matching the query, plus domain context |
-| Dashboard Synthesis | 20-30K tokens | Same as briefing generation |
+| Task Type | Target Context Budget | What Gets Loaded | Knowledge Layer Addition |
+|---|---|---|---|
+| Transcript Processing | 16-22K tokens | Open questions, recent decisions (last 20), epic/feature structure (names only), recent sessions (last 5) | +1-2K: article summaries for mentioned domains; AI flags stale articles |
+| Question Answering | 9-15K tokens | The specific question + its blocking relationships, related epic context, recent decisions affecting that scope | +1-3K: top 2 semantically matched articles (full content) |
+| Story Generation | 12-19K tokens | Parent epic full context, related answered questions, org components for that epic's domain | +2-4K: business processes for epic domain + top 3 relevant articles (full) |
+| Story Enrichment | 9-14K tokens | The story + its epic context + impacted org components | +1-2K: business processes for story components + article summaries |
+| Briefing Generation | 22-34K tokens | Full project summary, all open questions, all milestones, active risks, recent session summaries, epic phase statuses | +2-4K: article summaries project-wide (no full content) |
+| Document Generation | 15-25K tokens | Varies by document type; the context loader for each document template defines what's needed | Varies by document type |
+| Sprint Analysis | 17-23K tokens | All stories in the candidate sprint, their impacted components, blocking questions, dependency chains | +2-3K: business processes for all sprint components |
+| Context Package Assembly | 13-20K tokens | Story details, parent epic, scoped org components, related decisions and questions, overlapping stories | +3-5K: business processes for story components + top 3 articles (full); biggest impact, developers need business context |
+| Org Query | 5-10K tokens | Filtered org components matching the query, plus domain context | No change |
+| Dashboard Synthesis | 22-34K tokens | Same as briefing generation | +2-4K: article summaries project-wide |
 
 ### 4.3 Context Sizing Strategies
 
@@ -1462,7 +1651,169 @@ async function computeHealthScore(projectId: string) {
 }
 ```
 
-### 5.3 Briefing Cache Refresh Triggers
+### 5.3 Usage and Cost Queries (Session 6)
+
+The Usage & Costs tab in project settings aggregates SessionLog data with a pricing config to show token consumption and estimated dollar cost.
+
+#### Pricing Configuration
+
+```typescript
+// lib/config/ai-pricing.ts
+
+interface ModelPricing {
+  inputPer1KTokens: number;
+  outputPer1KTokens: number;
+}
+
+const AI_PRICING: Record<string, ModelPricing> = {
+  "claude-sonnet-4-20250514": { inputPer1KTokens: 0.003, outputPer1KTokens: 0.015 },
+  "claude-opus-4-20250514":   { inputPer1KTokens: 0.015, outputPer1KTokens: 0.075 },
+};
+
+function calculateSessionCost(
+  inputTokens: number,
+  outputTokens: number,
+  model: string = "claude-sonnet-4-20250514"
+): number {
+  const pricing = AI_PRICING[model] ?? AI_PRICING["claude-sonnet-4-20250514"];
+  return (inputTokens / 1000) * pricing.inputPer1KTokens
+       + (outputTokens / 1000) * pricing.outputPer1KTokens;
+}
+```
+
+Note: SessionLog needs an additional `model` field (String, nullable, default to current Sonnet model ID) so cost calculation uses the correct rate. Added to SessionLog schema.
+
+#### Usage Aggregation Queries
+
+```typescript
+// lib/dashboard/usage-queries.ts
+
+interface UsageSummary {
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCost: number;
+  sessionCount: number;
+}
+
+// Project totals for a date range
+async function getProjectUsage(
+  projectId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<UsageSummary> {
+  const result = await prisma.sessionLog.aggregate({
+    where: {
+      projectId,
+      status: { in: ["COMPLETE", "PARTIAL"] },
+      startedAt: { gte: startDate, lte: endDate },
+    },
+    _sum: { inputTokens: true, outputTokens: true },
+    _count: { id: true },
+  });
+
+  const inputTokens = result._sum.inputTokens ?? 0;
+  const outputTokens = result._sum.outputTokens ?? 0;
+
+  return {
+    totalInputTokens: inputTokens,
+    totalOutputTokens: outputTokens,
+    totalCost: calculateSessionCost(inputTokens, outputTokens),
+    sessionCount: result._count.id,
+  };
+}
+
+// Breakdown by task type
+async function getUsageByTaskType(
+  projectId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<Array<{ taskType: string } & UsageSummary>> {
+  const results = await prisma.sessionLog.groupBy({
+    by: ["taskType"],
+    where: {
+      projectId,
+      status: { in: ["COMPLETE", "PARTIAL"] },
+      startedAt: { gte: startDate, lte: endDate },
+    },
+    _sum: { inputTokens: true, outputTokens: true },
+    _count: { id: true },
+  });
+
+  return results.map(r => ({
+    taskType: r.taskType,
+    totalInputTokens: r._sum.inputTokens ?? 0,
+    totalOutputTokens: r._sum.outputTokens ?? 0,
+    totalCost: calculateSessionCost(r._sum.inputTokens ?? 0, r._sum.outputTokens ?? 0),
+    sessionCount: r._count.id,
+  }));
+}
+
+// Breakdown by team member (SA and PM only)
+async function getUsageByMember(
+  projectId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<Array<{ userId: string; displayName: string } & UsageSummary>> {
+  const results = await prisma.sessionLog.groupBy({
+    by: ["userId"],
+    where: {
+      projectId,
+      status: { in: ["COMPLETE", "PARTIAL"] },
+      startedAt: { gte: startDate, lte: endDate },
+    },
+    _sum: { inputTokens: true, outputTokens: true },
+    _count: { id: true },
+  });
+
+  // Resolve display names
+  const memberIds = results.map(r => r.userId);
+  const members = await prisma.projectMember.findMany({
+    where: { id: { in: memberIds } },
+    select: { id: true, displayName: true },
+  });
+  const nameMap = new Map(members.map(m => [m.id, m.displayName]));
+
+  return results.map(r => ({
+    userId: r.userId,
+    displayName: nameMap.get(r.userId) ?? "Unknown",
+    totalInputTokens: r._sum.inputTokens ?? 0,
+    totalOutputTokens: r._sum.outputTokens ?? 0,
+    totalCost: calculateSessionCost(r._sum.inputTokens ?? 0, r._sum.outputTokens ?? 0),
+    sessionCount: r._count.id,
+  }));
+}
+
+// Daily trend for chart
+async function getDailyUsageTrend(
+  projectId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<Array<{ date: string; inputTokens: number; outputTokens: number; cost: number }>> {
+  const results = await prisma.$queryRaw<Array<{
+    date: string; input_tokens: number; output_tokens: number;
+  }>>`
+    SELECT DATE("startedAt") as date,
+           SUM("inputTokens") as input_tokens,
+           SUM("outputTokens") as output_tokens
+    FROM "SessionLog"
+    WHERE "projectId" = ${projectId}::uuid
+      AND "status" IN ('COMPLETE', 'PARTIAL')
+      AND "startedAt" >= ${startDate}
+      AND "startedAt" <= ${endDate}
+    GROUP BY DATE("startedAt")
+    ORDER BY date ASC
+  `;
+
+  return results.map(r => ({
+    date: r.date,
+    inputTokens: Number(r.input_tokens),
+    outputTokens: Number(r.output_tokens),
+    cost: calculateSessionCost(Number(r.input_tokens), Number(r.output_tokens)),
+  }));
+}
+```
+
+### 5.4 Briefing Cache Refresh Triggers
 
 The cached AI briefing is refreshed when:
 
@@ -1475,22 +1826,377 @@ The refresh itself is a `DASHBOARD_SYNTHESIS` harness task that generates the Cu
 
 ---
 
-## 6. Remaining Items for Future Sessions
+## 6. Brownfield Org Ingestion Pipeline (Session 4-5)
 
-### Tier 2 — Resolve During Phase 2-3 Build
+The ingestion pipeline runs when a Salesforce org is connected (or manually triggered). It expands the original two-phase flow (parse + classify) to four phases.
 
-1. **Sprint Intelligence Algorithms.** How exactly does conflict detection work? The StoryComponent join table provides the data, but the scoring algorithm (how to rank severity of overlapping components) needs design. Recommended: address during Phase 2 when sprint management is built.
+### 6.1 Pipeline Phases
+
+```
+Phase 1: Parse      -> OrgComponent + OrgRelationship rows
+Phase 2: Classify   -> DomainGrouping suggestions (existing)
+Phase 3: Synthesize -> BusinessProcess + BusinessProcessComponent suggestions
+Phase 4: Articulate -> KnowledgeArticle drafts
+```
+
+**Phase 1 (Parse):** SF CLI metadata retrieval, parsed into normalized OrgComponent and OrgRelationship rows. Each component gets an embedding generated via Inngest `entity.content-changed` event.
+
+**Phase 2 (Classify):** AI analyzes component relationships and proposes DomainGrouping assignments. Existing logic, unchanged.
+
+**Phase 3+4 (Synthesize + Articulate):** Run as a single AI call to avoid re-deriving context. The AI:
+1. Identifies logical business processes from component clusters and relationships.
+2. Creates BusinessProcess records with `isAiSuggested = true`, `isConfirmed = false`, `status = DISCOVERED`.
+3. Creates BusinessProcessComponent join records with role descriptions.
+4. Writes KnowledgeArticle drafts: one per business process (`articleType = BUSINESS_PROCESS`) and one per domain (`articleType = DOMAIN_OVERVIEW`).
+5. Creates KnowledgeArticleReference records linking articles to their constituent components and processes.
+6. Generates embeddings for all new articles via Inngest `entity.content-changed` events.
+
+### 6.2 Inngest Implementation
+
+The full ingestion runs as an Inngest step function triggered by `org.sync-requested` or `org.initial-connect`:
+
+```typescript
+const orgIngestionFunction = inngest.createFunction(
+  { id: "org-ingestion", concurrency: { limit: 1, scope: "env", key: "event.data.projectId" } },
+  { event: "org.sync-requested" },
+  async ({ event, step }) => {
+    const { projectId } = event.data;
+
+    // Phase 1: Parse metadata
+    const components = await step.run("parse-metadata", async () => {
+      const rawMetadata = await fetchSalesforceMetadata(projectId);
+      return await parseIntoComponents(projectId, rawMetadata);
+    });
+
+    // Phase 2: Classify domains
+    await step.run("classify-domains", async () => {
+      return await classifyDomains(projectId, components);
+    });
+
+    // Phase 3+4: Synthesize processes and articulate knowledge
+    await step.run("synthesize-and-articulate", async () => {
+      return await synthesizeBusinessProcesses(projectId, components);
+    });
+
+    // Emit events for embedding generation
+    await step.sendEvent("emit-embedding-events", {
+      name: "entity.content-changed",
+      data: { projectId, entityType: "BATCH", entityIds: components.map(c => c.id) },
+    });
+  }
+);
+```
+
+### 6.3 Confirmation Model
+
+All AI-generated entities require architect review:
+- BusinessProcess suggestions appear in a "Review Suggested Processes" UI.
+- KnowledgeArticle drafts appear in a "Review Knowledge Base" UI.
+- Architect can confirm, edit, or discard each suggestion.
+- Only confirmed processes and articles are treated as trusted context in future AI interactions.
+
+---
+
+## 7. Background Job Infrastructure — Inngest (Session 5)
+
+### 7.1 Architecture
+
+All asynchronous work runs through Inngest on Vercel serverless functions. The pattern: app state changes emit Inngest events; job handlers subscribe to relevant events.
+
+### 7.2 Job Inventory
+
+| Job | Trigger Event | Estimated Duration | Concurrency |
+|---|---|---|---|
+| Knowledge article refresh | `article.flagged-stale` (batched) | 10-30s per article | 2 per project |
+| Dashboard synthesis cache | `project.state-changed` + manual | 5-15s | 1 per project |
+| Transcript processing | `transcript.uploaded` | 30s-2min | 1 per project |
+| Embedding generation | `entity.content-changed` | 1-5s per entity | 5 per project |
+| Metadata sync | Cron (every 4h) + `org.sync-requested` | 30s-5min | 1 per project |
+| Notification dispatch | `notification.send` | <1s | 10 per project |
+
+### 7.3 Event Schema Pattern
+
+```typescript
+// All events follow this base pattern
+type InngestEvent = {
+  name: string;
+  data: {
+    projectId: string;
+    [key: string]: unknown;
+  };
+};
+
+// Example events
+type ArticleFlaggedStale = InngestEvent & {
+  name: "article.flagged-stale";
+  data: { projectId: string; articleId: string; staleReason: string };
+};
+
+type EntityContentChanged = InngestEvent & {
+  name: "entity.content-changed";
+  data: { projectId: string; entityType: string; entityId: string };
+};
+
+type TranscriptUploaded = InngestEvent & {
+  name: "transcript.uploaded";
+  data: { projectId: string; transcriptId: string; userId: string };
+};
+
+type ProjectStateChanged = InngestEvent & {
+  name: "project.state-changed";
+  data: { projectId: string; changeType: string; entityType: string; entityId: string };
+};
+```
+
+### 7.4 Step Function Pattern (Metadata Sync)
+
+```typescript
+const metadataSyncFunction = inngest.createFunction(
+  {
+    id: "metadata-sync",
+    concurrency: { limit: 1, scope: "env", key: "event.data.projectId" },
+  },
+  [
+    { event: "org.sync-requested" },
+    { cron: "0 */4 * * *" },  // Every 4 hours
+  ],
+  async ({ event, step }) => {
+    const projectId = event?.data?.projectId ?? await step.run("get-active-projects", getActiveProjects);
+
+    // Step 1: Fetch metadata (checkpoint)
+    const rawMetadata = await step.run("fetch-metadata", async () => {
+      return await fetchSalesforceMetadata(projectId);
+    });
+
+    // Step 2: Parse into components (checkpoint)
+    const components = await step.run("parse-components", async () => {
+      return await parseIntoComponents(projectId, rawMetadata);
+    });
+
+    // Step 3: AI domain classification (checkpoint)
+    await step.run("classify-domains", async () => {
+      return await classifyDomains(projectId, components);
+    });
+
+    // Step 4: AI business process + article synthesis (checkpoint)
+    await step.run("synthesize-knowledge", async () => {
+      return await synthesizeBusinessProcesses(projectId, components);
+    });
+
+    // Emit notification
+    await step.sendEvent("notify-complete", {
+      name: "notification.send",
+      data: {
+        projectId,
+        type: "METADATA_SYNC_COMPLETE",
+        title: "Org metadata sync complete",
+        entityType: "PROJECT",
+        entityId: projectId,
+      },
+    });
+  }
+);
+```
+
+### 7.5 Staleness Detection (End of Agent Loop)
+
+After every agent harness invocation, the execution engine runs a staleness check:
+
+```typescript
+// Called at the end of executeTask() in the execution engine
+async function flagStaleArticles(
+  projectId: string,
+  tracking: EntityTracking
+): Promise<void> {
+  // Collect all entity IDs the agent modified
+  const modifiedEntityIds = [
+    ...tracking.entitiesCreated.map(e => ({ type: e.entityType, id: e.entityId })),
+    ...tracking.entitiesModified.map(e => ({ type: e.entityType, id: e.entityId })),
+  ];
+
+  if (modifiedEntityIds.length === 0) return;
+
+  // Find articles that reference any modified entity
+  const staleArticles = await prisma.knowledgeArticleReference.findMany({
+    where: {
+      OR: modifiedEntityIds.map(e => ({
+        entityType: e.type.toUpperCase(),
+        entityId: e.id,
+      })),
+    },
+    select: { articleId: true },
+    distinct: ["articleId"],
+  });
+
+  // Flag them as stale (DB update only, no AI call)
+  for (const ref of staleArticles) {
+    await prisma.knowledgeArticle.update({
+      where: { id: ref.articleId },
+      data: {
+        isStale: true,
+        staleReason: `Referenced entities modified during ${tracking.taskType} session`,
+        staleSince: new Date(),
+      },
+    });
+
+    // Emit event for background refresh
+    await inngest.send({
+      name: "article.flagged-stale",
+      data: { projectId, articleId: ref.articleId, staleReason: "Referenced entities modified" },
+    });
+  }
+}
+```
+
+### 7.6 V1 Constraints and V2 Scaling Path
+
+V1 constraints and their V2 solutions are fully documented in V2-ROADMAP.md Section 1.1. Key migration triggers:
+- Job failure rate > 5%
+- Metadata sync > 3 minutes regularly
+- 10+ concurrent projects triggering events simultaneously
+- User-perceived lag > 30 seconds
+- Inngest event volume approaching tier limits
+
+---
+
+## 8. Search Infrastructure (Session 5)
+
+### 8.1 Full-Text Search Setup (tsvector)
+
+PostgreSQL `tsvector` columns are auto-maintained by database triggers. Prisma uses raw SQL for search queries since Prisma does not natively support `tsvector`.
+
+```sql
+-- Example: Add tsvector column and trigger for Question
+ALTER TABLE "Question" ADD COLUMN "search_vector" tsvector;
+
+CREATE INDEX idx_question_search ON "Question" USING GIN("search_vector");
+
+CREATE OR REPLACE FUNCTION question_search_update() RETURNS trigger AS $$
+BEGIN
+  NEW.search_vector :=
+    setweight(to_tsvector('english', COALESCE(NEW."questionText", '')), 'A') ||
+    setweight(to_tsvector('english', COALESCE(NEW."answerText", '')), 'B');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER question_search_trigger
+  BEFORE INSERT OR UPDATE ON "Question"
+  FOR EACH ROW EXECUTE FUNCTION question_search_update();
+```
+
+The same pattern applies to all indexed entities (see PRD Section 17.7 for the full list).
+
+### 8.2 Semantic Search (pgvector)
+
+```sql
+-- Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Embedding columns are already defined on OrgComponent and KnowledgeArticle.
+-- Add to other searchable entities:
+ALTER TABLE "Question" ADD COLUMN "embedding" vector(1536);
+ALTER TABLE "Decision" ADD COLUMN "embedding" vector(1536);
+ALTER TABLE "Story" ADD COLUMN "embedding" vector(1536);
+
+-- Create HNSW index for fast approximate nearest neighbor search
+CREATE INDEX idx_knowledge_article_embedding
+  ON "KnowledgeArticle" USING hnsw ("embedding" vector_cosine_ops);
+```
+
+Embeddings are generated via the Inngest `entity.content-changed` event handler. The embedding job calls the Claude/OpenAI embedding API and writes the result back to the entity's embedding column.
+
+### 8.3 Global Search Query Pattern
+
+```typescript
+// lib/search/global-search.ts
+
+interface SearchResult {
+  entityType: string;
+  entityId: string;
+  displayId?: string;
+  title: string;
+  snippet: string;
+  rank: number;
+}
+
+async function globalSearch(
+  projectId: string,
+  query: string,
+  options: { semantic?: boolean; limit?: number }
+): Promise<SearchResult[]> {
+  const limit = options.limit ?? 20;
+
+  // Layer 2: Full-text search
+  const fullTextResults = await prisma.$queryRaw<SearchResult[]>`
+    SELECT 'Question' as "entityType", id as "entityId", "displayId",
+           "questionText" as title,
+           ts_headline('english', "questionText", plainto_tsquery('english', ${query})) as snippet,
+           ts_rank("search_vector", plainto_tsquery('english', ${query})) as rank
+    FROM "Question"
+    WHERE "projectId" = ${projectId}::uuid
+      AND "search_vector" @@ plainto_tsquery('english', ${query})
+    UNION ALL
+    SELECT 'Story' as "entityType", id as "entityId", "displayId",
+           title,
+           ts_headline('english', description, plainto_tsquery('english', ${query})) as snippet,
+           ts_rank("search_vector", plainto_tsquery('english', ${query})) as rank
+    FROM "Story"
+    WHERE "projectId" = ${projectId}::uuid
+      AND "search_vector" @@ plainto_tsquery('english', ${query})
+    -- ... additional UNION ALL for each indexed entity type
+    ORDER BY rank DESC
+    LIMIT ${limit}
+  `;
+
+  // If full-text returns few results and semantic is enabled, fall back
+  if (fullTextResults.length < 3 && options.semantic) {
+    const embedding = await generateEmbedding(query);
+    const semanticResults = await prisma.$queryRaw<SearchResult[]>`
+      SELECT 'KnowledgeArticle' as "entityType", id as "entityId", NULL as "displayId",
+             title, summary as snippet,
+             1 - (embedding <=> ${embedding}::vector) as rank
+      FROM "KnowledgeArticle"
+      WHERE "projectId" = ${projectId}::uuid
+        AND embedding IS NOT NULL
+      ORDER BY embedding <=> ${embedding}::vector
+      LIMIT ${limit}
+    `;
+    return [...fullTextResults, ...semanticResults];
+  }
+
+  return fullTextResults;
+}
+```
+
+---
+
+## 9. Remaining Items for Future Sessions
+
+### Tier 2: Resolve During Phase 2-3 Build
+
+1. **Sprint Intelligence Algorithms.** The StoryComponent join table provides the data, but the scoring algorithm (how to rank severity of overlapping components) needs design. Recommended: address during Phase 2 when sprint management is built.
 
 2. **Org Metadata Parsing Pipeline.** Translating raw SF CLI JSON output into normalized OrgComponent/OrgRelationship rows. The existing `sf-org-knowledge` skill's four-phase approach informs this. Recommended: address during Phase 3 when org connectivity is built.
 
-### Tier 3 — Resolve During Phase 4
+### Tier 3: Resolve During Phase 4
 
 3. **Document Generation Pipeline.** Library choices for generating branded Word/PowerPoint/PDF from templates. Candidates: `docx-templater` or `python-docx` (via subprocess) for Word, `pptxgenjs` for PowerPoint, `pdf-lib` for PDF. Recommended: address during Phase 4.
 
-### Design Decisions Still Open
+### Design Decisions to Finalize During Phase 1
 
-4. **Question duplicate detection algorithm.** Currently described as "fuzzy match" — the implementation could range from simple Levenshtein distance to embedding-based similarity. Start simple (substring + Levenshtein), upgrade to embeddings if false positives/negatives are problematic.
+4. **Question duplicate detection algorithm.** Start simple (substring + Levenshtein distance). Upgrade to embedding-based similarity in V2 if false positives/negatives are problematic (V2-ROADMAP.md Section 2.1).
 
-5. **Firm-level rules configuration format.** Typographic rules, naming conventions, and terminology are "hardcoded in V1." The specific format (TypeScript constants? JSON config file? Database seeds?) should be decided during Phase 1 setup.
+5. **Firm-level rules configuration format.** TypeScript constants, JSON config file, or database seeds. Decide during Phase 1 initial setup.
 
-6. **Webhook/event-driven briefing refresh vs. polling.** The current design uses function calls after harness tasks complete. An alternative is a Postgres trigger or event system. Start with the simpler approach (explicit calls after task completion).
+### Resolved in Sessions 4-5
+
+The following items from the original "Remaining Items" list have been fully specified:
+
+- ~~Webhook/event-driven briefing refresh vs. polling~~ : Resolved. Inngest event-driven pattern (Section 7). Dashboard synthesis triggered by `project.state-changed` events.
+- ~~Knowledge architecture~~ : Resolved. Three-layer design specified in PRD Section 13.7, entity schemas in Section 2.2, context assembly in Section 3, ingestion pipeline in Section 6.
+- ~~Background job infrastructure~~ : Resolved. Inngest on Vercel serverless (Section 7).
+- ~~Search infrastructure~~ : Resolved. Three-layer search (Section 8).
+- ~~Notification system~~ : Resolved. In-app notifications via Inngest events (PRD Section 17.8, Notification entity in Section 2.2).
+- ~~Chat/conversation model~~ : Resolved. Conversation + ChatMessage entities (Section 2.2).
+- ~~AI ambiguity handling~~ : Resolved. Confidence/needsReview fields on Question, Decision, Requirement, Risk (Section 2.2, PRD Section 6.6).
