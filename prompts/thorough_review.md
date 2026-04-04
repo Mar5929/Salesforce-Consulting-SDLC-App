@@ -1,0 +1,10 @@
+I want you to do a thorough analysis on the product requirements document and the Claude Threads, like the different sessions that we've had. The file at the end of the Claude    Threads folder is just sort of like data about the different messages we've had, me and Claude Code trying to architect a solution.                                                                                                                                                                                                                                       Make sure that you have a really, really good understanding of the goal and the vision for this application, what the different problems it's trying to solve, and the findings,     holes, and questionable choices in the markdown file. I think we've solved for that, so I'm going to move that into an archive folder. You don't really need to read it; you can     
+look at it, but you don't need to fixate on it, because those have already been solved.
+
+I really need you to find issues with scalability. If we start using this application on more projects, are there any scale issues with users? Really fixate on the feature of the   
+progressive knowledge intelligence layer, where Claude continues to get smarter and smarter about the Salesforce org and the components and what's built, and ties that to business  
+context. The main goal for that is that when you're developing more features, Claude should basically use that and ground itself in it and be really, really smart, like the best    
+technical architect on earth. It should understand, when there's a new user story or a bug or a feature, exactly what has already been built and have a really, really in-depth      
+understanding of all the components and everything that's already been built in the Salesforce org. It can basically create the best solution design for that user story possible.   
+
+Also look at security risks and things like that. When you're done, create a thorough document and then just commit and push to GitHub.
