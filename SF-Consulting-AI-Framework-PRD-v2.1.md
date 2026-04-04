@@ -1269,6 +1269,16 @@ Embedding generation uses batched events to reduce event count (one batch event 
 
 **Claude Code as the execution layer.** The web application provides context; Claude Code executes code generation. The boundary is the REST API.
 
+### 25.3 UI Development Tooling
+
+The web application UI is built using three AI-assisted design tools in combination to produce polished, production-grade interfaces that avoid generic AI aesthetics:
+
+1. **frontend-design skill** — Generates distinctive, high-quality frontend code with creative design choices for components, pages, and layouts.
+2. **ui-ux-pro-max skill** — Provides design intelligence: style selection, color palettes, font pairings, chart types, and framework-specific implementation guidance.
+3. **21st.dev MCP server** — Supplies a library of pre-built, high-quality UI components (shadcn/ui-based) that serve as building blocks for the application's interface.
+
+All three tools must be used together when building or modifying UI. This is a locked decision for the duration of V1 development.
+
 ---
 
 ## 26. Build Sequence
