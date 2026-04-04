@@ -122,6 +122,8 @@ Below is the complete set of entities with field types, constraints, and foreign
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
 
+> **V1 Token Encryption Strategy:** Application-level encryption via Prisma middleware using AES-256-GCM. The encryption key is loaded from an environment variable (`SF_TOKEN_ENCRYPTION_KEY`) and is never committed to source control. Prisma middleware transparently encrypts `sfOrgAccessToken`, `sfOrgRefreshToken`, and `sfOrgInstanceUrl` on write and decrypts on read. Context loaders that do not need tokens should use Prisma `select` to avoid loading encrypted fields unnecessarily. **V2 upgrade path:** Migrate to an external secrets manager (AWS Secrets Manager or HashiCorp Vault). See V2-ROADMAP.md.
+
 ---
 
 #### ProjectMember
@@ -181,12 +183,15 @@ Unique constraint: (epicId, phase) — one record per phase per epic.
 | id | UUID | PK | |
 | projectId | UUID | FK → Project | |
 | epicId | UUID | FK → Epic | |
+| prefix | String | Required, unique within (epicId), max 4 chars | Short code for feature-scoped IDs (e.g., "LRT") |
 | name | String | Required | |
 | description | Text | Nullable | |
 | status | Enum | NOT_STARTED, IN_PROGRESS, COMPLETE | |
 | sortOrder | Int | Required | |
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
+
+Unique constraint: (epicId, prefix) — prevents duplicate feature prefixes within an epic.
 
 ---
 
@@ -381,7 +386,7 @@ Progress is computed at query time from MilestoneStory join table — percentage
 | projectId | UUID | FK → Project | |
 | storyId | UUID | Nullable FK → Story | |
 | testCaseId | UUID | Nullable FK → TestCase | Test case that exposed it |
-| displayId | String | Auto-generated | e.g., "DEF-001" |
+| displayId | String | Auto-generated | e.g., "DEF-001". Project-scoped sequential number, consistent with other entity ID patterns. |
 | title | String | Required | |
 | severity | Enum | LOW, MEDIUM, HIGH, CRITICAL | |
 | stepsToReproduce | Text | Required | |
@@ -390,6 +395,7 @@ Progress is computed at query time from MilestoneStory join table — percentage
 | environment | String | Nullable | |
 | status | Enum | OPEN, ASSIGNED, FIXED, VERIFIED, CLOSED | |
 | assigneeId | UUID | Nullable FK → ProjectMember | Developer assigned to fix the defect |
+| duplicateOfId | UUID | Nullable, self-referential FK → Defect | Links duplicate defects. When set, this defect is a duplicate of the referenced defect. |
 | createdById | UUID | FK → ProjectMember | QA member who reported the defect |
 | createdAt | DateTime | Auto-set | |
 | updatedAt | DateTime | Auto-updated | |
@@ -533,6 +539,8 @@ Unique constraint: (projectId, apiName, componentType) — one record per compon
 | uploadedById | UUID | FK → ProjectMember | |
 | uploadedAt | DateTime | Auto-set | |
 
+Index on (entityType, entityId) for polymorphic lookups.
+
 ---
 
 #### VersionHistory
@@ -546,6 +554,32 @@ Unique constraint: (projectId, apiName, componentType) — one record per compon
 | previousState | JSON | Required | Full snapshot of the entity before modification |
 | modifiedById | UUID | FK → ProjectMember | |
 | modifiedAt | DateTime | Auto-set | |
+
+> **V1 Accepted Trade-off:** Full entity snapshots are stored for simplicity. At target scale (200+ stories, 6-month projects), this is manageable. If storage grows beyond acceptable limits, migrate to diff-based storage (changed fields only) or implement periodic compaction. See V2-ROADMAP.md.
+
+Index on (entityType, entityId) for entity history lookups.
+
+> **Note on VersionHistory vs. StatusTransition:** VersionHistory captures full entity snapshots for general change tracking. For status-specific auditing (including RBAC audit of who transitioned what, and the split between management and execution roles), see StatusTransition below.
+
+---
+
+#### StatusTransition (NEW - Pre-Build Gap Analysis)
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| id | UUID | PK, auto-generated | |
+| entityType | String | Required | "Story", "Question", "Decision", "Defect", etc. |
+| entityId | UUID | Required | FK to the entity whose status changed (not enforced at DB level due to polymorphic design) |
+| fromStatus | String | Required | The status value before the transition |
+| toStatus | String | Required | The status value after the transition |
+| transitionedById | UUID | FK → ProjectMember | Who performed the transition |
+| transitionedByRole | String | Required | Captures the user's role at the time of transition (for RBAC audit: the role may change later, but this records what role authorized the action) |
+| reason | Text | Nullable | Optional explanation for the transition (e.g., "duplicate", "blocked by Q-FM-003") |
+| createdAt | DateTime | Auto-set | |
+
+Index on (entityType, entityId, createdAt) for entity transition history lookups.
+
+This entity provides the RBAC audit trail for the split management/execution transition model. It records not just *that* a status changed, but *who* changed it and *what role* they held at the time. This is essential for enforcing and auditing the rule that, for example, only QA can verify a defect fix or only a developer can mark a story as code-complete.
 
 ---
 
@@ -635,6 +669,8 @@ Unique constraint: (articleId, entityType, entityId)
 
 Note: Polymorphic join table. No database-level foreign key on entityId because it references different tables depending on entityType. Application-level validation ensures referential integrity. This is cleaner than N nullable FK columns and is the standard pattern for this type of cross-entity reference.
 
+Index on (entityType, entityId) for polymorphic lookups.
+
 ---
 
 #### Conversation (NEW - Session 5)
@@ -652,6 +688,10 @@ Note: Polymorphic join table. No database-level foreign key on entityId because 
 | updatedAt | DateTime | Auto-updated | |
 
 Notes: One GENERAL_CHAT conversation per project, auto-created. Task sessions are created on demand per harness invocation.
+
+> **Conversation Context Strategy:**
+> - **General chat:** Each message is an independent harness call with injected project context. No message history is assembled as conversational context between messages. The AI receives the current message plus project context (project summary, open questions, recent decisions), not a conversation thread.
+> - **Task sessions:** Single agent loop invocation. If interrupted (browser close, timeout, server error), the session status is set to FAILED. Artifacts created during the session (questions, decisions, stories written to the DB by tool calls) persist. Users start a new session rather than resuming a failed one.
 
 ---
 
@@ -678,10 +718,10 @@ Messages are append-only. No edits, no deletes.
 | id | UUID | PK | |
 | projectId | UUID | FK → Project | |
 | recipientId | UUID | FK → ProjectMember | |
-| type | Enum | QUESTION_ANSWERED, WORK_ITEM_UNBLOCKED, SPRINT_CONFLICT_DETECTED, AI_PROCESSING_COMPLETE, QUESTION_AGING, HEALTH_SCORE_CHANGED, QUESTION_ASSIGNED, STORY_STATUS_CHANGED, ARTICLE_FLAGGED_STALE, METADATA_SYNC_COMPLETE | |
+| type | Enum | QUESTION_ANSWERED, WORK_ITEM_UNBLOCKED, SPRINT_CONFLICT_DETECTED, AI_PROCESSING_COMPLETE, QUESTION_AGING, HEALTH_SCORE_CHANGED, QUESTION_ASSIGNED, STORY_STATUS_CHANGED, STORY_MOVED_TO_QA, STORY_REASSIGNED, DECISION_RECORDED, RISK_CHANGED, ARTICLE_FLAGGED_STALE, METADATA_SYNC_COMPLETE | |
 | title | String | Required | Short notification title |
 | body | Text | Nullable | Additional detail |
-| entityType | Enum | QUESTION, STORY, SPRINT, PROJECT, ARTICLE, BUSINESS_PROCESS | What entity triggered the notification |
+| entityType | Enum | QUESTION, STORY, SPRINT, PROJECT, ARTICLE, BUSINESS_PROCESS, DECISION, RISK | What entity triggered the notification |
 | entityId | UUID | Required | For one-click navigation to the source entity |
 | isRead | Boolean | Default: false | |
 | createdAt | DateTime | Auto-set | |
@@ -755,6 +795,7 @@ All join tables follow the same pattern: composite unique constraint on the two 
 |---|---|---|
 | id | UUID | PK |
 | storyId | UUID FK → Story | |
+| projectId | UUID FK → Project | Denormalized for efficient project-wide queries (sprint conflict detection). Kept in sync with the parent story's projectId. |
 | orgComponentId | UUID Nullable FK → OrgComponent | Linked org component. Null when the component is free-text (planned/new). |
 | componentName | String Nullable | Free-text component name. Required when orgComponentId is null. Used for planned or new components that don't yet exist in the org metadata. |
 | impactType | Enum: CREATE, MODIFY, DELETE | What the story does to this component |
@@ -770,6 +811,29 @@ This table is the foundation of sprint intelligence. Conflict detection queries 
 |---|---|
 | milestoneId | UUID FK → Milestone |
 | storyId | UUID FK → Story |
+
+---
+
+### 2.4 Display ID Auto-Generation Strategy
+
+Human-readable display IDs (e.g., `STORY-FM-001`, `Q-ENG-003`, `DEF-005`) are auto-generated when entities are created. The strategy is designed for simplicity at V1 target scale (10-30 concurrent projects).
+
+**Generation approach:** Within a database transaction, query `MAX(sequential number)` from the entity's table filtered by project (and scope, where applicable), then increment by 1. A unique constraint on the composite key acts as a safety net against race conditions.
+
+**Reusable function:** `generateDisplayId(projectId, entityType, scopePrefix?)` handles all entity types. Numbers are zero-padded to 3 digits (001, 002, etc.).
+
+**Format by entity type:**
+
+| Entity | Format | Scope | Example | Unique Constraint |
+|---|---|---|---|---|
+| Story | STORY-{epicPrefix}-{NUM} | Per epic within project | STORY-FM-003 | (projectId, epicId, sequentialNumber) |
+| Question | Q-{scopePrefix}-{NUM} | Per scope within project | Q-ENG-005 | (projectId, scope, sequentialNumber) |
+| Decision | D-{epicPrefix}-{NUM} | Per epic within project | D-DM-002 | (projectId, epicId, sequentialNumber) |
+| Requirement | REQ-{NUM} | Per project | REQ-014 | (projectId, sequentialNumber) |
+| Risk | RISK-{NUM} | Per project | RISK-007 | (projectId, sequentialNumber) |
+| Defect | DEF-{NUM} | Per project | DEF-001 | (projectId, sequentialNumber) |
+
+**Concurrency note:** At target scale (10-30 concurrent projects, typically 1-3 concurrent users per project), contention on the MAX query is negligible. The unique constraint prevents duplicates in the unlikely event of a race condition: the loser gets a constraint violation and retries with the next available number.
 
 ---
 
@@ -842,6 +906,27 @@ This table is the foundation of sprint intelligence. Conflict detection queries 
 │  differently based on what the task needs.        │
 └─────────────────────────────────────────────────┘
 ```
+
+### 3.1.1 Rate Limiting and Concurrency Control
+
+**Rate Limiting (Postgres-backed in V1):**
+
+Counters are checked before each agent invocation. Two limit types:
+
+- **Per-consultant daily limit:** Caps total AI invocations per user per day. Configurable per project. Default: 100 invocations/day.
+- **Per-project monthly cost cap:** Caps estimated cost (based on token usage from SessionLog) per project per calendar month. Configurable by SA/PM.
+
+Limits are soft by default: approaching a threshold (80%) triggers a notification to the PM/SA. Exceeding the limit returns HTTP 429 with a `Retry-After` header and a message explaining which limit was hit and who to contact. Firm-wide monthly cost threshold triggers an alert to firm administrators.
+
+**Concurrency Control (via Inngest):**
+
+Uses Inngest's built-in concurrency configuration to prevent duplicate work:
+
+- **Write-heavy task types** (`TRANSCRIPT_PROCESSING`, `STORY_GENERATION`): Limited to 1 concurrent execution per project using Inngest concurrency key `project-{projectId}-{taskType}`. This prevents the scenario where two BAs process transcripts simultaneously and create duplicate questions/decisions.
+- **Read-heavy task types** (`BRIEFING_GENERATION`, `CONTEXT_PACKAGE_ASSEMBLY`, `ORG_QUERY`): No concurrency limit. These are safe to run in parallel.
+- **Other task types** (`STORY_ENRICHMENT`, `SPRINT_ANALYSIS`, etc.): Limited to 2 concurrent executions per project as a sensible default.
+
+If a task cannot acquire a concurrency slot, Inngest queues it and executes when a slot opens. The user sees a "processing queued" status in the UI.
 
 ### 3.2 Task Definition Structure (TypeScript)
 
@@ -1006,6 +1091,8 @@ const contextPackageContextLoader = async (
   };
 };
 ```
+
+> **Context Package Caching:** Context packages are cached with a 5-minute TTL, keyed on `(projectId, storyId)`. The cache is invalidated when the story, its parent sprint, or any entity referenced in the package (decisions, questions, components) is modified. This prevents redundant 7-query assembly when developers restart Claude Code sessions or multiple developers on the same team request the same story's context in quick succession. Cache implementation: in-memory (Node.js `Map` with TTL) in V1; upgrade to Redis if horizontal scaling requires shared cache.
 
 ### 3.4 Tool Definitions by Task Type
 
@@ -1462,6 +1549,8 @@ Each task type has a target context budget. These are approximate guidelines, no
 - **Full detail:** The primary entity being worked on (the story being enriched, the question being answered).
 - **Summary detail:** Related entities (sibling stories in the same epic, other questions in the same scope).
 - **Reference detail:** Distant context (other epics, project-level decisions) — just names and IDs, loadable on demand.
+
+**Strategy 5: Chat History Windowing.** When the AI references previous general chat messages for context enrichment (e.g., a task session's context loader pulling recent chat for background), it loads the most recent 50 messages or last 7 days, whichever is smaller. These windowing parameters are configurable per project via project settings. This prevents unbounded growth of injected chat context on long-running projects.
 
 ### 4.4 Monitoring and Adjustment
 
@@ -2216,3 +2305,23 @@ The following items from the original "Remaining Items" list have been fully spe
 - ~~Notification system~~ : Resolved. In-app notifications via Inngest events (PRD Section 17.8, Notification entity in Section 2.2).
 - ~~Chat/conversation model~~ : Resolved. Conversation + ChatMessage entities (Section 2.2).
 - ~~AI ambiguity handling~~ : Resolved. Confidence/needsReview fields on Question, Decision, Requirement, Risk (Section 2.2, PRD Section 6.6).
+
+### Resolved in Pre-Build Gap Analysis
+
+The following gaps were identified during the pre-build specification review (see `Findings-HolesandQuestionableChoices.md`) and resolved with targeted additions to the PRD and tech spec:
+
+- ~~Status transition audit trail~~ : Resolved. StatusTransition entity added (Section 2.2).
+- ~~Conversation context strategy~~ : Resolved. Documented on Conversation entity (Section 2.2) and PRD Section 8.2.
+- ~~Notification type enum sync~~ : Resolved. Four missing notification types and two entity types added to Notification entity (Section 2.2).
+- ~~Display ID auto-generation strategy~~ : Resolved. New Section 2.4 documenting generation approach and formats.
+- ~~OAuth token encryption~~ : Resolved. V1 encryption strategy documented on Project entity (Section 2.2).
+- ~~VersionHistory storage trade-off~~ : Resolved. V1 trade-off note added to VersionHistory entity (Section 2.2).
+- ~~Agent harness rate limiting and concurrency~~ : Resolved. Section 3.1.1 added.
+- ~~StoryComponent projectId denormalization~~ : Resolved. Field added to StoryComponent (Section 2.3).
+- ~~Feature prefix field~~ : Resolved. Field added to Feature entity (Section 2.2).
+- ~~Defect displayId scope clarification~~ : Resolved. Note updated on Defect entity (Section 2.2).
+- ~~Context package caching~~ : Resolved. Caching note added to context package assembly (Section 3.3).
+- ~~Polymorphic column indexes~~ : Resolved. Index notes added to Attachment, VersionHistory, KnowledgeArticleReference, and StatusTransition.
+- ~~Defect duplicate linking~~ : Resolved. Self-referential `duplicateOfId` FK added to Defect entity (Section 2.2).
+- ~~General chat windowing~~ : Resolved. Strategy 5 added to Section 4.3, PRD Section 8.2 updated.
+- ~~Jira sync implementation approach~~ : Resolved. PRD Section 20.5 corrected to Inngest + Jira Cloud REST API pattern.

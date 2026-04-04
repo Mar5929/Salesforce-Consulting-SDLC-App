@@ -434,10 +434,12 @@ The AI's job during discovery is to receive unstructured information and organiz
 
 **Chat with the AI.** The primary input method. The chat interface follows a hybrid model with two conversation types:
 
-- **General project chat.** One per project, auto-created. A persistent, shared conversation for quick conversational discovery. All project members with chat permission can see it. Each message triggers an independent harness call. Interleaved messages from multiple users are handled as independent interactions, with conflict detection catching contradictory information across conversations.
+- **General project chat.** One per project, auto-created. A persistent, shared conversation for quick conversational discovery. All project members with chat permission can see it. Each message triggers an independent harness call. Interleaved messages from multiple users are handled as independent interactions, with conflict detection catching contradictory information across conversations. When the AI references previous general chat messages for context enrichment (not for conversational continuity: each message is independently processed), it loads the most recent 50 messages or last 7 days, whichever is smaller. This window is configurable per project.
 - **Task sessions.** Discrete, scoped conversations for heavy-lift tasks (transcript processing, story generation, briefings). Each session maps to one SessionLog for cost tracking. Simultaneous task sessions are independent of each other and of the general chat.
 
 All conversations persist permanently. Nothing is ephemeral. The AI can reference previous conversations for context continuity. Session history is browsable for audit trail purposes.
+
+**Context strategy clarification:** General chat is intentionally stateless per-message. Each message receives injected project context (project summary, open questions, recent decisions) but no conversational memory from previous chat messages. This is by design: general chat is a knowledge *input* channel, not a conversational AI assistant. Task sessions run as a single agent invocation with full tool-use loop; if interrupted (browser close, timeout), the artifacts written to the database persist but the session is marked FAILED and a new session should be started rather than attempting to resume.
 
 Users type or paste information in either conversation type. The AI extracts structured data (questions, answers, decisions, requirements, action items) and files them appropriately. Examples:
 - "The client confirmed that they use Pardot for email marketing and it's integrated through the standard Salesforce connector."
@@ -1097,7 +1099,7 @@ The solution architect configures the Jira sync during project setup: Jira insta
 
 ### 20.5 Implementation
 
-Jira sync is implemented via MCP (Model Context Protocol) using existing Jira MCP servers or a custom-built thin adapter. The specific implementation approach is an architecture decision to be made during build.
+Jira sync is implemented as Inngest background jobs calling the Jira Cloud REST API directly. The sync job authenticates with the configured Jira credentials (stored encrypted per project, same strategy as Salesforce org tokens), maps fields per the project's field mapping configuration, and pushes story data on status transitions that match the configured triggers. MCP is not used here: MCP is a local protocol designed for IDE integrations (like Claude Code connecting to a Salesforce sandbox), not for server-to-server communication from a web application backend. The Inngest job pattern provides retry logic, failure alerting, and dead-letter handling consistent with the rest of the background job infrastructure (Section 7 of the tech spec).
 
 ---
 
