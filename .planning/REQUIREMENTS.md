@@ -1,0 +1,324 @@
+# Requirements: Salesforce Consulting AI Framework
+
+**Defined:** 2026-04-04
+**Core Value:** The AI must retain and build understanding across sessions — every discovery conversation, transcript, question, and decision feeds a persistent knowledge base that makes the AI progressively smarter about each project's business context.
+
+## v1 Requirements
+
+Requirements for initial release. Each maps to roadmap phases.
+
+### Authentication and Security
+
+- [ ] **AUTH-01**: User can sign up and log in with email/password via Clerk
+- [ ] **AUTH-02**: User session persists across browser refresh
+- [ ] **AUTH-03**: User is assigned a project-level role (SA, PM, BA, Developer, QA) that controls visible features
+- [ ] **AUTH-04**: All data queries are scoped to the active project — no cross-project data leakage
+- [ ] **AUTH-05**: Salesforce org credentials are encrypted at rest using per-project derived keys (HKDF-SHA256)
+- [ ] **AUTH-06**: Access to sensitive operations is logged for audit trail
+
+### Project Management
+
+- [ ] **PROJ-01**: User can create a new project with name, client, engagement type, and sandbox strategy
+- [ ] **PROJ-02**: User can view and edit project settings and team membership
+- [ ] **PROJ-03**: User can invite team members and assign project-level roles
+- [ ] **PROJ-04**: PM can archive a completed project (read-only state, data retained)
+- [ ] **PROJ-05**: PM can reactivate an archived project for follow-on engagements
+
+### Question System
+
+- [ ] **QUES-01**: User can raise a question manually with category, scope assignment, and priority
+- [ ] **QUES-02**: AI can raise questions automatically during transcript processing or story generation
+- [ ] **QUES-03**: Question owner can answer a question with source attribution
+- [ ] **QUES-04**: Answering a question triggers AI impact assessment (unblocks, contradictions, new questions)
+- [ ] **QUES-05**: Questions have a full lifecycle: Open > Scoped > Owned > Answered > Reviewed
+- [ ] **QUES-06**: Questions are linked to relevant entities (epics, features, stories, decisions)
+- [ ] **QUES-07**: SA can flag answered questions for review when confidence is below threshold
+- [ ] **QUES-08**: User can filter and search questions by status, category, scope, owner, and priority
+
+### AI Agent Harness
+
+- [ ] **AGENT-01**: Three-layer architecture: task definitions, execution engine, context assembly
+- [ ] **AGENT-02**: Task definitions specify required context, token budget, output schema, and validation rules
+- [ ] **AGENT-03**: Execution engine manages AI calls with retry logic, token tracking, and cost recording
+- [ ] **AGENT-04**: Context assembly builds scoped context packages from multiple data sources within token budgets
+- [ ] **AGENT-05**: AI handles ambiguity context-dependently: ask inline when user present, best-guess + flag in task sessions, flag-only in background jobs
+- [ ] **AGENT-06**: All AI interactions are logged with token usage, cost, and session linkage
+
+### Transcript Processing
+
+- [ ] **TRNS-01**: User can upload or paste a meeting transcript (up to ~10K words)
+- [ ] **TRNS-02**: AI extracts questions, decisions, requirements, and risks from the transcript
+- [ ] **TRNS-03**: Extracted items are deduplicated against existing project data before filing
+- [ ] **TRNS-04**: AI assigns scope (epic/feature) to extracted items based on project context
+- [ ] **TRNS-05**: Transcript processing runs as a multi-step agent loop with user confirmation at key points
+- [ ] **TRNS-06**: Processing status and results are visible in the chat session interface
+
+### Chat Interface
+
+- [ ] **CHAT-01**: Each project has one general chat for quick discovery and ad-hoc AI interaction
+- [ ] **CHAT-02**: Task-specific chat sessions exist for heavy-lift operations (transcript processing, story generation, briefings)
+- [ ] **CHAT-03**: All conversations persist with full message history
+- [ ] **CHAT-04**: Chat supports streaming AI responses
+- [ ] **CHAT-05**: Token usage and cost are tracked per chat session
+
+### Knowledge Architecture
+
+- [ ] **KNOW-01**: Structured BusinessProcess relationships are stored in Postgres and queryable
+- [ ] **KNOW-02**: AI-curated KnowledgeArticles synthesize understanding into versioned, persistent documents
+- [ ] **KNOW-03**: Knowledge articles track staleness and trigger re-synthesis when underlying data changes
+- [ ] **KNOW-04**: Article refresh runs as Inngest background jobs, not inline
+- [ ] **KNOW-05**: Two-pass context retrieval: load summaries first, then full content for most relevant articles
+- [ ] **KNOW-06**: AI proactively identifies discovery gaps and assesses readiness to start building
+- [ ] **KNOW-07**: New information that contradicts existing decisions is automatically flagged as a conflict
+
+### Search
+
+- [ ] **SRCH-01**: Filtered search across all entities by type, status, category, and other structured fields
+- [ ] **SRCH-02**: Full-text search via PostgreSQL tsvector for exact keyword matching
+- [ ] **SRCH-03**: Semantic search via pgvector embeddings for meaning-based retrieval
+- [ ] **SRCH-04**: Embeddings are generated by Inngest background jobs on entity create/update
+
+### Discovery Dashboard
+
+- [ ] **DASH-01**: Dashboard shows outstanding questions count by status and category
+- [ ] **DASH-02**: Dashboard shows blocked items and dependency chains
+- [ ] **DASH-03**: Dashboard shows project health score derived from discovery completeness
+- [ ] **DASH-04**: AI synthesis cache provides "Current Focus" and "Recommended Focus" summaries
+- [ ] **DASH-05**: Dashboard data refreshes via Inngest-triggered cached synthesis
+
+### Notifications
+
+- [ ] **NOTF-01**: In-app notification system with bell icon and unread count
+- [ ] **NOTF-02**: Notifications fire for 10 defined event types (question assigned, answer posted, story status change, etc.)
+- [ ] **NOTF-03**: Notifications are priority-based and dispatched via Inngest background jobs
+- [ ] **NOTF-04**: User can mark notifications as read individually or in bulk
+
+### Background Infrastructure
+
+- [ ] **INFRA-01**: Inngest event-driven background job infrastructure with automatic retries
+- [ ] **INFRA-02**: Step functions with checkpoints for long-running operations (transcript processing, embedding gen)
+- [ ] **INFRA-03**: Background jobs for: article refresh, dashboard synthesis, embedding generation, notification dispatch
+- [ ] **INFRA-04**: Optimistic concurrency control with version-based conflict detection on concurrent edits
+
+### Epic, Feature, and User Story Management
+
+- [ ] **WORK-01**: User can create and manage epics with hierarchy: epic > feature > user story
+- [ ] **WORK-02**: Stories have mandatory fields enforced by validation (acceptance criteria, impacted components, etc.)
+- [ ] **WORK-03**: User can edit and delete own stories; PM/SA can edit any story
+- [ ] **WORK-04**: Story status workflow: Draft > Ready > Sprint Planned > In Progress > In Review > QA > Done
+- [ ] **WORK-05**: PM manages lifecycle states, developers manage execution states, auto-transition on sprint assignment
+- [ ] **WORK-06**: AI-assisted story generation from requirements and discovery context
+- [ ] **WORK-07**: Each story tracks impacted Salesforce components (creates/modifies/deletes) via StoryComponent join
+
+### Sprint Management
+
+- [ ] **SPRT-01**: PM can create sprints with start/end dates and capacity
+- [ ] **SPRT-02**: PM can assign stories to sprints
+- [ ] **SPRT-03**: Sprint intelligence detects component-level conflicts between stories in the same sprint
+- [ ] **SPRT-04**: Sprint intelligence suggests dependency ordering and parallelization opportunities
+- [ ] **SPRT-05**: Sprint dashboard shows progress, velocity, and burndown
+
+### Salesforce Org Connectivity
+
+- [ ] **ORG-01**: User can connect a Salesforce org via OAuth
+- [ ] **ORG-02**: Periodic metadata sync (incremental + full refresh) stores normalized component data
+- [ ] **ORG-03**: Org knowledge base tables: OrgComponent, OrgRelationship, DomainGrouping
+- [ ] **ORG-04**: Brownfield org ingestion pipeline: Parse > Classify > Synthesize > Articulate (4-phase)
+- [ ] **ORG-05**: AI maps org components to business processes with human confirmation (isConfirmed pattern)
+- [ ] **ORG-06**: Domain groupings with AI suggestion and architect confirmation
+
+### Developer Integration
+
+- [ ] **DEV-01**: REST API exposes context package assembly for Claude Code consumption
+- [ ] **DEV-02**: Context packages include: story details, business processes, knowledge articles, related decisions, sprint conflicts
+- [ ] **DEV-03**: REST API supports org metadata queries for Claude Code skills
+- [ ] **DEV-04**: REST API supports story status updates from Claude Code
+- [ ] **DEV-05**: Claude Code skills updated to consume the web app API
+
+### Document Generation
+
+- [ ] **DOC-01**: PM can generate branded documents (Word, PowerPoint, PDF) from project context
+- [ ] **DOC-02**: Documents are populated by AI using project knowledge base content
+- [ ] **DOC-03**: Generated documents are stored in S3/R2 with version tracking
+- [ ] **DOC-04**: Branding templates enforce firm visual identity
+
+### QA Workflow
+
+- [ ] **QA-01**: QA can record test execution results (Pass/Fail/Blocked) with notes per test case
+- [ ] **QA-02**: QA can create and manage defects linked to stories
+- [ ] **QA-03**: Defect lifecycle: Open > In Progress > Fixed > Verified > Closed
+
+### Project Administration
+
+- [ ] **ADMIN-01**: Optional one-directional push sync to client Jira instance
+- [ ] **ADMIN-02**: PM dashboard with aggregated views across project dimensions
+- [ ] **ADMIN-03**: Usage and cost tracking for AI token consumption per project
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Collaboration
+
+- **V2-COLLAB-01**: Real-time collaborative editing via CRDT/OT infrastructure
+- **V2-COLLAB-02**: Activity feed / change history UI
+
+### AI Enhancements
+
+- **V2-AI-01**: Provider-agnostic AI abstraction layer (support GPT, Gemini alongside Claude)
+- **V2-AI-02**: AI output quality benchmarking and evaluation framework
+- **V2-AI-03**: Large transcript handling (20K+ words) with chunked processing
+
+### Notifications
+
+- **V2-NOTF-01**: Email notifications for critical events
+- **V2-NOTF-02**: Push notifications
+
+### Authentication
+
+- **V2-AUTH-01**: OAuth login providers (Google, GitHub)
+
+### Administration
+
+- **V2-ADMIN-01**: Firm administrator UI for managing settings, branding, guardrails
+- **V2-ADMIN-02**: Cross-project learning and template library (with data isolation)
+
+### Developer
+
+- **V2-DEV-01**: Git repository management from web app
+- **V2-DEV-02**: Playwright test result auto-import
+
+### Access
+
+- **V2-ACCESS-01**: Full QA access to chat, decisions, and transcripts (V1: questions + draft stories only)
+- **V2-ACCESS-02**: Developer access to transcript processing (V1: SA/BA only)
+
+### Mobile
+
+- **V2-MOBILE-01**: Mobile-optimized responsive views for dashboard and notifications
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Native mobile app | Web-first; primary use cases need desktop-class interface. Responsive web sufficient for V1. |
+| Bidirectional Jira sync | Split-brain problem. One-directional push avoids reconciliation complexity. |
+| Real-time collaborative editing | CRDT/OT infrastructure too complex for solo builder. Optimistic concurrency handles realistic scenarios. |
+| Provider-agnostic AI layer | Premature optimization. Claude-only in V1 with clean module boundary for future swap. |
+| Email/push notifications | In-app only sufficient for 5-30 internal users. Infrastructure cost not justified in V1. |
+| Firm admin UI | Settings change rarely. Firm owner (also the developer) updates config in code. |
+| Git management from web app | Web app is management/knowledge layer. Git is developer tooling. Clean boundary. |
+| Cross-project data sharing | Hard constraint from client NDAs. Project-level data isolation is non-negotiable. |
+| Large transcript handling (20K+) | Token costs scale linearly. V1 cap at ~10K words; users split longer transcripts. |
+| Playwright test integration | Manual test recording simpler for V1. QAs add context with Pass/Fail notes. |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| AUTH-01 | TBD | Pending |
+| AUTH-02 | TBD | Pending |
+| AUTH-03 | TBD | Pending |
+| AUTH-04 | TBD | Pending |
+| AUTH-05 | TBD | Pending |
+| AUTH-06 | TBD | Pending |
+| PROJ-01 | TBD | Pending |
+| PROJ-02 | TBD | Pending |
+| PROJ-03 | TBD | Pending |
+| PROJ-04 | TBD | Pending |
+| PROJ-05 | TBD | Pending |
+| QUES-01 | TBD | Pending |
+| QUES-02 | TBD | Pending |
+| QUES-03 | TBD | Pending |
+| QUES-04 | TBD | Pending |
+| QUES-05 | TBD | Pending |
+| QUES-06 | TBD | Pending |
+| QUES-07 | TBD | Pending |
+| QUES-08 | TBD | Pending |
+| AGENT-01 | TBD | Pending |
+| AGENT-02 | TBD | Pending |
+| AGENT-03 | TBD | Pending |
+| AGENT-04 | TBD | Pending |
+| AGENT-05 | TBD | Pending |
+| AGENT-06 | TBD | Pending |
+| TRNS-01 | TBD | Pending |
+| TRNS-02 | TBD | Pending |
+| TRNS-03 | TBD | Pending |
+| TRNS-04 | TBD | Pending |
+| TRNS-05 | TBD | Pending |
+| TRNS-06 | TBD | Pending |
+| CHAT-01 | TBD | Pending |
+| CHAT-02 | TBD | Pending |
+| CHAT-03 | TBD | Pending |
+| CHAT-04 | TBD | Pending |
+| CHAT-05 | TBD | Pending |
+| KNOW-01 | TBD | Pending |
+| KNOW-02 | TBD | Pending |
+| KNOW-03 | TBD | Pending |
+| KNOW-04 | TBD | Pending |
+| KNOW-05 | TBD | Pending |
+| KNOW-06 | TBD | Pending |
+| KNOW-07 | TBD | Pending |
+| SRCH-01 | TBD | Pending |
+| SRCH-02 | TBD | Pending |
+| SRCH-03 | TBD | Pending |
+| SRCH-04 | TBD | Pending |
+| DASH-01 | TBD | Pending |
+| DASH-02 | TBD | Pending |
+| DASH-03 | TBD | Pending |
+| DASH-04 | TBD | Pending |
+| DASH-05 | TBD | Pending |
+| NOTF-01 | TBD | Pending |
+| NOTF-02 | TBD | Pending |
+| NOTF-03 | TBD | Pending |
+| NOTF-04 | TBD | Pending |
+| INFRA-01 | TBD | Pending |
+| INFRA-02 | TBD | Pending |
+| INFRA-03 | TBD | Pending |
+| INFRA-04 | TBD | Pending |
+| WORK-01 | TBD | Pending |
+| WORK-02 | TBD | Pending |
+| WORK-03 | TBD | Pending |
+| WORK-04 | TBD | Pending |
+| WORK-05 | TBD | Pending |
+| WORK-06 | TBD | Pending |
+| WORK-07 | TBD | Pending |
+| SPRT-01 | TBD | Pending |
+| SPRT-02 | TBD | Pending |
+| SPRT-03 | TBD | Pending |
+| SPRT-04 | TBD | Pending |
+| SPRT-05 | TBD | Pending |
+| ORG-01 | TBD | Pending |
+| ORG-02 | TBD | Pending |
+| ORG-03 | TBD | Pending |
+| ORG-04 | TBD | Pending |
+| ORG-05 | TBD | Pending |
+| ORG-06 | TBD | Pending |
+| DEV-01 | TBD | Pending |
+| DEV-02 | TBD | Pending |
+| DEV-03 | TBD | Pending |
+| DEV-04 | TBD | Pending |
+| DEV-05 | TBD | Pending |
+| DOC-01 | TBD | Pending |
+| DOC-02 | TBD | Pending |
+| DOC-03 | TBD | Pending |
+| DOC-04 | TBD | Pending |
+| QA-01 | TBD | Pending |
+| QA-02 | TBD | Pending |
+| QA-03 | TBD | Pending |
+| ADMIN-01 | TBD | Pending |
+| ADMIN-02 | TBD | Pending |
+| ADMIN-03 | TBD | Pending |
+
+**Coverage:**
+- v1 requirements: 88 total
+- Mapped to phases: 0
+- Unmapped: 88 (TBD — populated during roadmap creation)
+
+---
+*Requirements defined: 2026-04-04*
+*Last updated: 2026-04-04 after initial definition*
