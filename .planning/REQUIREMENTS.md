@@ -220,105 +220,105 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | TBD | Pending |
-| AUTH-02 | TBD | Pending |
-| AUTH-03 | TBD | Pending |
-| AUTH-04 | TBD | Pending |
-| AUTH-05 | TBD | Pending |
-| AUTH-06 | TBD | Pending |
-| PROJ-01 | TBD | Pending |
-| PROJ-02 | TBD | Pending |
-| PROJ-03 | TBD | Pending |
-| PROJ-04 | TBD | Pending |
-| PROJ-05 | TBD | Pending |
-| QUES-01 | TBD | Pending |
-| QUES-02 | TBD | Pending |
-| QUES-03 | TBD | Pending |
-| QUES-04 | TBD | Pending |
-| QUES-05 | TBD | Pending |
-| QUES-06 | TBD | Pending |
-| QUES-07 | TBD | Pending |
-| QUES-08 | TBD | Pending |
-| AGENT-01 | TBD | Pending |
-| AGENT-02 | TBD | Pending |
-| AGENT-03 | TBD | Pending |
-| AGENT-04 | TBD | Pending |
-| AGENT-05 | TBD | Pending |
-| AGENT-06 | TBD | Pending |
-| TRNS-01 | TBD | Pending |
-| TRNS-02 | TBD | Pending |
-| TRNS-03 | TBD | Pending |
-| TRNS-04 | TBD | Pending |
-| TRNS-05 | TBD | Pending |
-| TRNS-06 | TBD | Pending |
-| CHAT-01 | TBD | Pending |
-| CHAT-02 | TBD | Pending |
-| CHAT-03 | TBD | Pending |
-| CHAT-04 | TBD | Pending |
-| CHAT-05 | TBD | Pending |
-| KNOW-01 | TBD | Pending |
-| KNOW-02 | TBD | Pending |
-| KNOW-03 | TBD | Pending |
-| KNOW-04 | TBD | Pending |
-| KNOW-05 | TBD | Pending |
-| KNOW-06 | TBD | Pending |
-| KNOW-07 | TBD | Pending |
-| SRCH-01 | TBD | Pending |
-| SRCH-02 | TBD | Pending |
-| SRCH-03 | TBD | Pending |
-| SRCH-04 | TBD | Pending |
-| DASH-01 | TBD | Pending |
-| DASH-02 | TBD | Pending |
-| DASH-03 | TBD | Pending |
-| DASH-04 | TBD | Pending |
-| DASH-05 | TBD | Pending |
-| NOTF-01 | TBD | Pending |
-| NOTF-02 | TBD | Pending |
-| NOTF-03 | TBD | Pending |
-| NOTF-04 | TBD | Pending |
-| INFRA-01 | TBD | Pending |
-| INFRA-02 | TBD | Pending |
-| INFRA-03 | TBD | Pending |
-| INFRA-04 | TBD | Pending |
-| WORK-01 | TBD | Pending |
-| WORK-02 | TBD | Pending |
-| WORK-03 | TBD | Pending |
-| WORK-04 | TBD | Pending |
-| WORK-05 | TBD | Pending |
-| WORK-06 | TBD | Pending |
-| WORK-07 | TBD | Pending |
-| SPRT-01 | TBD | Pending |
-| SPRT-02 | TBD | Pending |
-| SPRT-03 | TBD | Pending |
-| SPRT-04 | TBD | Pending |
-| SPRT-05 | TBD | Pending |
-| ORG-01 | TBD | Pending |
-| ORG-02 | TBD | Pending |
-| ORG-03 | TBD | Pending |
-| ORG-04 | TBD | Pending |
-| ORG-05 | TBD | Pending |
-| ORG-06 | TBD | Pending |
-| DEV-01 | TBD | Pending |
-| DEV-02 | TBD | Pending |
-| DEV-03 | TBD | Pending |
-| DEV-04 | TBD | Pending |
-| DEV-05 | TBD | Pending |
-| DOC-01 | TBD | Pending |
-| DOC-02 | TBD | Pending |
-| DOC-03 | TBD | Pending |
-| DOC-04 | TBD | Pending |
-| QA-01 | TBD | Pending |
-| QA-02 | TBD | Pending |
-| QA-03 | TBD | Pending |
-| ADMIN-01 | TBD | Pending |
-| ADMIN-02 | TBD | Pending |
-| ADMIN-03 | TBD | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Pending |
+| AUTH-06 | Phase 1 | Pending |
+| PROJ-01 | Phase 1 | Pending |
+| PROJ-02 | Phase 1 | Pending |
+| PROJ-03 | Phase 1 | Pending |
+| PROJ-04 | Phase 5 | Pending |
+| PROJ-05 | Phase 5 | Pending |
+| QUES-01 | Phase 2 | Pending |
+| QUES-02 | Phase 2 | Pending |
+| QUES-03 | Phase 2 | Pending |
+| QUES-04 | Phase 2 | Pending |
+| QUES-05 | Phase 2 | Pending |
+| QUES-06 | Phase 2 | Pending |
+| QUES-07 | Phase 2 | Pending |
+| QUES-08 | Phase 2 | Pending |
+| AGENT-01 | Phase 2 | Pending |
+| AGENT-02 | Phase 2 | Pending |
+| AGENT-03 | Phase 2 | Pending |
+| AGENT-04 | Phase 2 | Pending |
+| AGENT-05 | Phase 2 | Pending |
+| AGENT-06 | Phase 2 | Pending |
+| TRNS-01 | Phase 2 | Pending |
+| TRNS-02 | Phase 2 | Pending |
+| TRNS-03 | Phase 2 | Pending |
+| TRNS-04 | Phase 2 | Pending |
+| TRNS-05 | Phase 2 | Pending |
+| TRNS-06 | Phase 2 | Pending |
+| CHAT-01 | Phase 2 | Pending |
+| CHAT-02 | Phase 2 | Pending |
+| CHAT-03 | Phase 2 | Pending |
+| CHAT-04 | Phase 2 | Pending |
+| CHAT-05 | Phase 2 | Pending |
+| KNOW-01 | Phase 2 | Pending |
+| KNOW-02 | Phase 2 | Pending |
+| KNOW-03 | Phase 2 | Pending |
+| KNOW-04 | Phase 2 | Pending |
+| KNOW-05 | Phase 2 | Pending |
+| KNOW-06 | Phase 2 | Pending |
+| KNOW-07 | Phase 2 | Pending |
+| SRCH-01 | Phase 2 | Pending |
+| SRCH-02 | Phase 2 | Pending |
+| SRCH-03 | Phase 2 | Pending |
+| SRCH-04 | Phase 2 | Pending |
+| DASH-01 | Phase 2 | Pending |
+| DASH-02 | Phase 2 | Pending |
+| DASH-03 | Phase 2 | Pending |
+| DASH-04 | Phase 2 | Pending |
+| DASH-05 | Phase 2 | Pending |
+| NOTF-01 | Phase 2 | Pending |
+| NOTF-02 | Phase 2 | Pending |
+| NOTF-03 | Phase 2 | Pending |
+| NOTF-04 | Phase 2 | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 2 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| WORK-01 | Phase 3 | Pending |
+| WORK-02 | Phase 3 | Pending |
+| WORK-03 | Phase 3 | Pending |
+| WORK-04 | Phase 3 | Pending |
+| WORK-05 | Phase 3 | Pending |
+| WORK-06 | Phase 3 | Pending |
+| WORK-07 | Phase 3 | Pending |
+| SPRT-01 | Phase 3 | Pending |
+| SPRT-02 | Phase 3 | Pending |
+| SPRT-03 | Phase 3 | Pending |
+| SPRT-04 | Phase 3 | Pending |
+| SPRT-05 | Phase 3 | Pending |
+| ORG-01 | Phase 4 | Pending |
+| ORG-02 | Phase 4 | Pending |
+| ORG-03 | Phase 4 | Pending |
+| ORG-04 | Phase 4 | Pending |
+| ORG-05 | Phase 4 | Pending |
+| ORG-06 | Phase 4 | Pending |
+| DEV-01 | Phase 4 | Pending |
+| DEV-02 | Phase 4 | Pending |
+| DEV-03 | Phase 4 | Pending |
+| DEV-04 | Phase 4 | Pending |
+| DEV-05 | Phase 4 | Pending |
+| DOC-01 | Phase 5 | Pending |
+| DOC-02 | Phase 5 | Pending |
+| DOC-03 | Phase 5 | Pending |
+| DOC-04 | Phase 5 | Pending |
+| QA-01 | Phase 5 | Pending |
+| QA-02 | Phase 5 | Pending |
+| QA-03 | Phase 5 | Pending |
+| ADMIN-01 | Phase 5 | Pending |
+| ADMIN-02 | Phase 5 | Pending |
+| ADMIN-03 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 88 total
-- Mapped to phases: 0
-- Unmapped: 88 (TBD — populated during roadmap creation)
+- v1 requirements: 93 total
+- Mapped to phases: 93
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-04*
-*Last updated: 2026-04-04 after initial definition*
+*Last updated: 2026-04-04 after roadmap creation*
