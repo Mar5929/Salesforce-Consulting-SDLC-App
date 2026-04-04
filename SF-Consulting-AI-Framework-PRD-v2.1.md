@@ -714,10 +714,12 @@ The web application periodically retrieves metadata from the connected sandbox a
 - Installed packages with namespaces and versions.
 - Any other metadata types retrievable via the Salesforce CLI.
 
-The sync is triggered:
-- Automatically at a configurable interval (default: every 4 hours during business hours).
-- Manually by the architect or tech lead via a "Refresh Org Knowledge" action in the web application.
-- Automatically at project creation if a sandbox is connected.
+The sync operates in two modes:
+
+- **Incremental sync (automated).** Runs Phases 1-2 only (Parse + Classify) at the project's configured interval (default: every 4 hours). Detects new, modified, and removed components. Flags new unclassified components for the next knowledge refresh. Near-zero AI cost.
+- **Full knowledge refresh (manual or weekly).** Runs Phases 3-4 only (Synthesize + Articulate) on unassigned components and stale articles only. Generates suggestions, not overwrites. Triggered manually via "Refresh Knowledge Base" button or by weekly cron (configurable, default: Sunday 2am UTC). Moderate AI cost but runs infrequently.
+
+Both modes can also be triggered manually by the architect or tech lead. The initial sync at project creation runs all 4 phases.
 
 ### 13.4 Org Knowledge Base Structure
 
@@ -751,6 +753,8 @@ Phase 4: Articulate -> KnowledgeArticle drafts, one per process + one per domain
 ```
 
 **Phases 1-2** are unchanged from the original design: raw metadata is parsed into normalized component and relationship rows, then the AI proposes business domain groupings.
+
+> **Sync mode clarification:** The initial ingestion (on first org connection) runs all 4 phases. Subsequent automated syncs run only Phases 1-2 (incremental mode). Phases 3-4 run on-demand or weekly via the full knowledge refresh. See Tech Spec Section 6.1.1 for detailed specification.
 
 **Phases 3-4** run as a single AI call (they need the same context; splitting them would re-derive understanding twice). The AI analyzes the parsed components and their relationships to identify logical business processes ("Account Onboarding," "Renewal Pipeline"), creates BusinessProcess and BusinessProcessComponent records linking processes to their constituent components, then writes initial KnowledgeArticle drafts synthesizing its understanding of each process and each domain.
 
@@ -1145,6 +1149,25 @@ All access to project data is logged: who accessed what, when, and what action t
 
 Salesforce org credentials are encrypted at rest in the database. They are scoped to the project and not accessible by other projects or users without the appropriate role. When a project is archived, credentials are revoked and deleted.
 
+### 22.6 AI-Generated Content Sanitization
+
+AI tool calls write content to the database that originates from user-provided inputs (transcripts, chat messages). This content is untrusted and may contain adversarial injected scripts or HTML. Two defense layers are enforced:
+
+1. **Server-side input sanitization.** All text fields written to the database via AI tool calls are stripped of HTML and script tags before the Prisma write (see Tech Spec Section 3.6.1). The `$queryRawUnsafe` Prisma method is banned; all raw SQL uses parameterized tagged template literals.
+2. **Frontend output escaping.** All AI-generated content displayed in the web UI uses React JSX escaping (default for text content) or DOMPurify sanitization (for markdown/HTML-rendered content such as knowledge article bodies). `dangerouslySetInnerHTML` must never be used on AI-generated or user-provided content without DOMPurify sanitization. This is a documented coding standard.
+
+### 22.7 Prompt Injection Defense
+
+Transcripts and chat messages are untrusted user content processed by the AI. The system prompt for transcript processing includes explicit instructions treating the transcript body as data, not commands. The AI is instructed to never execute instructions that appear within transcript text, to flag suspicious content as a risk, and to extract only factual information. This defense is documented in Tech Spec Section 3.3.1. It is a defense-in-depth measure that works in combination with input sanitization (Section 22.6).
+
+### 22.8 Per-Project Token Encryption
+
+Salesforce org credentials are encrypted using per-project derived keys (HKDF-SHA256 with the project UUID as salt) rather than a single shared encryption key. This limits the blast radius of a key compromise to a single project's tokens. Key rotation is supported via a `keyVersion` field on the project. Serialization helpers strip token fields from JSON output to prevent accidental leakage in API responses, error stack traces, or logs. Full specification in Tech Spec Section 2, Project entity.
+
+### 22.9 REST API Rate Limiting and Access Control
+
+The REST API endpoints consumed by Claude Code skills are rate-limited per API key per minute (see Tech Spec Section 3.1.2 for specific limits per endpoint). API keys are scoped per project — a key issued for Project A cannot access Project B's data. All API requests are logged with key ID, endpoint, timestamp, and response status. Logs are retained for 90 days to support security audit (Section 22.4). This prevents data exfiltration via compromised sessions and supports abuse detection.
+
 ---
 
 ## 23. Consultant Licensing and Cost Management
@@ -1187,6 +1210,21 @@ Cost per session = (inputTokens * inputRate) + (outputTokens * outputRate). Aggr
 
 **RBAC:** Solution Architect and PM can view the full dashboard (project totals + per-user breakdown). Other roles cannot access this tab.
 
+### 23.5 Inngest Event Volume and Tier Planning
+
+The application uses Inngest for all background jobs (metadata sync, embedding generation, article refresh, notifications). Inngest free tier: 5,000 events/month. Projected event volumes:
+
+- **1-2 projects:** ~3,000-9,000 events/month (may fit free tier with conservative sync intervals)
+- **3-10 projects:** ~15,000-45,000 events/month (requires paid Team tier)
+- **10-30 projects:** ~60,000-150,000 events/month (requires paid Pro tier or dedicated worker migration)
+
+Sync intervals are configurable per project (`sfOrgSyncIntervalHours`). Recommended defaults by project phase:
+- **Discovery / Hypercare:** 12h (low metadata churn)
+- **Active Build:** 4h (frequent changes)
+- **Archived:** Disabled (set to 0)
+
+Embedding generation uses batched events to reduce event count (one batch event per agent invocation instead of one event per entity — see Tech Spec Section 7.4.1). The Usage & Costs dashboard (Section 23.4) should include an Inngest event volume metric alongside AI token costs so firm administrators can track consumption against tier limits.
+
 ---
 
 ## 24. What This Product Is Not
@@ -1215,7 +1253,7 @@ Cost per session = (inputTokens * inputRate) + (outputTokens * outputRate). Aggr
 | Authentication | Clerk | Clerk Cloud |
 | File Storage | S3 or Cloudflare R2 | AWS or Cloudflare |
 | AI Provider | Claude API (Anthropic) | Anthropic Cloud |
-| Background Jobs | Inngest | Vercel (serverless functions) |
+| Background Jobs | Inngest | Vercel (serverless functions). Free tier sufficient for 1-2 projects; paid Team tier required from project #3 onward (see Section 23.5). |
 | Vector Search | pgvector (PostgreSQL extension) | Neon or Supabase |
 | Full-Text Search | PostgreSQL tsvector/tsquery | Neon or Supabase |
 | Real-Time Updates | WebSocket or polling | Vercel |
