@@ -1,0 +1,17 @@
+{
+  "name": "agent-a66895b8",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run --reporter=verbose"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "vitest": "^4.1.2"
+  }
+}
