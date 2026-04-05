@@ -1,15 +1,14 @@
 {
-  "name": "agent-a66895b8",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "sf-consulting-ai-framework",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "test": "vitest run --reporter=verbose"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",
     "@types/node": "^22.15.3",
@@ -39,6 +38,7 @@
     "lucide-react": "^1.7.0",
     "next": "^16.2.2",
     "next-safe-action": "^8.4.0",
+    "next-themes": "^0.4.6",
     "nuqs": "^2.8.9",
     "prisma": "^7.6.0",
     "react": "^19.2.4",
