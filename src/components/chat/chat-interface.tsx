@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useCallback, type KeyboardEvent } from "react"
+import { useState, useEffect, useCallback, type KeyboardEvent } from "react"
 import { useChat, type UIMessage } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { ArrowUp, AlertCircle, RefreshCw } from "lucide-react"
+import { getSessionTokenTotals } from "@/actions/conversations"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { TokenDisplay } from "./token-display"
@@ -46,8 +47,21 @@ export function ChatInterface({
 
   const isLoading = status === "submitted" || status === "streaming"
 
-  // Calculate session totals from messages
-  const sessionTokens = computeSessionTokens(messages)
+  // Load real session token totals from database
+  const [sessionTokens, setSessionTokens] = useState({ totalTokens: 0, totalCost: 0 })
+
+  useEffect(() => {
+    if (!conversationId || !projectId) return
+
+    const loadTokens = async () => {
+      const result = await getSessionTokenTotals({ projectId, conversationId })
+      if (result?.data) {
+        setSessionTokens(result.data)
+      }
+    }
+
+    loadTokens()
+  }, [conversationId, projectId, messages.length])
 
   const handleSend = useCallback(() => {
     const text = inputValue.trim()
@@ -149,8 +163,8 @@ export function ChatInterface({
           <ContextPanel
             title="Session Context"
             tokenUsage={{
-              promptTokens: sessionTokens.promptTokens,
-              responseTokens: sessionTokens.responseTokens,
+              promptTokens: 0,
+              responseTokens: 0,
               sessionTotal: sessionTokens.totalTokens,
               cost: sessionTokens.totalCost,
             }}
@@ -183,16 +197,3 @@ function extractTextFromParts(
     .join("")
 }
 
-/** Compute aggregate token/cost stats from messages (placeholder) */
-function computeSessionTokens(_messages: UIMessage[]) {
-  // Token data is stored server-side in ChatMessage records,
-  // not in UIMessage parts. For now return zeros;
-  // the TokenDisplay will hide when totalTokens is 0.
-  // Session-level token data will be loaded via server component props.
-  return {
-    promptTokens: 0,
-    responseTokens: 0,
-    totalTokens: 0,
-    totalCost: 0,
-  }
-}

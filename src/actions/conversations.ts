@@ -168,6 +168,35 @@ export const getConversations = actionClient
   })
 
 /**
+ * Get aggregate token usage and cost for a conversation session.
+ * Sums inputTokens + outputTokens and cost across all ChatMessage records.
+ */
+const getSessionTokenTotalsSchema = z.object({
+  projectId: z.string().min(1),
+  conversationId: z.string().min(1),
+})
+
+export const getSessionTokenTotals = actionClient
+  .schema(getSessionTokenTotalsSchema)
+  .action(async ({ parsedInput: { projectId, conversationId } }) => {
+    await getCurrentMember(projectId)
+
+    const result = await prisma.chatMessage.aggregate({
+      where: { conversationId },
+      _sum: {
+        inputTokens: true,
+        outputTokens: true,
+        cost: true,
+      },
+    })
+
+    return {
+      totalTokens: (result._sum.inputTokens ?? 0) + (result._sum.outputTokens ?? 0),
+      totalCost: result._sum.cost ?? 0,
+    }
+  })
+
+/**
  * Persist a chat message to the database.
  * For AI messages, stores inputTokens, outputTokens, and cost.
  */
