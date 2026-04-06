@@ -25,6 +25,7 @@ export type TaskType =
   | "CONTEXT_PACKAGE_ASSEMBLY"
   | "ORG_QUERY"
   | "DASHBOARD_SYNTHESIS"
+  | "ARTICLE_SYNTHESIS"
 
 /**
  * Execution mode determines how the engine processes AI responses.

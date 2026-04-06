@@ -8,3 +8,4 @@
 export { transcriptProcessingTask } from "./transcript-processing"
 export { questionAnsweringTask } from "./question-answering"
 export { dashboardSynthesisTask } from "./dashboard-synthesis"
+export { articleSynthesisTask } from "./article-synthesis"
