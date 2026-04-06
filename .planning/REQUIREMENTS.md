@@ -104,19 +104,19 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **WORK-01**: User can create and manage epics with hierarchy: epic > feature > user story
 - [ ] **WORK-02**: Stories have mandatory fields enforced by validation (acceptance criteria, impacted components, etc.)
-- [ ] **WORK-03**: User can edit and delete own stories; PM/SA can edit any story
-- [ ] **WORK-04**: Story status workflow: Draft > Ready > Sprint Planned > In Progress > In Review > QA > Done
-- [ ] **WORK-05**: PM manages lifecycle states, developers manage execution states, auto-transition on sprint assignment
+- [x] **WORK-03**: User can edit and delete own stories; PM/SA can edit any story
+- [x] **WORK-04**: Story status workflow: Draft > Ready > Sprint Planned > In Progress > In Review > QA > Done
+- [x] **WORK-05**: PM manages lifecycle states, developers manage execution states, auto-transition on sprint assignment
 - [ ] **WORK-06**: AI-assisted story generation from requirements and discovery context
 - [ ] **WORK-07**: Each story tracks impacted Salesforce components (creates/modifies/deletes) via StoryComponent join
 
 ### Sprint Management
 
 - [ ] **SPRT-01**: PM can create sprints with start/end dates and capacity
-- [ ] **SPRT-02**: PM can assign stories to sprints
+- [x] **SPRT-02**: PM can assign stories to sprints
 - [ ] **SPRT-03**: Sprint intelligence detects component-level conflicts between stories in the same sprint
 - [ ] **SPRT-04**: Sprint intelligence suggests dependency ordering and parallelization opportunities
-- [ ] **SPRT-05**: Sprint dashboard shows progress, velocity, and burndown
+- [x] **SPRT-05**: Sprint dashboard shows progress, velocity, and burndown
 
 ### Salesforce Org Connectivity
 
@@ -282,16 +282,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-04 | Phase 1 | Pending |
 | WORK-01 | Phase 3 | Pending |
 | WORK-02 | Phase 3 | Pending |
-| WORK-03 | Phase 3 | Pending |
-| WORK-04 | Phase 3 | Pending |
-| WORK-05 | Phase 3 | Pending |
+| WORK-03 | Phase 3 | Complete |
+| WORK-04 | Phase 3 | Complete |
+| WORK-05 | Phase 3 | Complete |
 | WORK-06 | Phase 3 | Pending |
 | WORK-07 | Phase 3 | Pending |
 | SPRT-01 | Phase 3 | Pending |
-| SPRT-02 | Phase 3 | Pending |
+| SPRT-02 | Phase 3 | Complete |
 | SPRT-03 | Phase 3 | Pending |
 | SPRT-04 | Phase 3 | Pending |
-| SPRT-05 | Phase 3 | Pending |
+| SPRT-05 | Phase 3 | Complete |
 | ORG-01 | Phase 4 | Pending |
 | ORG-02 | Phase 4 | Pending |
 | ORG-03 | Phase 4 | Pending |
