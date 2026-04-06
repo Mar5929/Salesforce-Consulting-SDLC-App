@@ -1,0 +1,206 @@
+"use server"
+
+import { z } from "zod"
+import { actionClient } from "@/lib/safe-action"
+import { prisma } from "@/lib/db"
+import { scopedPrisma } from "@/lib/project-scope"
+import { getCurrentMember } from "@/lib/auth"
+import type { ConversationType, ChatMessageRole } from "@/generated/prisma"
+
+// ============================================================================
+// Schemas
+// ============================================================================
+
+const getOrCreateGeneralChatSchema = z.object({
+  projectId: z.string().min(1),
+})
+
+const createConversationSchema = z.object({
+  projectId: z.string().min(1),
+  conversationType: z.enum([
+    "GENERAL_CHAT",
+    "TRANSCRIPT_SESSION",
+    "STORY_SESSION",
+    "BRIEFING_SESSION",
+    "QUESTION_SESSION",
+    "ENRICHMENT_SESSION",
+  ]),
+  title: z.string().optional(),
+  sessionLogId: z.string().optional(),
+})
+
+const getConversationSchema = z.object({
+  conversationId: z.string().min(1),
+  projectId: z.string().min(1),
+})
+
+const getConversationsSchema = z.object({
+  projectId: z.string().min(1),
+})
+
+const saveMessageSchema = z.object({
+  conversationId: z.string().min(1),
+  role: z.enum(["USER", "ASSISTANT", "SYSTEM"]),
+  content: z.string().min(1),
+  inputTokens: z.number().int().nonnegative().optional(),
+  outputTokens: z.number().int().nonnegative().optional(),
+  cost: z.number().nonnegative().optional(),
+})
+
+// ============================================================================
+// Actions
+// ============================================================================
+
+/**
+ * Find or create the single GENERAL_CHAT conversation for a project.
+ * Returns the conversation with the most recent 50 messages.
+ */
+export const getOrCreateGeneralChat = actionClient
+  .schema(getOrCreateGeneralChatSchema)
+  .action(async ({ parsedInput: { projectId }, ctx: { userId } }) => {
+    const member = await getCurrentMember(projectId)
+    const scoped = scopedPrisma(projectId)
+
+    let conversation = await scoped.conversation.findFirst({
+      where: { conversationType: "GENERAL_CHAT" },
+      include: {
+        messages: {
+          orderBy: { createdAt: "asc" },
+          take: 50,
+        },
+      },
+    })
+
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        data: {
+          projectId,
+          conversationType: "GENERAL_CHAT",
+          title: "Project Chat",
+          createdById: member.id,
+        },
+        include: {
+          messages: {
+            orderBy: { createdAt: "asc" },
+            take: 50,
+          },
+        },
+      })
+    }
+
+    return conversation
+  })
+
+/**
+ * Create a new task-specific conversation.
+ */
+export const createConversation = actionClient
+  .schema(createConversationSchema)
+  .action(
+    async ({
+      parsedInput: { projectId, conversationType, title, sessionLogId },
+    }) => {
+      const member = await getCurrentMember(projectId)
+
+      const conversation = await prisma.conversation.create({
+        data: {
+          projectId,
+          conversationType: conversationType as ConversationType,
+          title: title ?? `${conversationType.replace(/_/g, " ").toLowerCase()} session`,
+          createdById: member.id,
+          sessionLogId,
+        },
+        include: {
+          messages: {
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      })
+
+      return conversation
+    }
+  )
+
+/**
+ * Fetch a conversation with all messages. Verifies project scope.
+ */
+export const getConversation = actionClient
+  .schema(getConversationSchema)
+  .action(async ({ parsedInput: { conversationId, projectId } }) => {
+    // Verify membership
+    await getCurrentMember(projectId)
+    const scoped = scopedPrisma(projectId)
+
+    const conversation = await scoped.conversation.findFirst({
+      where: { id: conversationId },
+      include: {
+        messages: {
+          orderBy: { createdAt: "asc" },
+        },
+        sessionLog: true,
+      },
+    })
+
+    if (!conversation) {
+      throw new Error("Conversation not found")
+    }
+
+    return conversation
+  })
+
+/**
+ * List all conversations for a project, ordered by most recently updated.
+ */
+export const getConversations = actionClient
+  .schema(getConversationsSchema)
+  .action(async ({ parsedInput: { projectId } }) => {
+    await getCurrentMember(projectId)
+    const scoped = scopedPrisma(projectId)
+
+    const conversations = await scoped.conversation.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: {
+        _count: { select: { messages: true } },
+      },
+    })
+
+    return conversations
+  })
+
+/**
+ * Persist a chat message to the database.
+ * For AI messages, stores inputTokens, outputTokens, and cost.
+ */
+export const saveMessage = actionClient
+  .schema(saveMessageSchema)
+  .action(
+    async ({
+      parsedInput: {
+        conversationId,
+        role,
+        content,
+        inputTokens,
+        outputTokens,
+        cost,
+      },
+    }) => {
+      const message = await prisma.chatMessage.create({
+        data: {
+          conversationId,
+          role: role as ChatMessageRole,
+          content,
+          inputTokens,
+          outputTokens,
+          cost,
+        },
+      })
+
+      // Update conversation's updatedAt timestamp
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() },
+      })
+
+      return message
+    }
+  )

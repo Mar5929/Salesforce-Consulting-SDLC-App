@@ -6,6 +6,7 @@ export const env = createEnv({
     DATABASE_URL: z.string().url(),
     CLERK_SECRET_KEY: z.string().min(1),
     SF_TOKEN_ENCRYPTION_KEY: z.string().min(32),
+    ANTHROPIC_API_KEY: z.string().min(1),
     INNGEST_SIGNING_KEY: z.string().optional(),
     INNGEST_EVENT_KEY: z.string().optional(),
   },
@@ -16,6 +17,7 @@ export const env = createEnv({
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     SF_TOKEN_ENCRYPTION_KEY: process.env.SF_TOKEN_ENCRYPTION_KEY,
     INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,

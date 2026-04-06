@@ -958,6 +958,9 @@ model ChatMessage {
   content        String
   senderId       String?
   toolCalls      Json?
+  inputTokens    Int?
+  outputTokens   Int?
+  cost           Float?
   createdAt      DateTime        @default(now())
 
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
