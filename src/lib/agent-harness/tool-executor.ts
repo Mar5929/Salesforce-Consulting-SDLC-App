@@ -20,6 +20,7 @@ import { executeCreateDecision } from "./tools/create-decision"
 import { executeCreateRequirement } from "./tools/create-requirement"
 import { executeCreateRisk } from "./tools/create-risk"
 import { executeFlagConflict } from "./tools/flag-conflict"
+import { executeCreateStoryDraft } from "./tools/create-story-draft"
 
 /**
  * Execute a tool call from the AI agent.
@@ -69,9 +70,13 @@ export async function executeToolCall(
     case "flag_conflict":
       return executeFlagConflict(sanitizedInput, projectId)
 
+    // Story generation tools (Phase 03 Plan 03)
+    case "create_story_draft":
+      return executeCreateStoryDraft(sanitizedInput, projectId)
+
     default:
       throw new Error(
-        `Unknown tool: ${toolName}. Available tools: create_question, answer_question, update_question_status, create_decision, create_requirement, create_risk, flag_conflict`
+        `Unknown tool: ${toolName}. Available tools: create_question, answer_question, update_question_status, create_decision, create_requirement, create_risk, flag_conflict, create_story_draft`
       )
   }
 }
