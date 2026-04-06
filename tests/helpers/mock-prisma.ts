@@ -42,6 +42,8 @@ export function createMockPrisma() {
     sprint: createModelMock(),
     attachment: createModelMock(),
     generatedDocument: createModelMock(),
+    storyComponent: createModelMock(),
+    statusTransition: createModelMock(),
     $queryRaw: vi.fn().mockResolvedValue([]),
     $executeRaw: vi.fn().mockResolvedValue(0),
     $transaction: vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => {
