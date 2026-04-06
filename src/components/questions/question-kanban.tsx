@@ -3,7 +3,7 @@
 /**
  * Question Kanban View (D-02, D-03)
  *
- * Kanban board with lifecycle columns: Open, Answered, Parked.
+ * Kanban board with lifecycle columns: Open, Scoped, Owned, Answered, Reviewed, Parked.
  * Cards show title, priority indicator, and owner avatar per UI-SPEC.
  * Drag between columns to advance status via HTML drag-and-drop API.
  */
@@ -42,7 +42,10 @@ interface QuestionKanbanProps {
 
 const COLUMNS = [
   { id: "OPEN", label: "Open", color: "border-[#2563EB]" },
+  { id: "SCOPED", label: "Scoped", color: "border-[#8B5CF6]" },
+  { id: "OWNED", label: "Owned", color: "border-[#F59E0B]" },
   { id: "ANSWERED", label: "Answered", color: "border-[#16A34A]" },
+  { id: "REVIEWED", label: "Reviewed", color: "border-[#06B6D4]" },
   { id: "PARKED", label: "Parked", color: "border-[#737373]" },
 ] as const
 
@@ -98,7 +101,7 @@ export function QuestionKanban({ questions, projectId }: QuestionKanbanProps) {
     execute({
       projectId,
       questionId,
-      status: newStatus as "OPEN" | "ANSWERED" | "PARKED",
+      status: newStatus as "OPEN" | "SCOPED" | "OWNED" | "ANSWERED" | "REVIEWED" | "PARKED",
     })
     setDraggedId(null)
   }

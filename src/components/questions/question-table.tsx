@@ -61,7 +61,10 @@ interface QuestionTableProps {
 
 const STATUS_STYLES: Record<string, string> = {
   OPEN: "bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]",
+  SCOPED: "bg-[#F5F3FF] text-[#8B5CF6] border-[#DDD6FE]",
+  OWNED: "bg-[#FFFBEB] text-[#F59E0B] border-[#FDE68A]",
   ANSWERED: "bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]",
+  REVIEWED: "bg-[#ECFEFF] text-[#06B6D4] border-[#A5F3FC]",
   PARKED: "bg-[#F5F5F5] text-[#737373] border-[#E5E5E5]",
 }
 
@@ -118,7 +121,10 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="OPEN">Open</SelectItem>
+            <SelectItem value="SCOPED">Scoped</SelectItem>
+            <SelectItem value="OWNED">Owned</SelectItem>
             <SelectItem value="ANSWERED">Answered</SelectItem>
+            <SelectItem value="REVIEWED">Reviewed</SelectItem>
             <SelectItem value="PARKED">Parked</SelectItem>
           </SelectContent>
         </Select>

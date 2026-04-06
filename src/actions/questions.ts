@@ -42,7 +42,7 @@ const updateQuestionSchema = z.object({
   questionText: z.string().min(1).optional(),
   scope: z.enum(["ENGAGEMENT", "EPIC", "FEATURE"]).optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
-  status: z.enum(["OPEN", "ANSWERED", "PARKED"]).optional(),
+  status: z.enum(["OPEN", "SCOPED", "OWNED", "ANSWERED", "REVIEWED", "PARKED"]).optional(),
   scopeEpicId: z.string().nullable().optional(),
   scopeFeatureId: z.string().nullable().optional(),
   ownerId: z.string().nullable().optional(),
@@ -68,7 +68,7 @@ const deleteQuestionSchema = z.object({
 
 const getQuestionsSchema = z.object({
   projectId: z.string().min(1),
-  status: z.enum(["OPEN", "ANSWERED", "PARKED"]).optional(),
+  status: z.enum(["OPEN", "SCOPED", "OWNED", "ANSWERED", "REVIEWED", "PARKED"]).optional(),
   scope: z.enum(["ENGAGEMENT", "EPIC", "FEATURE"]).optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
   ownerId: z.string().optional(),
@@ -363,12 +363,17 @@ export const getQuestion = actionClient
 
 /**
  * Validate question status transitions.
- * Allowed: OPEN -> ANSWERED, OPEN -> PARKED, ANSWERED -> OPEN (reopen), PARKED -> OPEN
+ * Lifecycle: OPEN -> SCOPED -> OWNED -> ANSWERED -> REVIEWED
+ * Parked is reachable from any active state. Unpark returns to OPEN.
+ * Reopen from ANSWERED or REVIEWED returns to OPEN.
  */
 function validateStatusTransition(current: string, next: string): void {
   const VALID_TRANSITIONS: Record<string, string[]> = {
-    OPEN: ["ANSWERED", "PARKED"],
-    ANSWERED: ["OPEN"], // Reopen
+    OPEN: ["SCOPED", "PARKED"],
+    SCOPED: ["OWNED", "OPEN", "PARKED"],
+    OWNED: ["ANSWERED", "SCOPED", "OPEN", "PARKED"],
+    ANSWERED: ["REVIEWED", "OPEN", "PARKED"], // Reopen or advance
+    REVIEWED: ["OPEN", "PARKED"], // Reopen if needed
     PARKED: ["OPEN"], // Unpark
   }
 
