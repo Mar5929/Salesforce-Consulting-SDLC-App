@@ -12,7 +12,14 @@
  * - T-02-05: scopedPrisma(projectId) for cross-project isolation
  */
 
+import { prisma } from "@/lib/db"
 import { sanitizeToolInput } from "./sanitize"
+import { executeCreateQuestion } from "./tools/create-question"
+import { executeAnswerQuestion } from "./tools/answer-question"
+import { executeCreateDecision } from "./tools/create-decision"
+import { executeCreateRequirement } from "./tools/create-requirement"
+import { executeCreateRisk } from "./tools/create-risk"
+import { executeFlagConflict } from "./tools/flag-conflict"
 
 /**
  * Execute a tool call from the AI agent.
@@ -32,54 +39,75 @@ export async function executeToolCall(
   const sanitizedInput = sanitizeToolInput(toolInput)
 
   // Dispatch to tool implementation
-  // Note: scopedPrisma(projectId) will be used inside each tool implementation
-  // to ensure project-level data isolation (T-02-05)
+  // Each tool receives sanitized input and projectId for project isolation (T-02-05)
   switch (toolName) {
     // Question management tools (Plan 04)
     case "create_question":
-      throw new ToolNotImplementedError(toolName)
+      return executeCreateQuestion(sanitizedInput, projectId)
 
     case "answer_question":
-      throw new ToolNotImplementedError(toolName)
+      return executeAnswerQuestion(sanitizedInput, projectId)
 
     case "update_question_status":
-      throw new ToolNotImplementedError(toolName)
+      // Status transitions are handled via server actions (questions.ts)
+      // This tool updates question status from the AI agent context
+      return executeUpdateQuestionStatus(sanitizedInput, projectId)
 
-    // Decision management tools (Plan 04)
+    // Decision management tools (Plan 05)
     case "create_decision":
-      throw new ToolNotImplementedError(toolName)
+      return executeCreateDecision(sanitizedInput, projectId)
 
-    // Requirement management tools (Plan 04)
+    // Requirement management tools (Plan 05)
     case "create_requirement":
-      throw new ToolNotImplementedError(toolName)
+      return executeCreateRequirement(sanitizedInput, projectId)
 
-    // Risk management tools (Plan 04)
+    // Risk management tools (Plan 05)
     case "create_risk":
-      throw new ToolNotImplementedError(toolName)
+      return executeCreateRisk(sanitizedInput, projectId)
 
     // Conflict detection tools (Plan 04)
     case "flag_conflict":
-      throw new ToolNotImplementedError(toolName)
+      return executeFlagConflict(sanitizedInput, projectId)
 
     default:
       throw new Error(
         `Unknown tool: ${toolName}. Available tools: create_question, answer_question, update_question_status, create_decision, create_requirement, create_risk, flag_conflict`
       )
   }
-
-  // This ensures TypeScript knows sanitizedInput and projectId are used
-  // Once tools are implemented, they'll receive these as parameters
-  void sanitizedInput
-  void projectId
 }
 
 /**
- * Error thrown when a tool is registered but not yet implemented.
- * Implementations will be added in Plans 04-06.
+ * Update a question's status from the AI agent context.
+ * Supports transitions: OPEN -> ANSWERED, OPEN -> PARKED, ANSWERED -> OPEN
  */
-export class ToolNotImplementedError extends Error {
-  constructor(toolName: string) {
-    super(`Tool not yet implemented: ${toolName}. Implementation coming in Plans 04-06.`)
-    this.name = "ToolNotImplementedError"
+async function executeUpdateQuestionStatus(
+  input: Record<string, unknown>,
+  projectId: string
+): Promise<{ success: boolean; questionId: string; newStatus: string }> {
+  const questionId = String(input.questionId ?? "")
+  const newStatus = String(input.status ?? "")
+
+  if (!questionId) throw new Error("questionId is required")
+  if (!newStatus) throw new Error("status is required")
+
+  const validStatuses = ["OPEN", "ANSWERED", "PARKED"]
+  if (!validStatuses.includes(newStatus)) {
+    throw new Error(`Invalid status: ${newStatus}. Valid: ${validStatuses.join(", ")}`)
   }
+
+  const question = await prisma.question.findUnique({
+    where: { id: questionId },
+    select: { projectId: true, status: true },
+  })
+
+  if (!question || question.projectId !== projectId) {
+    throw new Error(`Question ${questionId} not found in project ${projectId}`)
+  }
+
+  await prisma.question.update({
+    where: { id: questionId },
+    data: { status: newStatus as "OPEN" | "ANSWERED" | "PARKED" },
+  })
+
+  return { success: true, questionId, newStatus }
 }
