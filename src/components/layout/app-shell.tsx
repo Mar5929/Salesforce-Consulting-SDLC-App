@@ -1,6 +1,7 @@
 "use client"
 
 import { Sidebar } from "@/components/layout/sidebar"
+import { CommandPalette } from "@/components/search/command-palette"
 
 interface AppShellProps {
   children: React.ReactNode
@@ -22,6 +23,7 @@ export function AppShell({
       <main className="flex-1 overflow-y-auto bg-white px-8 pt-6">
         {children}
       </main>
+      {activeProjectId && <CommandPalette projectId={activeProjectId} />}
     </div>
   )
 }
