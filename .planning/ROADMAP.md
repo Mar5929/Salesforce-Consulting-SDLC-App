@@ -107,7 +107,7 @@ Plans:
 - [x] 04-02-PLAN.md -- OAuth flow: authorize/callback routes, org connection settings page with status card
 - [x] 04-03-PLAN.md -- Metadata sync: Inngest function, component parsing, sync history table, org overview page
 - [x] 04-04-PLAN.md -- Brownfield ingestion: 4-phase AI pipeline, domain classification, business process synthesis, review actions
-- [ ] 04-05-PLAN.md -- REST API: context-package, org/components, stories/status, project/summary endpoints with API key auth
+- [x] 04-05-PLAN.md -- REST API: context-package, org/components, stories/status, project/summary endpoints with API key auth
 - [ ] 04-06-PLAN.md -- Org analysis UI: pipeline stepper, domain/process review cards, tabbed review interface
 - [ ] 04-07-PLAN.md -- Claude Code skills: API endpoint documentation for developer consumption
 
