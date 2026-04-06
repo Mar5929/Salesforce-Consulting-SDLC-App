@@ -76,12 +76,14 @@ Plans:
   2. AI generates story drafts from requirements and discovery context, pre-populating acceptance criteria and impacted Salesforce components
   3. PM can create sprints, assign stories, and view sprint dashboard with progress, velocity, and burndown
   4. Sprint intelligence flags component-level conflicts between stories and suggests dependency ordering
-**Plans**: 6 plans
+**Plans**: 8 plans
 
 Plans:
+- [ ] 03-00-PLAN.md -- Wave 0: vitest setup, test utilities, unit tests for status machine, burndown, sprint assignment
 - [ ] 03-01-PLAN.md -- Foundation: schema migration, server actions, status machine, sidebar nav
-- [ ] 03-02-PLAN.md -- Work breakdown UI: epic/feature/story pages, breadcrumb drill-down, story form, bulk actions
-- [ ] 03-03-PLAN.md -- AI story generation: agent harness task, draft tool, accept/edit/reject cards
+- [ ] 03-02-PLAN.md -- Work breakdown UI: epic/feature pages, breadcrumb, view toggle, epic/feature tables
+- [ ] 03-02b-PLAN.md -- Story UI: story table with bulk actions, story form, component selector, backlog page
+- [ ] 03-03-PLAN.md -- AI story generation: agent harness task, draft tool, accept/edit/reject cards, STORY_SESSION initiation
 - [ ] 03-04-PLAN.md -- Sprint management: CRUD, sprint list, split-view planning with drag-and-drop
 - [ ] 03-05-PLAN.md -- Sprint board kanban and dashboard with burndown chart
 - [ ] 03-06-PLAN.md -- Sprint intelligence: conflict detection Inngest function, dependency suggestions
@@ -132,6 +134,6 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 |-------|----------------|--------|-----------|
 | 1. Foundation and Data Layer | 3/3 | Complete | - |
 | 2. Discovery and Knowledge Brain | 12/12 | Complete | - |
-| 3. Story Management and Sprint Intelligence | 0/6 | Planned | - |
+| 3. Story Management and Sprint Intelligence | 0/8 | Planned | - |
 | 4. Salesforce Org Connectivity and Developer Integration | 0/3 | Not started | - |
 | 5. Document Generation, QA, and Administration | 0/3 | Not started | - |

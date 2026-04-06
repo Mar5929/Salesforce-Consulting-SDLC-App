@@ -492,22 +492,25 @@ export const sprintIntelligence = inngest.createFunction(
 | A4 | Sprint model needs an `analysisCache` JSON field (not in current schema) | Architecture Patterns | Medium -- requires Prisma migration. Alternative: separate table. |
 | A5 | Native HTML drag-and-drop sufficient for split-view sprint planning | Standard Stack | Low -- already proven in Phase 2 kanban. Same complexity level. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Sprint analysis storage**
+1. **Sprint analysis storage** -- RESOLVED: `cachedAnalysis Json?` field added to Sprint model in Plan 01 Task 1.
    - What we know: Sprint model has no field for storing conflict/dependency analysis results.
    - What's unclear: Should we add a JSON field to Sprint, or create a separate SprintAnalysis model?
    - Recommendation: Add a `cachedAnalysis` JSON field to Sprint (Prisma `Json?` type). Same pattern used for `Project.cachedBriefingContent` in Phase 2. Requires a migration.
+   - **Resolution:** Plan 01 Task 1 adds `cachedAnalysis Json?` to Sprint model via schema migration.
 
-2. **Story displayId uniqueness constraint**
+2. **Story displayId uniqueness constraint** -- RESOLVED: `@@unique([projectId, displayId])` added in Plan 01 Task 1.
    - What we know: Story.displayId exists in schema but has no unique constraint.
    - What's unclear: Whether this was intentional.
    - Recommendation: Add `@@unique([projectId, displayId])` via migration. This is needed for data integrity.
+   - **Resolution:** Plan 01 Task 1 adds `@@unique([projectId, displayId])` to Story model.
 
-3. **Epic/Feature displayId or prefix in story tables**
+3. **Epic/Feature displayId or prefix in story tables** -- RESOLVED: Using `{EpicPrefix}-{N}` format per Plan 01 Task 1.
    - What we know: Epic has a `prefix` field. Feature has a `prefix` field scoped to epic (`@@unique([epicId, prefix])`).
    - What's unclear: Whether story displayId should incorporate the feature prefix too (e.g., AUTH-LOGIN-1).
    - Recommendation: Keep it simple: `{EpicPrefix}-{N}`. Feature context is shown in the table column (D-03). Nesting feature prefix adds complexity for marginal benefit.
+   - **Resolution:** Plan 01 Task 1 implements `generateStoryDisplayId` using `{EpicPrefix}-{N}` format. Feature name shown as separate column per D-03.
 
 ## Validation Architecture
 
