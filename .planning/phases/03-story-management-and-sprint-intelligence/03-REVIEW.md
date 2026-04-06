@@ -1,8 +1,8 @@
 ---
 phase: 03-story-management-and-sprint-intelligence
-reviewed: 2026-04-06T19:45:00Z
+reviewed: 2026-04-06T20:15:00Z
 depth: standard
-files_reviewed: 65
+files_reviewed: 67
 files_reviewed_list:
   - package.json
   - prisma/schema.prisma
@@ -71,32 +71,37 @@ files_reviewed_list:
   - tests/lib/story-status-machine.test.ts
   - vitest.config.ts
 findings:
-  critical: 1
-  warning: 6
-  info: 4
-  total: 11
+  critical: 2
+  warning: 7
+  info: 5
+  total: 14
 status: issues_found
 ---
 
 # Phase 03: Code Review Report
 
-**Reviewed:** 2026-04-06T19:45:00Z
+**Reviewed:** 2026-04-06T20:15:00Z
 **Depth:** standard
-**Files Reviewed:** 65
+**Files Reviewed:** 67
 **Status:** issues_found
 
 ## Summary
 
-Phase 03 implements story management (CRUD, status machine, display IDs), sprint management (CRUD, story assignment, planning UI), sprint intelligence (AI-powered conflict detection via Inngest), and the AI story generation chat session. The code is well-structured with consistent patterns: server actions use next-safe-action with Zod validation, project scoping via scopedPrisma, and role-based access control. The sprint intelligence Inngest function follows a clean deterministic-then-AI two-phase pattern.
+Phase 03 implements story management (CRUD, status machine, display IDs), sprint management (CRUD, planning, board, dashboard), AI story generation (chat-based with tool calls), and sprint intelligence (conflict detection and dependency ordering via Inngest). The code is generally well-structured with consistent patterns: server actions use next-safe-action with Zod validation, project scoping is enforced via scopedPrisma, and role-based access is checked where appropriate.
 
-Key concerns: one authorization bypass in the conversations action (saveMessage has no project scope check), a partial date validation gap in sprint updates, and the bulk status change in the story table bypasses the status machine.
+Key concerns:
+1. The `saveMessage` action has no authorization check -- any authenticated user can write to any conversation.
+2. Sprint date validation has a bypass when only one date is updated (partial update allows invalid date ranges).
+3. Bulk status/assignee changes in story-table fire individual actions without awaiting, causing premature UI refresh.
+4. The `getSessionTokenTotals` action does not verify the conversation belongs to the specified project.
+5. The chat API route lacks request body schema validation.
 
 ## Critical Issues
 
-### CR-01: saveMessage has no authorization or project-scope check
+### CR-01: saveMessage Has No Authorization or Project-Scope Check
 
 **File:** `src/actions/conversations.ts:250-282`
-**Issue:** The `saveMessage` action accepts a `conversationId` and persists a message without verifying the caller is a member of the project that owns the conversation. Any authenticated user who knows a `conversationId` could write messages to conversations in projects they are not a member of. All other conversation actions properly call `getCurrentMember(projectId)`, but `saveMessage` does not even accept a `projectId` parameter.
+**Issue:** The `saveMessage` action accepts a `conversationId` and persists a message without verifying the caller is a member of the project that owns the conversation. Any authenticated user who knows a `conversationId` could write messages to conversations in projects they are not a member of. All other conversation actions properly call `getCurrentMember(projectId)`, but `saveMessage` does not even accept a `projectId` parameter. This is an authorization bypass.
 **Fix:**
 ```typescript
 const saveMessageSchema = z.object({
@@ -124,50 +129,81 @@ export const saveMessage = actionClient
   )
 ```
 
-## Warnings
-
-### WR-01: Sprint date validation gap when only one date is updated
+### CR-02: Incomplete Date Validation on Sprint Update Allows Invalid Date Ranges
 
 **File:** `src/actions/sprints.ts:126-131`
-**Issue:** When updating a sprint, date validation only runs when both `startDate` and `endDate` are provided in the same update call. If only `endDate` is updated to a value before the existing `startDate` (or vice versa), the invalid state is persisted. The code should fetch the existing dates and validate against them when only one date is changing.
+**Issue:** When only `endDate` or only `startDate` is updated (not both simultaneously), no validation occurs against the existing stored date. A user could set `endDate` to a value before the existing `startDate` by only passing `endDate` in the update, bypassing the date validation check on lines 127-131 which only fires when both dates are present in the update payload. The `findUnique` on line 107 only selects `projectId`, so existing dates are not available for comparison.
 **Fix:**
 ```typescript
+// Change the select to include dates
+const existing = await prisma.sprint.findUnique({
+  where: { id: parsedInput.sprintId },
+  select: { projectId: true, startDate: true, endDate: true },
+})
+// ...
 // After building updateData, validate dates against existing values
 if (updateData.startDate || updateData.endDate) {
-  const existingSprint = await prisma.sprint.findUnique({
-    where: { id: parsedInput.sprintId },
-    select: { startDate: true, endDate: true },
-  })
-  const effectiveStart = (updateData.startDate as Date) ?? existingSprint?.startDate
-  const effectiveEnd = (updateData.endDate as Date) ?? existingSprint?.endDate
-  if (effectiveEnd && effectiveStart && effectiveEnd <= effectiveStart) {
+  const effectiveStart = (updateData.startDate as Date) ?? existing.startDate
+  const effectiveEnd = (updateData.endDate as Date) ?? existing.endDate
+  if (effectiveEnd <= effectiveStart) {
     throw new Error("End date must be after start date")
   }
 }
 ```
 
-### WR-02: Bulk status change in StoryTable bypasses the status machine
+## Warnings
 
-**File:** `src/components/work/story-table.tsx:270-279`
-**Issue:** `handleBulkStatusChange` iterates over selected rows and calls `updateStoryStatus` for each. While the server action does validate transitions, the UI offers all 7 statuses in the dropdown regardless of the current status of each selected story. This means a user could select stories in different states and attempt invalid transitions for some of them. The errors would surface as toasts, but the UX is confusing because some stories would transition and others would fail silently in the batch. Consider filtering the dropdown options based on common valid transitions, or at minimum noting this limitation.
-**Fix:** Filter the status dropdown to only show transitions valid for ALL selected stories, or show a warning that some transitions may fail when stories are in mixed states.
+### WR-01: Bulk Status Change Does Not Await Server Actions
 
-### WR-03: Bulk sprint assignment in StoryTable is non-functional
+**File:** `src/components/work/story-table.tsx:280-289`
+**Issue:** `handleBulkStatusChange` fires `executeStatusChange` in a `for` loop without awaiting each call, then immediately calls `setRowSelection({})` and `router.refresh()`. The `executeStatusChange` calls are non-blocking (fire-and-forget via `useAction`), so the router refreshes before the mutations complete. This causes a stale UI that does not reflect the status changes until a manual refresh.
+**Fix:** Use `executeAsync` from next-safe-action and await each call, or create a batch server action that accepts multiple story IDs and a target status.
 
-**File:** `src/components/work/story-table.tsx:282-293`
-**Issue:** `handleBulkSprintAssign` calls `updateStory` but never passes a `sprintId` field. The `updateStorySchema` does not include `sprintId` as a field, so this bulk action does nothing useful. The code even has a comment acknowledging this: "Sprint assignment will be available when sprint management is built." However, sprint management IS now built (via `assignStoriesToSprint` in sprints.ts). This should be wired up to the actual sprint assignment action.
-**Fix:** Use `assignStoriesToSprint` from `@/actions/sprints` for the bulk sprint assignment, passing all selected story IDs in one call.
+### WR-02: Bulk Assignee Change Does Not Await Server Actions
 
-### WR-04: Display ID generation race condition under concurrent requests
+**File:** `src/components/work/story-table.tsx:297-307`
+**Issue:** Same pattern as WR-01. `handleBulkAssigneeChange` fires multiple `executeUpdate` calls without awaiting, then immediately resets selection and refreshes. Updates may not be reflected.
+**Fix:** Same approach as WR-01 -- either await each call or create a bulk server action.
 
-**File:** `src/lib/display-id.ts:127-163`
-**Issue:** `generateStoryDisplayId` fetches all display IDs, finds the max, and increments. Between the read and the subsequent write (in the caller `createStory`), another concurrent request could generate the same ID. The retry-on-P2002 mitigates this but only retries once. Under high concurrency (unlikely for this app but worth noting), the second attempt could also collide. The `generateDisplayId` function for other entity types has the same pattern. Consider using a database sequence or `SELECT ... FOR UPDATE` for stronger guarantees.
-**Fix:** This is acceptable for V1 given the low-concurrency use case, but add a comment documenting the limitation and consider a database-level sequence for V2.
+### WR-03: Chat API Route Lacks Request Body Validation
 
-### WR-05: getSessionTokenTotals does not verify conversation belongs to project
+**File:** `src/app/api/chat/route.ts:70-77`
+**Issue:** The request body is parsed from JSON with `request.json()` but there is no schema validation. The destructured fields `messages`, `projectId`, `conversationId`, `epicId`, `featureId` are trusted as-is. While `projectId` and `conversationId` presence is checked, `messages` is passed directly to the AI SDK without validation. Malformed `messages` arrays could cause unexpected behavior or errors deep in the AI SDK.
+**Fix:** Add Zod validation for the request body:
+```typescript
+const bodySchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant", "system"]),
+    content: z.unknown(),
+  })),
+  projectId: z.string().min(1),
+  conversationId: z.string().min(1),
+  epicId: z.string().optional(),
+  featureId: z.string().optional(),
+})
+const body = bodySchema.parse(await request.json())
+```
+
+### WR-04: Sprint Intelligence AI Response Parsing Uses Greedy Regex
+
+**File:** `src/lib/inngest/functions/sprint-intelligence.ts:145`
+**Issue:** The regex `text.match(/\{[\s\S]*\}/)` is greedy and matches from the first `{` to the last `}` in the response. If the AI includes any text with curly braces after the JSON object, this could capture extra content and cause `JSON.parse` to fail. The function silently falls back to `{ conflicts: [], dependencies: [] }` on parse failure, which means legitimate conflicts could be silently dropped.
+**Fix:** Try parsing the full text first, then fall back to extraction:
+```typescript
+let parsed: AnalysisResult
+try {
+  parsed = JSON.parse(text)
+} catch {
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) return { conflicts: [], dependencies: [] }
+  parsed = JSON.parse(jsonMatch[0])
+}
+```
+
+### WR-05: getSessionTokenTotals Does Not Verify Conversation Belongs to Project
 
 **File:** `src/actions/conversations.ts:179-197`
-**Issue:** `getSessionTokenTotals` verifies project membership but queries `chatMessage.aggregate` using only `conversationId` without verifying the conversation belongs to the given `projectId`. An authenticated member of project A could pass a `conversationId` from project B and retrieve token usage data.
+**Issue:** The `getSessionTokenTotals` action verifies project membership via `getCurrentMember(projectId)`, but then queries `chatMessage.aggregate` using only `conversationId` without verifying the conversation belongs to the specified project. A user who is a member of project A could pass a `conversationId` from project B and retrieve token usage data from a conversation they should not have access to.
 **Fix:**
 ```typescript
 // After getCurrentMember, verify conversation belongs to project
@@ -175,54 +211,59 @@ const conversation = await prisma.conversation.findFirst({
   where: { id: conversationId, projectId },
 })
 if (!conversation) throw new Error("Conversation not found")
-```
 
-### WR-06: Chat API route does not validate request body schema
-
-**File:** `src/app/api/chat/route.ts:70-77`
-**Issue:** The POST handler parses `request.json()` and destructures `messages`, `projectId`, `conversationId`, `epicId`, `featureId` without any schema validation. While `projectId` and `conversationId` are null-checked, `messages` is passed directly to `streamText` without validation. Malformed message arrays could cause unexpected behavior. The `epicId` and `featureId` are used in database queries without sanitization (though Prisma parameterizes queries, so SQL injection is not a risk).
-**Fix:** Add Zod schema validation for the request body:
-```typescript
-const chatRequestSchema = z.object({
-  messages: z.array(z.object({
-    role: z.enum(["user", "assistant", "system"]),
-    content: z.union([z.string(), z.array(z.unknown())]),
-  })),
-  projectId: z.string().min(1),
-  conversationId: z.string().min(1),
-  epicId: z.string().optional(),
-  featureId: z.string().optional(),
+const result = await prisma.chatMessage.aggregate({
+  where: { conversationId: conversation.id },
+  // ...rest
 })
 ```
 
+### WR-06: Display ID Race Condition Under Concurrent Story Creation
+
+**File:** `src/lib/display-id.ts:127-163`
+**Issue:** `generateStoryDisplayId` queries all existing stories with the prefix, finds the max number, and increments it. Under concurrent requests, two calls could read the same max number and generate the same display ID. The retry-on-P2002 mechanism only works if there is a unique constraint on `displayId` in the schema. The retry does re-read the max (which is correct), but only retries once. Under high concurrency this could still fail.
+**Fix:** This is acceptable for V1 given the low-concurrency use case. Add a comment documenting the limitation and consider a database-level sequence for V2.
+
+### WR-07: Bulk Status Change Dropdown Shows All Statuses Regardless of Selection
+
+**File:** `src/components/work/story-table.tsx:324-335`
+**Issue:** The bulk "Change Status" dropdown always shows all 7 statuses (`ALL_STATUSES`) regardless of the current status of selected stories. When stories in different states are selected, applying a status change will fail for some stories (the server validates transitions) while succeeding for others. The error toasts would appear alongside success toasts, creating a confusing UX.
+**Fix:** Filter the dropdown options to only show transitions valid for ALL selected stories, or show a confirmation dialog noting which stories cannot be transitioned.
+
 ## Info
 
-### IN-01: console.error in chat API route
+### IN-01: console.error in Production Chat API Route
 
 **File:** `src/app/api/chat/route.ts:181`
-**Issue:** `console.error("[Chat API Error]", error)` is present. This is acceptable for an API route error handler but should be replaced with structured logging in production.
-**Fix:** Replace with a structured logger when one is added to the project.
+**Issue:** `console.error("[Chat API Error]", error)` will log to server output in production. Consider using a structured logger for production environments.
+**Fix:** Replace with a structured logging call or remove in favor of error monitoring.
 
-### IN-02: Unused import in conversations.ts
+### IN-02: Duplicated System Prompt Between Chat Route and Task Definition
 
-**File:** `src/actions/conversations.ts:8`
-**Issue:** `ConversationType` and `ChatMessageRole` are imported but `ConversationType` is only used via a cast (`as ConversationType`) and `ChatMessageRole` similarly. The Zod enum validation already constrains values, making the cast redundant.
-**Fix:** Remove the type imports and the `as` casts, since Zod validation already ensures correct values.
+**File:** `src/app/api/chat/route.ts:33-59` and `src/lib/agent-harness/tasks/story-generation.ts:56-82`
+**Issue:** The story generation system prompt is duplicated between the chat API route's `buildStorySessionPrompt` function and the `storyGenerationTask` task definition. Changes to one will not automatically propagate to the other, risking divergence.
+**Fix:** Extract the shared prompt template to a single constant and import it in both locations.
 
-### IN-03: Hardcoded color values throughout components
+### IN-03: Hardcoded Model String in Sprint Intelligence Function
 
-**File:** Multiple files (e.g., `sprint-board.tsx`, `sprint-table.tsx`, `story-table.tsx`, `epic-table.tsx`)
-**Issue:** Color values like `#2563EB`, `#737373`, `#E5E5E5`, `#FAFAFA` are repeated across many components without centralized constants. While this follows the established pattern in the codebase and matches the UI design spec, it creates maintenance risk if the design system evolves. This is not a bug but worth tracking.
-**Fix:** Consider extracting to a shared theme constants file when the design system stabilizes.
+**File:** `src/lib/inngest/functions/sprint-intelligence.ts:129`
+**Issue:** The model `"claude-sonnet-4-20250514"` is hardcoded rather than referencing the `DEFAULT_MODEL` constant used elsewhere (e.g., in the chat route's cost calculation). If the default model changes, this function would be missed.
+**Fix:** Import and use `DEFAULT_MODEL` from `@/lib/config/ai-pricing` or define a central AI model config.
 
-### IN-04: Sprint intelligence stores empty title strings in cached analysis
+### IN-04: Type Assertions Using `as` in Multiple Components
 
-**File:** `src/lib/inngest/functions/sprint-intelligence.ts:158-169`
-**Issue:** The cached analysis initially sets `storyA.title` and `storyB.title` to empty strings (`""`), then enriches them from `sprintData` using a `titleMap`. If the AI response contains a `storyADisplayId` that does not match any story in `sprintData` (e.g., AI hallucination), the title will remain as an empty string. The conflict banner would then show an empty title, which is a cosmetic issue.
-**Fix:** Add a fallback like `titleMap.get(conflict.storyA.displayId) || conflict.storyA.displayId` so the display ID is shown when the title lookup fails.
+**File:** Multiple files including `src/app/(dashboard)/projects/[projectId]/backlog/backlog-client.tsx:90`, `src/components/work/story-form.tsx:282`, `src/components/sprints/sprint-board.tsx:286`
+**Issue:** Several components use `as` type assertions to force type compatibility (e.g., `as Parameters<typeof StoryForm>[0]["story"]`, `as Parameters<typeof executeUpdateStatus>[0]["status"]`). These mask potential type mismatches at compile time.
+**Fix:** Define explicit shared types for these interfaces rather than using parameter extraction patterns.
+
+### IN-05: Duplicated Style Constants Across Components
+
+**File:** `src/components/sprints/sprint-board.tsx:55-60`, `src/components/sprints/sprint-planning.tsx:52-57`, `src/components/work/story-table.tsx:99-104`, `src/components/work/story-draft-cards.tsx:56-61`
+**Issue:** `PRIORITY_STYLES`, `STATUS_STYLES`, and `STATUS_LABELS` Record objects are defined identically in at least 4-6 different component files.
+**Fix:** Extract these shared style constants to a central file (e.g., `src/lib/constants/status-styles.ts`) and import them.
 
 ---
 
-_Reviewed: 2026-04-06T19:45:00Z_
+_Reviewed: 2026-04-06T20:15:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
