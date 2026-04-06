@@ -159,26 +159,23 @@ None -- discussion stayed within phase scope.
 | Progress | Transcript processing steps, health score bar |
 | Popover | Notification dropdown, filter controls |
 
-### Embedding Model (DECISION REQUIRED)
+### Embedding Model (RESOLVED)
 
-The Prisma schema defines `vector(1536)` for embedding columns. Anthropic does not provide an embeddings API. Two options:
+The Prisma schema defines `vector(1536)` for embedding columns. Anthropic does not provide an embeddings API. **User chose Voyage AI** (Anthropic-recommended). Plan 07 implements this with `voyage-3-large` at 1024 dimensions. The schema embedding columns will be migrated from `vector(1536)` to `vector(1024)` via SQL migration in Plan 07 Task 1.
 
-| Option | Model | Dimensions | Pricing | Compatibility |
-|--------|-------|-----------|---------|---------------|
-| **A: OpenAI** | text-embedding-3-small | 1536 (native) | $0.02/MTok | Schema already matches. Requires `openai` npm package. |
-| **B: Voyage AI** | voyage-3-large | 1024 default, 1536 configurable | ~$0.06/MTok | Anthropic-recommended. Requires `voyageai` npm package. Schema needs change to `vector(1024)` or dimension override. |
-
-**Recommendation:** Use OpenAI `text-embedding-3-small`. The schema already uses 1536 dimensions. Cost is lower. Adding a second API key (OpenAI) for embeddings only is minimal friction. The embeddings are infrastructure, not the AI "brain" -- this doesn't conflict with the "Claude API only" decision which is about the reasoning/generation layer. [ASSUMED -- user should confirm embedding provider choice]
+| Property | Value |
+|----------|-------|
+| **Provider** | Voyage AI |
+| **Model** | voyage-3-large |
+| **Dimensions** | 1024 (Voyage AI default) |
+| **Pricing** | ~$0.06/MTok |
+| **npm package** | HTTP REST calls (no heavy SDK) |
+| **API Key env var** | VOYAGE_API_KEY |
 
 **Installation (Phase 2 new packages):**
 ```bash
 npm install @anthropic-ai/sdk ai @ai-sdk/anthropic isomorphic-dompurify
 npm install -D @types/dompurify
-
-# Embedding provider (pending decision):
-npm install openai  # Option A
-# OR
-npm install voyageai  # Option B
 
 # shadcn/ui components:
 npx shadcn@latest add command scroll-area tooltip collapsible progress popover
@@ -647,32 +644,28 @@ export async function POST(req: Request) {
 
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
-| A1 | OpenAI text-embedding-3-small is the right embedding provider despite "Claude API only" architecture decision | Standard Stack / Embedding Model | Schema dimension mismatch if Voyage AI chosen instead; need to change all vector(1536) columns to vector(1024) |
+| A1 | ~~RESOLVED~~ Voyage AI voyage-3-large chosen as embedding provider. Vector columns migrated to 1024 dimensions in Plan 07. | Standard Stack / Embedding Model | N/A -- resolved |
 | A2 | Vercel AI SDK onFinish callback provides reliable token tracking for chat sessions | Code Examples / Chat Route Handler | May need alternative approach for CHAT-05 token tracking if callback doesn't fire consistently |
 | A3 | Vercel free/hobby tier function timeout (10s default) is sufficient for individual Inngest step.run() calls | Common Pitfalls / Vercel Cold Starts | May need to upgrade Vercel plan or split steps further if processing exceeds timeout |
 | A4 | General chat is stateless per-message (each message is independent harness call with injected context, no conversational memory) | Architecture Patterns | This is stated in PRD 8.2 but may feel unnatural to users; could revisit if UX feedback is negative |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Embedding Model Choice**
-   - What we know: Schema uses vector(1536). Anthropic has no embeddings API. Voyage AI (Anthropic-recommended) defaults to 1024 dimensions. OpenAI text-embedding-3-small natively outputs 1536.
-   - What's unclear: Whether "Claude API only in V1" extends to embeddings or just the reasoning/generation layer.
-   - Recommendation: Use OpenAI text-embedding-3-small for embeddings. The architectural boundary ("Claude for reasoning") is about the AI brain, not infrastructure. Embeddings are a utility function. If this feels like a violation, Voyage AI voyage-3-large can be configured to output 1536 dimensions but at higher cost.
+1. **Embedding Model Choice** -- RESOLVED
+   - **Decision:** Use Voyage AI `voyage-3-large` with 1024 dimensions. User chose Voyage AI during planning discussion.
+   - **Implementation:** Plan 07 creates `src/lib/search/embeddings.ts` using Voyage AI REST API. SQL migration alters embedding columns from `vector(1536)` to `vector(1024)`. HNSW indexes created for similarity search. `VOYAGE_API_KEY` env var required.
 
-2. **tsvector Migration Strategy**
-   - What we know: Prisma can't express tsvector columns, triggers, or GIN indexes in its schema language.
-   - What's unclear: Whether to use Prisma's `db execute` command, a custom SQL migration file, or a post-deploy script.
-   - Recommendation: Create a custom Prisma migration (empty migration file, manually add SQL) for search infrastructure setup. This keeps it in the Prisma migration history.
+2. **tsvector Migration Strategy** -- RESOLVED
+   - **Decision:** Use a standalone SQL migration file executed via `npx prisma db execute --file`.
+   - **Implementation:** Plan 07 Task 1 creates `prisma/migrations/tsvector-setup.sql` containing tsvector column additions, GIN indexes, and auto-populate trigger functions. This lives outside the Prisma schema (Prisma cannot express tsvector). The file is manually executed as part of Plan 07 deployment and checked into the repo for reproducibility.
 
-3. **Vercel Function Timeout for Transcript Processing**
-   - What we know: Each Inngest step.run() is a separate Vercel function invocation. Free tier timeout is 10s.
-   - What's unclear: Whether complex agent loop iterations (Claude API call + tool execution + DB writes) complete within 10s.
-   - Recommendation: Profile during development. Individual Claude API calls typically complete in 2-5s. If timeouts occur, either upgrade Vercel plan (Pro: 60s) or break steps into smaller units.
+3. **Vercel Function Timeout for Transcript Processing** -- RESOLVED
+   - **Decision:** Design each Inngest `step.run()` to complete within 10s (Vercel free tier). Monitor during development; upgrade to Vercel Pro (60s timeout) if needed.
+   - **Implementation:** Plan 05 transcript processing breaks work into fine-grained steps: load-transcript, extract-items, update-status, save-to-conversation, trigger-downstream. Each step does ONE focused operation (single Claude API call OR DB writes, not both heavy operations). Individual Claude API calls typically complete in 2-5s. The Inngest concurrency limit (1 per project) prevents resource contention.
 
-4. **Chat Context Strategy for General Chat**
-   - What we know: PRD 8.2 says general chat is "stateless per-message" -- each message gets injected project context but no conversational memory. But useChat maintains local message history for display.
-   - What's unclear: Whether to send the full message history to Claude (expensive but conversational) or just the latest message with injected context (cheap but each message is independent).
-   - Recommendation: Start with injecting the last 10 messages as context (pragmatic middle ground). This provides conversational continuity without unbounded growth. The PRD's "stateless" language refers to the backend not maintaining persistent chat state beyond the Conversation model -- but the message history is still useful for Claude to understand conversational flow within a session.
+4. **Chat Context Strategy for General Chat** -- RESOLVED
+   - **Decision:** Send the last 10 messages as conversational context alongside injected project context. This balances cost with conversational continuity.
+   - **Implementation:** Plan 03 Task 1 chat route handler passes the `messages` array from useChat (which maintains local history) to `streamText()`. The Vercel AI SDK's `useChat` hook naturally manages the rolling message list. The system prompt includes project context (summary + open questions + article summaries). The 10-message window provides conversational flow without unbounded token growth. The PRD's "stateless" language means the backend doesn't maintain session state beyond the Conversation model -- the message history IS the state, loaded from DB on page load and maintained in-memory by useChat.
 
 ## Environment Availability
 
@@ -698,26 +691,31 @@ export async function POST(req: Request) {
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| AGENT-01 | Three-layer architecture instantiates correctly | unit | `npx vitest run src/lib/agent-harness/__tests__/engine.test.ts` | Wave 0 |
-| AGENT-03 | Execution engine tracks tokens and retries | unit | `npx vitest run src/lib/agent-harness/__tests__/engine.test.ts` | Wave 0 |
-| AGENT-06 | SessionLog created with correct fields | unit | `npx vitest run src/lib/agent-harness/__tests__/session-log.test.ts` | Wave 0 |
-| TRNS-03 | Deduplication detects similar questions | unit | `npx vitest run src/lib/agent-harness/__tests__/deduplication.test.ts` | Wave 0 |
-| SRCH-02 | Full-text search returns ranked results | integration | `npx vitest run src/lib/search/__tests__/global-search.test.ts` | Wave 0 |
-| DASH-03 | Health score computation returns correct signals | unit | `npx vitest run src/lib/dashboard/__tests__/health-score.test.ts` | Wave 0 |
-| CHAT-04 | Chat route handler returns streaming response | integration | `npx vitest run src/app/api/chat/__tests__/route.test.ts` | Wave 0 |
+| AGENT-01 | Three-layer architecture instantiates correctly | unit | `npx vitest run tests/lib/agent-harness/engine.test.ts` | Wave 0 |
+| AGENT-03 | Execution engine tracks tokens and retries | unit | `npx vitest run tests/lib/agent-harness/engine.test.ts` | Wave 0 |
+| AGENT-06 | SessionLog created with correct fields | unit | `npx vitest run tests/lib/agent-harness/engine.test.ts` | Wave 0 |
+| TRNS-03 | Deduplication detects similar questions | unit | `npx vitest run tests/lib/agent-harness/task-definitions.test.ts` | Wave 0 |
+| SRCH-02 | Full-text search returns ranked results | integration | `npx vitest run tests/lib/search/global-search.test.ts` | Wave 0 |
+| DASH-03 | Health score computation returns correct signals | unit | `npx vitest run tests/lib/dashboard/health-score.test.ts` | Wave 0 |
+| CHAT-04 | Chat route handler returns streaming response | integration | `npx vitest run tests/lib/search/global-search.test.ts` | Wave 0 |
 
 ### Sampling Rate
 - **Per task commit:** `npx vitest run --reporter=verbose`
 - **Per wave merge:** `npx vitest run`
 - **Phase gate:** Full suite green before `/gsd-verify-work`
 
-### Wave 0 Gaps
-- [ ] `vitest.config.ts` -- framework configuration with path aliases
-- [ ] `src/lib/agent-harness/__tests__/engine.test.ts` -- core engine tests
-- [ ] `src/lib/search/__tests__/global-search.test.ts` -- search integration tests
-- [ ] `src/lib/dashboard/__tests__/health-score.test.ts` -- health score computation tests
-- [ ] `vitest` + `@vitejs/plugin-react` dev dependencies
-- [ ] Test utilities for mocking Prisma and Anthropic SDK
+### Wave 0 Gaps (UPDATED)
+- [x] `vitest.config.ts` -- already exists with `tests/**/*.test.ts` glob and `@` path alias
+- [x] `vitest@4.1.2` -- already installed as dev dependency
+- [ ] `tests/helpers/mock-prisma.ts` -- Prisma mock factory (Plan 01 Task 0)
+- [ ] `tests/helpers/mock-anthropic.ts` -- Anthropic SDK mock factory (Plan 01 Task 0)
+- [ ] `tests/lib/agent-harness/engine.test.ts` -- core engine tests (Plan 01 Task 1)
+- [ ] `tests/lib/agent-harness/context.test.ts` -- context loader tests (Plan 02 Task 1)
+- [ ] `tests/lib/agent-harness/task-definitions.test.ts` -- task definition smoke tests (Plan 02 Task 2)
+- [ ] `tests/lib/search/global-search.test.ts` -- search integration tests (Plan 07 Task 1)
+- [ ] `tests/lib/dashboard/health-score.test.ts` -- health score computation tests (Plan 08 Task 1)
+
+*Note: Test path convention is `tests/` (established in Phase 1 with 3 existing test files), NOT `src/lib/__tests__/`.*
 
 ## Sources
 
