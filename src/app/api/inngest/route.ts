@@ -6,6 +6,7 @@ import { stalenessDetectionFunction } from "@/lib/inngest/functions/staleness-de
 import { articleRefreshFunction } from "@/lib/inngest/functions/article-refresh"
 import { embeddingBatchFunction } from "@/lib/inngest/functions/embedding-batch"
 import { dashboardSynthesisFunction } from "@/lib/inngest/functions/dashboard-synthesis"
+import { notificationDispatchFunction } from "@/lib/inngest/functions/notification-dispatch"
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -17,5 +18,6 @@ export const { GET, POST, PUT } = serve({
     articleRefreshFunction,
     embeddingBatchFunction,
     dashboardSynthesisFunction,
+    notificationDispatchFunction,
   ],
 })
