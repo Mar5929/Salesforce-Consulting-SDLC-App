@@ -66,7 +66,7 @@ Declared values (multiples of 4 only):
 | Exception | Value | Justification |
 |-----------|-------|---------------|
 | Sidebar width | 240px | Carried from Phase 1. Fixed width. |
-| Touch targets | 36px min | Carried from Phase 1. Buttons and interactive elements. |
+| Touch targets | 40px min | Buttons and interactive elements minimum touch target. Nearest multiple of 4 above WCAG 2.5.8 recommended minimum. |
 | API key display font | monospace 13px | API keys must use monospace for readability. Shown once in a copy-to-clipboard card. |
 | Confidence indicator width | 48px | Fixed width for confidence percentage badges so they align in review card lists. |
 
@@ -88,6 +88,7 @@ Notes:
 - Inherited typography system unchanged from Phases 1-2. No new sizes or weights introduced.
 - Monospace exception for API key display only: `"SF Mono", "Fira Code", "Fira Mono", Menlo, monospace` at 13px/400.
 - Confidence percentages on review cards use 13px/600 label style.
+- 13px and 14px are visually differentiated by weight and role: 13px is reserved for metadata (400 weight, muted color) and labels (600 weight, secondary color), while 14px is body content (400 weight, primary foreground). The weight and color contrast provide sufficient visual separation at 1px size difference.
 
 ---
 
@@ -158,7 +159,7 @@ Accent is NOT used for: connection status badges (use semantic colors), confiden
 | Context | CTA Label | Style |
 |---------|-----------|-------|
 | Org connection | "Connect Salesforce Org" | Accent button |
-| Metadata sync | "Sync Now" | Outline button (secondary action) |
+| Metadata sync | "Sync Metadata" | Outline button (secondary action) |
 | Brownfield ingestion | "Analyze Org" | Accent button |
 | API key creation | "Generate API Key" | Accent button |
 | Bulk confirm suggestions | "Confirm All High-Confidence" | Accent button |
@@ -168,7 +169,7 @@ Accent is NOT used for: connection status badges (use semantic colors), confiden
 | View | Heading | Body | Action |
 |------|---------|------|--------|
 | Org connection (not connected) | "No Salesforce org connected" | "Connect a Salesforce org to sync metadata, analyze existing customizations, and enable context-aware development with Claude Code." | "Connect Salesforce Org" (accent button) |
-| Org components (pre-sync) | "No metadata synced" | "Connect a Salesforce org and run a sync to populate the component inventory. The first sync pulls all supported metadata types." | "Sync Now" (accent button, disabled if not connected) |
+| Org components (pre-sync) | "No metadata synced" | "Connect a Salesforce org and run a sync to populate the component inventory. The first sync pulls all supported metadata types." | "Sync Metadata" (accent button, disabled if not connected) |
 | Org analysis (pre-ingestion) | "Org not analyzed yet" | "Run the analysis pipeline to classify components into domain groupings and map them to business processes. Requires at least one completed metadata sync." | "Analyze Org" (accent button, disabled if no sync completed) |
 | Domain groupings (post-analysis, none confirmed) | "Review AI suggestions" | "The AI has grouped org components into domain areas. Review each grouping, confirm accurate ones, and edit or reject others." | None (review cards are the primary interaction) |
 | Business process mappings (post-analysis) | "Review process mappings" | "The AI has mapped org components to business processes. Confirm mappings that look correct and adjust any that need changes." | None (review cards are the primary interaction) |
@@ -193,9 +194,9 @@ Accent is NOT used for: connection status badges (use semantic colors), confiden
 
 | Action | Trigger | Confirmation |
 |--------|---------|-------------|
-| Disconnect Org | "Disconnect" button on org connection card | Dialog: "Disconnect Salesforce Org? Synced metadata and org analysis results will be preserved, but future syncs will stop. You can reconnect at any time." with "Cancel" (outline) and "Disconnect Org" (destructive) buttons. |
-| Revoke API Key | "Revoke" button on API key row | Dialog: "Revoke API Key [last 4 chars]? Any Claude Code sessions using this key will immediately lose API access. This cannot be undone." with "Cancel" (outline) and "Revoke Key" (destructive) buttons. |
-| Re-run Ingestion | "Re-analyze" button on org analysis page | Dialog: "Re-analyze Org? This will regenerate all AI suggestions. Previously confirmed domain groupings and business process mappings will be preserved, but unconfirmed suggestions will be replaced." with "Cancel" (outline) and "Re-analyze" (accent, not destructive -- confirmed items preserved) buttons. |
+| Disconnect Org | "Disconnect" button on org connection card | Dialog: "Disconnect Salesforce Org? Synced metadata and org analysis results will be preserved, but future syncs will stop. You can reconnect at any time." with "Keep Connected" (outline) and "Disconnect Org" (destructive) buttons. |
+| Revoke API Key | "Revoke" button on API key row | Dialog: "Revoke API Key [last 4 chars]? Any Claude Code sessions using this key will immediately lose API access. This cannot be undone." with "Keep Key" (outline) and "Revoke Key" (destructive) buttons. |
+| Re-run Ingestion | "Re-analyze" button on org analysis page | Dialog: "Re-analyze Org? This will regenerate all AI suggestions. Previously confirmed domain groupings and business process mappings will be preserved, but unconfirmed suggestions will be replaced." with "Keep Results" (outline) and "Re-analyze" (accent, not destructive -- confirmed items preserved) buttons. |
 
 ### Sidebar Navigation Labels (Phase 4 additions)
 
@@ -224,7 +225,7 @@ Accent is NOT used for: connection status badges (use semantic colors), confiden
 |  |  Instance: acme.my.salesforce.com                       |    |
 |  |  Last synced: 2 hours ago  |  Components: 847          |    |
 |  |                                                         |    |
-|  |  [ Sync Now ]  [ Disconnect ]                           |    |
+|  |  [ Sync Metadata ]  [ Disconnect ]                      |    |
 |  +--------------------------------------------------------+    |
 |                                                                 |
 |  Sync Schedule                                                  |
@@ -240,7 +241,7 @@ Accent is NOT used for: connection status badges (use semantic colors), confiden
 ```
 
 - Status card: Card component, 24px padding, border-left 3px colored by connection status
-- Sync Now: outline button. Disconnect: ghost button with destructive text on hover.
+- Sync Metadata: outline button. Disconnect: ghost button with destructive text on hover.
 - Sync history: Table component, 5 most recent entries, "View All" link if more exist.
 
 ### Org Analysis Page (D-10, D-14)
@@ -307,7 +308,7 @@ Accent is NOT used for: connection status badges (use semantic colors), confiden
 ```
 
 - API key creation flow: Dialog with name input. On create, show the key ONCE in a monospace card with copy-to-clipboard button. Warning text: "Copy this key now. It will not be shown again."
-- API key shown once: Card with `--muted` background, monospace 13px font, Copy icon button. Card auto-dismisses after user confirms copy or navigates away.
+- API key shown once: Card with `--muted` background, monospace 13px font, Copy icon button with `aria-label="Copy API key to clipboard"`. Card auto-dismisses after user confirms copy or navigates away.
 - Key table: Table component. "Revoke" is ghost button, destructive text color.
 - Endpoint documentation: Collapsible sections per endpoint showing method, path, description. Code-style formatting for paths.
 
