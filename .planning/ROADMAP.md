@@ -59,7 +59,7 @@ Plans:
 - [x] 02-05-PLAN.md -- Transcript processing: upload, AI extraction, interactive review
 - [x] 02-06-PLAN.md -- Knowledge architecture: articles, staleness, background refresh
 - [x] 02-07-PLAN.md -- Three-layer search: filtered, full-text, semantic, Cmd+K palette
-- [ ] 02-08-PLAN.md -- Discovery dashboard: stats, health score, AI synthesis
+- [x] 02-08-PLAN.md -- Discovery dashboard: stats, health score, AI synthesis
 - [ ] 02-09-PLAN.md -- Notification system: bell icon, dispatch, mark-read
 
 **UI hint**: yes

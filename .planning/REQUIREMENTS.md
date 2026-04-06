@@ -68,7 +68,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **KNOW-03**: Knowledge articles track staleness and trigger re-synthesis when underlying data changes
 - [x] **KNOW-04**: Article refresh runs as Inngest background jobs, not inline
 - [ ] **KNOW-05**: Two-pass context retrieval: load summaries first, then full content for most relevant articles
-- [ ] **KNOW-06**: AI proactively identifies discovery gaps and assesses readiness to start building
+- [x] **KNOW-06**: AI proactively identifies discovery gaps and assesses readiness to start building
 - [x] **KNOW-07**: New information that contradicts existing decisions is automatically flagged as a conflict
 
 ### Search
@@ -80,11 +80,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Discovery Dashboard
 
-- [ ] **DASH-01**: Dashboard shows outstanding questions count by status and category
-- [ ] **DASH-02**: Dashboard shows blocked items and dependency chains
-- [ ] **DASH-03**: Dashboard shows project health score derived from discovery completeness
-- [ ] **DASH-04**: AI synthesis cache provides "Current Focus" and "Recommended Focus" summaries
-- [ ] **DASH-05**: Dashboard data refreshes via Inngest-triggered cached synthesis
+- [x] **DASH-01**: Dashboard shows outstanding questions count by status and category
+- [x] **DASH-02**: Dashboard shows blocked items and dependency chains
+- [x] **DASH-03**: Dashboard shows project health score derived from discovery completeness
+- [x] **DASH-04**: AI synthesis cache provides "Current Focus" and "Recommended Focus" summaries
+- [x] **DASH-05**: Dashboard data refreshes via Inngest-triggered cached synthesis
 
 ### Notifications
 
@@ -261,17 +261,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | KNOW-03 | Phase 2 | Complete |
 | KNOW-04 | Phase 2 | Complete |
 | KNOW-05 | Phase 2 | Pending |
-| KNOW-06 | Phase 2 | Pending |
+| KNOW-06 | Phase 2 | Complete |
 | KNOW-07 | Phase 2 | Complete |
 | SRCH-01 | Phase 2 | Complete |
 | SRCH-02 | Phase 2 | Complete |
 | SRCH-03 | Phase 2 | Complete |
 | SRCH-04 | Phase 2 | Complete |
-| DASH-01 | Phase 2 | Pending |
-| DASH-02 | Phase 2 | Pending |
-| DASH-03 | Phase 2 | Pending |
-| DASH-04 | Phase 2 | Pending |
-| DASH-05 | Phase 2 | Pending |
+| DASH-01 | Phase 2 | Complete |
+| DASH-02 | Phase 2 | Complete |
+| DASH-03 | Phase 2 | Complete |
+| DASH-04 | Phase 2 | Complete |
+| DASH-05 | Phase 2 | Complete |
 | NOTF-01 | Phase 2 | Pending |
 | NOTF-02 | Phase 2 | Pending |
 | NOTF-03 | Phase 2 | Pending |
