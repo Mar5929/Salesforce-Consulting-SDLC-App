@@ -120,16 +120,18 @@ Plans:
   3. PM can optionally push stories and status to a client Jira instance (one-directional)
   4. PM dashboard shows aggregated views across project dimensions with AI token usage and cost tracking
   5. PM can archive a completed project (read-only state) and reactivate it for follow-on engagements
-**Plans**: 7 plans
+**Plans**: 9 plans
 
 Plans:
+- [ ] 05-00-PLAN.md -- Wave 0: test stubs for all Phase 5 modules (TDD RED), mock helpers for S3 and Jira
 - [ ] 05-01-PLAN.md -- Foundation: dependencies, Inngest events, defect status machine, S3 utilities, branding config, sidebar nav
 - [ ] 05-02-PLAN.md -- QA server actions: test case CRUD, test execution recording, defect CRUD with status transitions
-- [ ] 05-03-PLAN.md -- QA UI: story QA tab, defect list page (table+kanban), defect creation sheet
-- [ ] 05-04-PLAN.md -- Document generation backend: template definitions, format renderers, AI task, Inngest pipeline
+- [ ] 05-03-PLAN.md -- QA UI: story detail page with QA tab, defect list page (table+kanban), defect creation sheet
+- [ ] 05-04-PLAN.md -- Document generation backend: template definitions, format renderers (with DOC-04 branding), AI task, Inngest pipeline
 - [ ] 05-05-PLAN.md -- Document generation UI: template gallery, generation dialog, progress, preview page
-- [ ] 05-06-PLAN.md -- PM Dashboard: stat cards, charts (AI usage, work progress, QA summary), Inngest synthesis
-- [ ] 05-07-PLAN.md -- Jira sync + project archival: schema, Jira client, sync Inngest function, settings UI
+- [ ] 05-06-PLAN.md -- PM Dashboard: stat cards, charts (AI usage, work progress, QA summary), stories by assignee/questions by status/knowledge coverage (D-14), Inngest synthesis
+- [ ] 05-07-PLAN.md -- Jira sync + project archival backend: schema models, Jira client, sync Inngest function, server actions
+- [ ] 05-08-PLAN.md -- Jira sync + archival UI: schema push, settings page, SyncStatusBadge wired into story table (D-17)
 
 **UI hint**: yes
 
@@ -144,4 +146,4 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | 2. Discovery and Knowledge Brain | 12/12 | Complete | - |
 | 3. Story Management and Sprint Intelligence | 0/8 | Planned | - |
 | 4. Salesforce Org Connectivity and Developer Integration | 0/7 | Planned | - |
-| 5. Document Generation, QA, and Administration | 0/7 | Planned | - |
+| 5. Document Generation, QA, and Administration | 0/9 | Planned | - |
