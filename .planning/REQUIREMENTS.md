@@ -112,7 +112,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Sprint Management
 
-- [ ] **SPRT-01**: PM can create sprints with start/end dates and capacity
+- [x] **SPRT-01**: PM can create sprints with start/end dates and capacity
 - [x] **SPRT-02**: PM can assign stories to sprints
 - [ ] **SPRT-03**: Sprint intelligence detects component-level conflicts between stories in the same sprint
 - [ ] **SPRT-04**: Sprint intelligence suggests dependency ordering and parallelization opportunities
@@ -287,7 +287,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WORK-05 | Phase 3 | Complete |
 | WORK-06 | Phase 3 | Complete |
 | WORK-07 | Phase 3 | Complete |
-| SPRT-01 | Phase 3 | Pending |
+| SPRT-01 | Phase 3 | Complete |
 | SPRT-02 | Phase 3 | Complete |
 | SPRT-03 | Phase 3 | Pending |
 | SPRT-04 | Phase 3 | Pending |
