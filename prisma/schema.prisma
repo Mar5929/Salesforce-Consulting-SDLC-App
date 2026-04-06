@@ -783,7 +783,7 @@ model OrgComponent {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   lastSyncedAt      DateTime?
-  embedding         Unsupported("vector(1536)")?
+  embedding         Unsupported("vector(1536)")? // Runtime: vector(1024) via SQL migration for Voyage AI
   embeddingStatus   EmbeddingStatus @default(PENDING)
   needsAssignment   Boolean         @default(false)
 
@@ -903,7 +903,7 @@ model KnowledgeArticle {
   staleSince         DateTime?
   lastRefreshedAt    DateTime?
   authorType         KnowledgeAuthorType   @default(AI_GENERATED)
-  embedding          Unsupported("vector(1536)")?
+  embedding          Unsupported("vector(1536)")? // Runtime: vector(1024) via SQL migration for Voyage AI
   embeddingStatus    EmbeddingStatus       @default(PENDING)
   useCount           Int                   @default(0)
   thumbsUpCount      Int                   @default(0)

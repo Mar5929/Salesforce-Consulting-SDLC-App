@@ -9,6 +9,7 @@ export const env = createEnv({
     ANTHROPIC_API_KEY: z.string().min(1),
     INNGEST_SIGNING_KEY: z.string().optional(),
     INNGEST_EVENT_KEY: z.string().optional(),
+    VOYAGE_API_KEY: z.string().optional(), // Voyage AI for embeddings — non-critical, search falls back to full-text
   },
   client: {
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
@@ -22,6 +23,7 @@ export const env = createEnv({
     SF_TOKEN_ENCRYPTION_KEY: process.env.SF_TOKEN_ENCRYPTION_KEY,
     INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
     INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
+    VOYAGE_API_KEY: process.env.VOYAGE_API_KEY,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     NEXT_PUBLIC_CLERK_SIGN_IN_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
     NEXT_PUBLIC_CLERK_SIGN_UP_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL,
