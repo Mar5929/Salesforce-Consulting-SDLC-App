@@ -99,12 +99,16 @@ Plans:
   2. Brownfield ingestion pipeline processes org metadata through Parse > Classify > Synthesize > Articulate, with AI-suggested domain groupings confirmed by the architect
   3. Claude Code can call the REST API to retrieve context packages (story details, business processes, knowledge articles, decisions, sprint conflicts) and update story status
   4. Org components are mapped to business processes with the isConfirmed pattern for human oversight
-**Plans**: TBD
+**Plans**: 7 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
-- [ ] 04-03: TBD
+- [ ] 04-01-PLAN.md -- Foundation: schema additions (ApiKey, OrgSyncRun), jsforce client, API key infrastructure, test scaffolds
+- [ ] 04-02-PLAN.md -- OAuth flow: authorize/callback routes, org connection settings page with status card
+- [ ] 04-03-PLAN.md -- Metadata sync: Inngest function, component parsing, sync history table, org overview page
+- [ ] 04-04-PLAN.md -- Brownfield ingestion: 4-phase AI pipeline, domain classification, business process synthesis, review actions
+- [ ] 04-05-PLAN.md -- REST API: context-package, org/components, stories/status, project/summary endpoints with API key auth
+- [ ] 04-06-PLAN.md -- Org analysis UI: pipeline stepper, domain/process review cards, tabbed review interface
+- [ ] 04-07-PLAN.md -- Claude Code skills: API endpoint documentation for developer consumption
 
 ### Phase 5: Document Generation, QA, and Administration
 **Goal**: The platform produces branded deliverables, supports QA workflows, and provides PM-level administration including Jira sync and project archival
@@ -135,5 +139,5 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | 1. Foundation and Data Layer | 3/3 | Complete | - |
 | 2. Discovery and Knowledge Brain | 12/12 | Complete | - |
 | 3. Story Management and Sprint Intelligence | 0/8 | Planned | - |
-| 4. Salesforce Org Connectivity and Developer Integration | 0/3 | Not started | - |
+| 4. Salesforce Org Connectivity and Developer Integration | 0/7 | Planned | - |
 | 5. Document Generation, QA, and Administration | 0/3 | Not started | - |
