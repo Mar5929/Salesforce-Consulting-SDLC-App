@@ -21,6 +21,10 @@ export const EVENTS = {
   // Dashboard events (Phase 2)
   PROJECT_STATE_CHANGED: "project/state-changed",
 
+  // Sprint events (Phase 3)
+  SPRINT_STORIES_CHANGED: "sprint/stories-changed",
+  STORY_STATUS_CHANGED: "story/status-changed",
+
   // Org events (Phase 4)
   ORG_SYNC_REQUESTED: "org/sync-requested",
   ORG_KNOWLEDGE_REFRESH: "org/knowledge-refresh-requested",

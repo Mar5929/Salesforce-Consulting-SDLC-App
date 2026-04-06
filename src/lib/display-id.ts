@@ -11,10 +11,13 @@
 import type { PrismaClient } from "@/generated/prisma"
 
 /** Entity types that support display IDs */
-export type DisplayIdEntityType = "Question" | "Decision" | "Risk" | "Requirement"
+export type DisplayIdEntityType = "Question" | "Decision" | "Risk" | "Requirement" | "Story"
 
-/** Prefix mapping for each entity type */
-const ENTITY_PREFIXES: Record<DisplayIdEntityType, string> = {
+/** Entity types that use fixed-prefix display IDs (not Story, which uses epic prefix) */
+type FixedPrefixEntityType = Exclude<DisplayIdEntityType, "Story">
+
+/** Prefix mapping for fixed-prefix entity types */
+const ENTITY_PREFIXES: Record<FixedPrefixEntityType, string> = {
   Question: "Q",
   Decision: "D",
   Risk: "R",
@@ -35,7 +38,7 @@ const ENTITY_PREFIXES: Record<DisplayIdEntityType, string> = {
  */
 export async function generateDisplayId(
   projectId: string,
-  entityType: DisplayIdEntityType,
+  entityType: FixedPrefixEntityType,
   prismaClient: PrismaClient
 ): Promise<string> {
   const prefix = ENTITY_PREFIXES[entityType]
@@ -64,7 +67,7 @@ export async function generateDisplayId(
 async function getMaxDisplayNumber(
   prismaClient: PrismaClient,
   projectId: string,
-  entityType: DisplayIdEntityType,
+  entityType: FixedPrefixEntityType,
   prefix: string
 ): Promise<number> {
   // Query all display IDs for this entity type in the project
@@ -108,6 +111,55 @@ async function getMaxDisplayNumber(
     .filter((n) => !isNaN(n))
 
   return numbers.length > 0 ? Math.max(...numbers) : 0
+}
+
+/**
+ * Generate a sequential display ID for a story within an epic.
+ *
+ * Stories use their epic's prefix instead of a fixed entity prefix.
+ * Format: {epicPrefix}-{N} (e.g., "AUTH-1", "AUTH-2")
+ *
+ * @param projectId - The project to scope the ID within
+ * @param epicPrefix - The epic's prefix (e.g., "AUTH")
+ * @param prismaClient - Prisma client instance
+ * @returns Formatted display ID string (e.g., "AUTH-3")
+ */
+export async function generateStoryDisplayId(
+  projectId: string,
+  epicPrefix: string,
+  prismaClient: PrismaClient
+): Promise<string> {
+  async function tryGenerate(): Promise<string> {
+    const records = await prismaClient.story.findMany({
+      where: {
+        projectId,
+        displayId: { startsWith: `${epicPrefix}-` },
+      },
+      select: { displayId: true },
+    })
+
+    let maxNumber = 0
+    for (const r of records) {
+      const match = r.displayId.match(new RegExp(`^${epicPrefix}-(\\d+)$`))
+      if (match) {
+        const num = parseInt(match[1], 10)
+        if (num > maxNumber) maxNumber = num
+      }
+    }
+
+    return `${epicPrefix}-${maxNumber + 1}`
+  }
+
+  // First attempt
+  try {
+    return await tryGenerate()
+  } catch (error) {
+    // Retry once on unique constraint violation (P2002)
+    if (isUniqueConstraintError(error)) {
+      return await tryGenerate()
+    }
+    throw error
+  }
 }
 
 /**

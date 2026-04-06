@@ -573,6 +573,8 @@ model Story {
   questionBlocksStories QuestionBlocksStory[]
   requirementStories   RequirementStory[]
   milestoneStories     MilestoneStory[]
+
+  @@unique([projectId, displayId])
 }
 
 model Question {
@@ -697,15 +699,16 @@ model Milestone {
 }
 
 model Sprint {
-  id        String       @id @default(cuid())
-  projectId String
-  name      String
-  goal      String?
-  startDate DateTime
-  endDate   DateTime
-  status    SprintStatus @default(PLANNING)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  projectId      String
+  name           String
+  goal           String?
+  startDate      DateTime
+  endDate        DateTime
+  status         SprintStatus @default(PLANNING)
+  cachedAnalysis Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
 

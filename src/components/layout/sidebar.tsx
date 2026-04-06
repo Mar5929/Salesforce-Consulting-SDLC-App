@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { FolderKanban, MessageSquare, Settings, Users, CircleHelp, FileText, BookOpen, LayoutDashboard, type LucideIcon } from "lucide-react"
+import { FolderKanban, MessageSquare, Settings, Users, CircleHelp, FileText, BookOpen, LayoutDashboard, Layers, Inbox, Timer, type LucideIcon } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ProjectSwitcher } from "@/components/layout/project-switcher"
 import { UserMenu } from "@/components/layout/user-menu"
@@ -69,6 +69,30 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number): 
       href: activeProjectId
         ? `/projects/${activeProjectId}/dashboard`
         : "/dashboard",
+      roles: undefined, // all roles
+    },
+    {
+      label: "Work",
+      icon: Layers,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/work`
+        : "/work",
+      roles: undefined, // all roles
+    },
+    {
+      label: "Backlog",
+      icon: Inbox,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/backlog`
+        : "/backlog",
+      roles: undefined, // all roles
+    },
+    {
+      label: "Sprints",
+      icon: Timer,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/sprints`
+        : "/sprints",
       roles: undefined, // all roles
     },
     {
