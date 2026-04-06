@@ -14,6 +14,7 @@ import { getCurrentMember } from "@/lib/auth"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SprintPlanning, type PlanningStory } from "@/components/sprints/sprint-planning"
+import { SprintBoard, type BoardStory } from "@/components/sprints/sprint-board"
 
 interface SprintDetailPageProps {
   params: Promise<{ projectId: string; sprintId: string }>
@@ -67,8 +68,19 @@ export default async function SprintDetailPage({
     orderBy: { sortOrder: "asc" },
   })
 
-  // Serialize for client component
+  // Serialize for client components
   const sprintStories: PlanningStory[] = sprint.stories.map((s) => ({
+    id: s.id,
+    displayId: s.displayId,
+    title: s.title,
+    status: s.status,
+    priority: s.priority,
+    storyPoints: s.storyPoints,
+    feature: s.feature,
+    assignee: s.assignee,
+  }))
+
+  const boardStories: BoardStory[] = sprint.stories.map((s) => ({
     id: s.id,
     displayId: s.displayId,
     title: s.title,
@@ -135,9 +147,7 @@ export default async function SprintDetailPage({
         </TabsContent>
 
         <TabsContent value="board" className="mt-4">
-          <div className="flex items-center justify-center rounded-lg border border-dashed border-[#E5E5E5] py-16 text-[14px] text-[#737373]">
-            Sprint board coming next
-          </div>
+          <SprintBoard stories={boardStories} projectId={projectId} />
         </TabsContent>
 
         <TabsContent value="dashboard" className="mt-4">
