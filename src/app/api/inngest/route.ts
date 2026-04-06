@@ -7,6 +7,7 @@ import { articleRefreshFunction } from "@/lib/inngest/functions/article-refresh"
 import { embeddingBatchFunction } from "@/lib/inngest/functions/embedding-batch"
 import { dashboardSynthesisFunction } from "@/lib/inngest/functions/dashboard-synthesis"
 import { notificationDispatchFunction } from "@/lib/inngest/functions/notification-dispatch"
+import { questionImpactAssessmentFunction } from "@/lib/inngest/functions/question-impact-assessment"
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -19,5 +20,6 @@ export const { GET, POST, PUT } = serve({
     embeddingBatchFunction,
     dashboardSynthesisFunction,
     notificationDispatchFunction,
+    questionImpactAssessmentFunction,
   ],
 })
