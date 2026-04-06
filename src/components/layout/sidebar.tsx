@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { FolderKanban, MessageSquare, Settings, Users, CircleHelp, type LucideIcon } from "lucide-react"
+import { FolderKanban, MessageSquare, Settings, Users, CircleHelp, FileText, type LucideIcon } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ProjectSwitcher } from "@/components/layout/project-switcher"
 import { UserMenu } from "@/components/layout/user-menu"
@@ -38,6 +38,14 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number): 
         : "/questions",
       roles: undefined, // all roles
       badge: questionReviewCount,
+    },
+    {
+      label: "Transcripts",
+      icon: FileText,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/transcripts`
+        : "/transcripts",
+      roles: undefined, // all roles
     },
     {
       label: "Chat",
