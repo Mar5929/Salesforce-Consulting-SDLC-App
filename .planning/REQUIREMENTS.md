@@ -88,10 +88,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Notifications
 
-- [ ] **NOTF-01**: In-app notification system with bell icon and unread count
-- [ ] **NOTF-02**: Notifications fire for 10 defined event types (question assigned, answer posted, story status change, etc.)
-- [ ] **NOTF-03**: Notifications are priority-based and dispatched via Inngest background jobs
-- [ ] **NOTF-04**: User can mark notifications as read individually or in bulk
+- [x] **NOTF-01**: In-app notification system with bell icon and unread count
+- [x] **NOTF-02**: Notifications fire for 10 defined event types (question assigned, answer posted, story status change, etc.)
+- [x] **NOTF-03**: Notifications are priority-based and dispatched via Inngest background jobs
+- [x] **NOTF-04**: User can mark notifications as read individually or in bulk
 
 ### Background Infrastructure
 
@@ -272,10 +272,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-03 | Phase 2 | Complete |
 | DASH-04 | Phase 2 | Complete |
 | DASH-05 | Phase 2 | Complete |
-| NOTF-01 | Phase 2 | Pending |
-| NOTF-02 | Phase 2 | Pending |
-| NOTF-03 | Phase 2 | Pending |
-| NOTF-04 | Phase 2 | Pending |
+| NOTF-01 | Phase 2 | Complete |
+| NOTF-02 | Phase 2 | Complete |
+| NOTF-03 | Phase 2 | Complete |
+| NOTF-04 | Phase 2 | Complete |
 | INFRA-01 | Phase 1 | Pending |
 | INFRA-02 | Phase 1 | Pending |
 | INFRA-03 | Phase 2 | Complete |

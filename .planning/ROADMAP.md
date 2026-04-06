@@ -60,7 +60,7 @@ Plans:
 - [x] 02-06-PLAN.md -- Knowledge architecture: articles, staleness, background refresh
 - [x] 02-07-PLAN.md -- Three-layer search: filtered, full-text, semantic, Cmd+K palette
 - [x] 02-08-PLAN.md -- Discovery dashboard: stats, health score, AI synthesis
-- [ ] 02-09-PLAN.md -- Notification system: bell icon, dispatch, mark-read
+- [x] 02-09-PLAN.md -- Notification system: bell icon, dispatch, mark-read
 
 **UI hint**: yes
 
