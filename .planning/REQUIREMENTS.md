@@ -46,12 +46,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Transcript Processing
 
-- [ ] **TRNS-01**: User can upload or paste a meeting transcript (up to ~10K words)
-- [ ] **TRNS-02**: AI extracts questions, decisions, requirements, and risks from the transcript
-- [ ] **TRNS-03**: Extracted items are deduplicated against existing project data before filing
-- [ ] **TRNS-04**: AI assigns scope (epic/feature) to extracted items based on project context
-- [ ] **TRNS-05**: Transcript processing runs as a multi-step agent loop with user confirmation at key points
-- [ ] **TRNS-06**: Processing status and results are visible in the chat session interface
+- [x] **TRNS-01**: User can upload or paste a meeting transcript (up to ~10K words)
+- [x] **TRNS-02**: AI extracts questions, decisions, requirements, and risks from the transcript
+- [x] **TRNS-03**: Extracted items are deduplicated against existing project data before filing
+- [x] **TRNS-04**: AI assigns scope (epic/feature) to extracted items based on project context
+- [x] **TRNS-05**: Transcript processing runs as a multi-step agent loop with user confirmation at key points
+- [x] **TRNS-06**: Processing status and results are visible in the chat session interface
 
 ### Chat Interface
 
@@ -97,7 +97,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **INFRA-01**: Inngest event-driven background job infrastructure with automatic retries
 - [ ] **INFRA-02**: Step functions with checkpoints for long-running operations (transcript processing, embedding gen)
-- [ ] **INFRA-03**: Background jobs for: article refresh, dashboard synthesis, embedding generation, notification dispatch
+- [x] **INFRA-03**: Background jobs for: article refresh, dashboard synthesis, embedding generation, notification dispatch
 - [ ] **INFRA-04**: Optimistic concurrency control with version-based conflict detection on concurrent edits
 
 ### Epic, Feature, and User Story Management
@@ -245,12 +245,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGENT-04 | Phase 2 | Pending |
 | AGENT-05 | Phase 2 | Pending |
 | AGENT-06 | Phase 2 | Pending |
-| TRNS-01 | Phase 2 | Pending |
-| TRNS-02 | Phase 2 | Pending |
-| TRNS-03 | Phase 2 | Pending |
-| TRNS-04 | Phase 2 | Pending |
-| TRNS-05 | Phase 2 | Pending |
-| TRNS-06 | Phase 2 | Pending |
+| TRNS-01 | Phase 2 | Complete |
+| TRNS-02 | Phase 2 | Complete |
+| TRNS-03 | Phase 2 | Complete |
+| TRNS-04 | Phase 2 | Complete |
+| TRNS-05 | Phase 2 | Complete |
+| TRNS-06 | Phase 2 | Complete |
 | CHAT-01 | Phase 2 | Pending |
 | CHAT-02 | Phase 2 | Pending |
 | CHAT-03 | Phase 2 | Pending |
@@ -278,7 +278,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NOTF-04 | Phase 2 | Pending |
 | INFRA-01 | Phase 1 | Pending |
 | INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 2 | Pending |
+| INFRA-03 | Phase 2 | Complete |
 | INFRA-04 | Phase 1 | Pending |
 | WORK-01 | Phase 3 | Pending |
 | WORK-02 | Phase 3 | Pending |

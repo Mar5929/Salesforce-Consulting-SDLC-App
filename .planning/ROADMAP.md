@@ -52,11 +52,11 @@ Plans:
 **Plans**: 9 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Agent harness core: types, execution engine, tool executor, sanitization
-- [ ] 02-02-PLAN.md -- Context assembly (Layer 3) and task definitions (Layer 1)
-- [ ] 02-03-PLAN.md -- Chat infrastructure: streaming API, conversation persistence, chat UI
-- [ ] 02-04-PLAN.md -- Question system: CRUD, table/kanban views, lifecycle, AI impact assessment
-- [ ] 02-05-PLAN.md -- Transcript processing: upload, AI extraction, interactive review
+- [x] 02-01-PLAN.md -- Agent harness core: types, execution engine, tool executor, sanitization
+- [x] 02-02-PLAN.md -- Context assembly (Layer 3) and task definitions (Layer 1)
+- [x] 02-03-PLAN.md -- Chat infrastructure: streaming API, conversation persistence, chat UI
+- [x] 02-04-PLAN.md -- Question system: CRUD, table/kanban views, lifecycle, AI impact assessment
+- [x] 02-05-PLAN.md -- Transcript processing: upload, AI extraction, interactive review
 - [ ] 02-06-PLAN.md -- Knowledge architecture: articles, staleness, background refresh
 - [ ] 02-07-PLAN.md -- Three-layer search: filtered, full-text, semantic, Cmd+K palette
 - [ ] 02-08-PLAN.md -- Discovery dashboard: stats, health score, AI synthesis
