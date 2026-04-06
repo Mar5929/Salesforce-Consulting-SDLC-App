@@ -196,6 +196,53 @@ export const getSessionTokenTotals = actionClient
     }
   })
 
+// ============================================================================
+// Story Session
+// ============================================================================
+
+const initiateStorySessionSchema = z.object({
+  projectId: z.string().min(1),
+  epicId: z.string().min(1),
+  featureId: z.string().optional(),
+})
+
+/**
+ * Create a STORY_SESSION conversation for AI story generation (WORK-06).
+ * Called from the "Generate Stories" context menu on epic/feature pages.
+ * Returns the conversationId for redirect to chat page.
+ *
+ * Note: epicId/featureId are passed as URL search params to the chat page
+ * rather than stored in conversation metadata (Conversation model has no
+ * metadata field). The conversation title encodes the scope for display.
+ */
+export const initiateStorySession = actionClient
+  .schema(initiateStorySessionSchema)
+  .action(async ({ parsedInput: { projectId, epicId, featureId } }) => {
+    const member = await getCurrentMember(projectId)
+
+    // Look up epic name for a descriptive title
+    const epic = await prisma.epic.findUnique({
+      where: { id: epicId },
+      select: { name: true, prefix: true },
+    })
+    const epicLabel = epic ? `${epic.prefix}: ${epic.name}` : "Epic"
+
+    const conversation = await prisma.conversation.create({
+      data: {
+        projectId,
+        conversationType: "STORY_SESSION",
+        title: `AI Story Generation - ${epicLabel}`,
+        createdById: member.id,
+      },
+    })
+
+    return { conversationId: conversation.id, epicId, featureId }
+  })
+
+// ============================================================================
+// Messages
+// ============================================================================
+
 /**
  * Persist a chat message to the database.
  * For AI messages, stores inputTokens, outputTokens, and cost.
