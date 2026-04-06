@@ -46,13 +46,12 @@ created: 2026-04-06
 
 ## Spacing Scale
 
-Declared values (must be multiples of 4, plus one justified intermediate value):
+Declared values (multiples of 4 only):
 
 | Token | Value | Usage |
 |-------|-------|-------|
 | xs | 4px | Icon gaps, inline padding, badge internal padding |
 | sm | 8px | Compact element spacing, chat message gap, filter chip padding |
-| sm-plus | 12px | Chat bubble padding. 16px is too roomy for dense conversation flow; 8px is too tight for readability. 12px is standard in chat UIs (Slack, Linear). |
 | md | 16px | Default element spacing, card padding, sidebar nav item padding |
 | lg | 24px | Section padding, dashboard card internal padding |
 | xl | 32px | Layout gaps between major sections |
@@ -63,6 +62,7 @@ Declared values (must be multiples of 4, plus one justified intermediate value):
 
 | Exception | Value | Justification |
 |-----------|-------|---------------|
+| Chat bubble padding | 12px | 16px is too roomy for dense conversation flow; 8px is too tight for readability. 12px is standard in chat UIs (Slack, Linear). |
 | Chat input min-height | 44px | Touch target compliance for the primary input. Matches mobile HIG 44pt minimum. |
 | Notification panel max-width | 360px | Fixed panel width for the bell dropdown. Standard notification panel width (GitHub, Linear). |
 | Sidebar width | 240px | Carried from Phase 1. Fixed width. |
@@ -117,7 +117,7 @@ Notes:
 | Aging | #F59E0B (amber-500) | Knowledge article staleness badge: article approaching staleness threshold |
 | Stale | #EF4444 (reuse destructive) | Knowledge article staleness badge: article past staleness threshold, needs refresh |
 
-These three semantic colors are used ONLY for knowledge article staleness badges. They are not general-purpose status colors. Do not use them for question status, chat states, or other UI elements.
+#22C55E carries a "complete/success" semantic and is permitted for both the Fresh staleness badge and the Answered question status badge. The Aging and Stale colors remain exclusive to knowledge article staleness badges. Do not use any of these three colors for chat states, notification indicators, or other UI elements beyond the two stated uses.
 
 ### Accent Reserved For (Phase 2 additions to Phase 1 list)
 
@@ -150,7 +150,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 | Open | Outline badge, `--muted-foreground` text |
 | Scoped | Outline badge, `--secondary-foreground` text |
 | Owned | Solid badge, `--primary` background |
-| Answered | Solid badge, #22C55E (Fresh green) background, white text |
+| Answered | Solid badge, #22C55E (success green) background, white text |
 | Reviewed | Solid badge, `--primary` background with checkmark icon |
 
 ---
@@ -200,8 +200,8 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 
 | Action | Trigger | Confirmation |
 |--------|---------|--------------|
-| Delete Question | Kebab menu on question row/card | Dialog: "Delete this question? This cannot be undone. Any linked decisions and impact assessments will be preserved but unlinked." with "Cancel" (outline) and "Delete Question" (destructive) buttons. |
-| Delete Chat Session | Kebab menu on chat session list | Dialog: "Delete this chat session? All messages in this session will be permanently removed." with "Cancel" (outline) and "Delete Session" (destructive) buttons. |
+| Delete Question | Kebab menu on question row/card | Dialog: "Delete this question? This cannot be undone. Any linked decisions and impact assessments will be preserved but unlinked." with "Keep Question" (outline) and "Delete Question" (destructive) buttons. |
+| Delete Chat Session | Kebab menu on chat session list | Dialog: "Delete this chat session? All messages in this session will be permanently removed." with "Keep Session" (outline) and "Delete Session" (destructive) buttons. |
 | Reject Extracted Item | Reject button on transcript extraction card | No dialog. Inline action with undo toast: "Item rejected. Undo" (5 second window). |
 | Dismiss Notification | Swipe or dismiss button | No dialog. Immediate dismiss with no undo. |
 | Bulk Mark All Read | "Mark all read" button in notification panel | No dialog. Immediate action. Non-destructive (notifications not deleted). |
@@ -215,7 +215,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 | Chat | "Chat" | MessageSquare | None |
 | Knowledge | "Knowledge" | BookOpen | None |
 | Dashboard | "Dashboard" | LayoutDashboard | None |
-| Notifications (header) | Bell icon only | Bell | Unread count badge (accent background) |
+| Notifications (header) | Bell icon only | Bell | Unread count badge (accent background). Requires `aria-label="Notifications"` on the button element. |
 
 ### Notification Event Type Copy
 
@@ -570,7 +570,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
                                             ScrollArea
 ```
 
-- Bell icon in app header with unread count badge (accent background, white text, 13px/600).
+- Bell icon button in app header with `aria-label="Notifications"` and unread count badge (accent background, white text, 13px/600).
 - Popover panel, max-width 360px, max-height 480px with ScrollArea.
 - Notifications grouped by time period (Today, Yesterday, Earlier).
 - Each notification: type icon (lucide), text (14px/400), timestamp (13px/400 muted).
