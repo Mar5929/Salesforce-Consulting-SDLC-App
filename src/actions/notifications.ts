@@ -55,7 +55,10 @@ export const getNotifications = actionClient
         projectId,
         recipientId: member.id,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [
+        { priority: "desc" },
+        { createdAt: "desc" },
+      ],
       take: limit,
     })
 

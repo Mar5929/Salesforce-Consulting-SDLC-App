@@ -1,6 +1,31 @@
 import { inngest } from "../client"
 import { EVENTS } from "../events"
 import { prisma } from "@/lib/db"
+import type { NotificationPriority } from "@/generated/prisma"
+
+/**
+ * Priority assignment by notification type (D-30).
+ * URGENT: Immediate attention needed (conflicts, critical risks)
+ * HIGH: Important workflow events (question answered, sprint conflicts)
+ * NORMAL: Standard workflow events (assignments, status changes)
+ * LOW: Informational (processing complete, sync done)
+ */
+const NOTIFICATION_PRIORITY: Record<string, NotificationPriority> = {
+  SPRINT_CONFLICT_DETECTED: "URGENT",
+  RISK_CHANGED: "HIGH",
+  QUESTION_ANSWERED: "HIGH",
+  WORK_ITEM_UNBLOCKED: "HIGH",
+  HEALTH_SCORE_CHANGED: "HIGH",
+  QUESTION_ASSIGNED: "NORMAL",
+  QUESTION_AGING: "NORMAL",
+  STORY_STATUS_CHANGED: "NORMAL",
+  STORY_MOVED_TO_QA: "NORMAL",
+  STORY_REASSIGNED: "NORMAL",
+  DECISION_RECORDED: "NORMAL",
+  ARTICLE_FLAGGED_STALE: "LOW",
+  AI_PROCESSING_COMPLETE: "LOW",
+  METADATA_SYNC_COMPLETE: "LOW",
+}
 
 /**
  * Notification Dispatch Function
@@ -182,6 +207,7 @@ export const notificationDispatchFunction = inngest.createFunction(
           body: body ?? null,
           entityType: entityType as any,
           entityId,
+          priority: NOTIFICATION_PRIORITY[type] ?? "NORMAL",
         })),
       })
       return result.count
