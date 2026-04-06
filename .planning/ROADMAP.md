@@ -49,7 +49,7 @@ Plans:
   3. User can chat with the AI in both general project chat and task-specific sessions, with streaming responses and persistent message history
   4. Knowledge articles are automatically synthesized from project data, track staleness, and refresh via background jobs -- with semantic search returning meaning-based results alongside filtered and full-text search
   5. Discovery dashboard shows outstanding questions, blocked items, health scores, and AI-generated focus summaries
-**Plans**: 9 plans
+**Plans**: 12 plans
 
 Plans:
 - [x] 02-01-PLAN.md -- Agent harness core: types, execution engine, tool executor, sanitization
@@ -61,6 +61,9 @@ Plans:
 - [x] 02-07-PLAN.md -- Three-layer search: filtered, full-text, semantic, Cmd+K palette
 - [x] 02-08-PLAN.md -- Discovery dashboard: stats, health score, AI synthesis
 - [x] 02-09-PLAN.md -- Notification system: bell icon, dispatch, mark-read
+- [ ] 02-10-PLAN.md -- Gap closure: schema migration (QuestionStatus lifecycle + Notification priority)
+- [ ] 02-11-PLAN.md -- Gap closure: question 5-state lifecycle UI + AI impact assessment Inngest function
+- [ ] 02-12-PLAN.md -- Gap closure: session tokens, extraction accept/reject, notification priority ordering
 
 **UI hint**: yes
 
@@ -125,7 +128,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation and Data Layer | 3/3 | Complete | - |
-| 2. Discovery and Knowledge Brain | 0/9 | Planning complete | - |
+| 2. Discovery and Knowledge Brain | 9/12 | Gap closure planned | - |
 | 3. Story Management and Sprint Intelligence | 0/3 | Not started | - |
 | 4. Salesforce Org Connectivity and Developer Integration | 0/3 | Not started | - |
 | 5. Document Generation, QA, and Administration | 0/3 | Not started | - |
