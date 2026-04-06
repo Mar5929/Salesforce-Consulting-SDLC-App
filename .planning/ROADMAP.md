@@ -87,7 +87,7 @@ Plans:
 - [x] 03-04-PLAN.md -- Sprint management: CRUD, sprint list, split-view planning with drag-and-drop
 - [x] 03-05-PLAN.md -- Sprint board kanban and dashboard with burndown chart
 - [x] 03-06-PLAN.md -- Sprint intelligence: conflict detection Inngest function, dependency suggestions
-- [ ] 03-07-PLAN.md -- Gap closure: wire Generate Stories button and bulk sprint assignment to server actions
+- [x] 03-07-PLAN.md -- Gap closure: wire Generate Stories button and bulk sprint assignment to server actions
 
 **UI hint**: yes
 
@@ -103,7 +103,7 @@ Plans:
 **Plans**: 7 plans
 
 Plans:
-- [ ] 04-01-PLAN.md -- Foundation: schema additions (ApiKey, OrgSyncRun), jsforce client, API key infrastructure, test scaffolds
+- [x] 04-01-PLAN.md -- Foundation: schema additions (ApiKey, OrgSyncRun), jsforce client, API key infrastructure, test scaffolds
 - [ ] 04-02-PLAN.md -- OAuth flow: authorize/callback routes, org connection settings page with status card
 - [ ] 04-03-PLAN.md -- Metadata sync: Inngest function, component parsing, sync history table, org overview page
 - [ ] 04-04-PLAN.md -- Brownfield ingestion: 4-phase AI pipeline, domain classification, business process synthesis, review actions

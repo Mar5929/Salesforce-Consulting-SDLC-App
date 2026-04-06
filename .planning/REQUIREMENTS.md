@@ -122,7 +122,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **ORG-01**: User can connect a Salesforce org via OAuth
 - [ ] **ORG-02**: Periodic metadata sync (incremental + full refresh) stores normalized component data
-- [ ] **ORG-03**: Org knowledge base tables: OrgComponent, OrgRelationship, DomainGrouping
+- [x] **ORG-03**: Org knowledge base tables: OrgComponent, OrgRelationship, DomainGrouping
 - [ ] **ORG-04**: Brownfield org ingestion pipeline: Parse > Classify > Synthesize > Articulate (4-phase)
 - [ ] **ORG-05**: AI maps org components to business processes with human confirmation (isConfirmed pattern)
 - [ ] **ORG-06**: Domain groupings with AI suggestion and architect confirmation
@@ -294,7 +294,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SPRT-05 | Phase 3 | Complete |
 | ORG-01 | Phase 4 | Pending |
 | ORG-02 | Phase 4 | Pending |
-| ORG-03 | Phase 4 | Pending |
+| ORG-03 | Phase 4 | Complete |
 | ORG-04 | Phase 4 | Pending |
 | ORG-05 | Phase 4 | Pending |
 | ORG-06 | Phase 4 | Pending |
