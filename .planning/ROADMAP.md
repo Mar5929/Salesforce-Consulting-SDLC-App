@@ -80,7 +80,7 @@ Plans:
 
 Plans:
 - [x] 03-00-PLAN.md -- Wave 0: vitest setup, test utilities, unit tests for status machine, burndown, sprint assignment
-- [ ] 03-01-PLAN.md -- Foundation: schema migration, server actions, status machine, sidebar nav
+- [x] 03-01-PLAN.md -- Foundation: schema migration, server actions, status machine, sidebar nav
 - [ ] 03-02-PLAN.md -- Work breakdown UI: epic/feature pages, breadcrumb, view toggle, epic/feature tables
 - [ ] 03-02b-PLAN.md -- Story UI: story table with bulk actions, story form, component selector, backlog page
 - [ ] 03-03-PLAN.md -- AI story generation: agent harness task, draft tool, accept/edit/reject cards, STORY_SESSION initiation
