@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db"
 import { getCurrentMember } from "@/lib/auth"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { OrgConnectionCard } from "@/components/org/org-connection-card"
+import { SyncHistoryTable } from "@/components/org/sync-history-table"
 import { OrgConnectedToast } from "./connected-toast"
 
 interface OrgSettingsPageProps {
@@ -25,6 +26,7 @@ export default async function OrgSettingsPage({
       sfOrgInstanceUrl: true,
       sfOrgAccessToken: true,
       sfOrgLastSyncAt: true,
+      sfOrgSyncIntervalHours: true,
     },
   })
 
@@ -35,9 +37,14 @@ export default async function OrgSettingsPage({
   const currentMember = await getCurrentMember(projectId)
   const canManage = ["SOLUTION_ARCHITECT", "PM"].includes(currentMember.role)
 
-  const componentCount = await prisma.orgComponent.count({
-    where: { projectId },
-  })
+  const [componentCount, syncRuns] = await Promise.all([
+    prisma.orgComponent.count({ where: { projectId } }),
+    prisma.orgSyncRun.findMany({
+      where: { projectId },
+      orderBy: { startedAt: "desc" },
+      take: 5,
+    }),
+  ])
 
   const isConnected = !!project.sfOrgInstanceUrl
   const needsReauth = isConnected && !project.sfOrgAccessToken
@@ -74,20 +81,38 @@ export default async function OrgSettingsPage({
         />
       </div>
 
-      {/* Placeholder sections for Plan 03 */}
+      {/* Sync Schedule */}
       <div className="mt-8 max-w-[640px] space-y-6">
         <div>
           <h2 className="text-[18px] font-semibold text-foreground">Sync Schedule</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Configure automatic metadata sync intervals. Coming in a future update.
-          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <span className="text-sm text-secondary-foreground">Incremental sync</span>
+            <span className="text-sm text-muted-foreground">
+              Every {project.sfOrgSyncIntervalHours} hours
+            </span>
+          </div>
         </div>
 
+        {/* Sync History */}
         <div>
           <h2 className="text-[18px] font-semibold text-foreground">Sync History</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Sync history will appear here after the first metadata sync completes.
-          </p>
+          <div className="mt-3">
+            <SyncHistoryTable
+              syncRuns={syncRuns.map((run) => ({
+                id: run.id,
+                syncType: run.syncType as "FULL" | "INCREMENTAL",
+                status: run.status,
+                componentCounts: run.componentCounts as {
+                  added: number
+                  modified: number
+                  removed: number
+                } | null,
+                startedAt: run.startedAt,
+                completedAt: run.completedAt,
+                errorMessage: run.errorMessage,
+              }))}
+            />
+          </div>
         </div>
       </div>
     </div>
