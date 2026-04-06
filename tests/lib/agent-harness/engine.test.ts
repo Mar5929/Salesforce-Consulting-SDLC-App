@@ -20,9 +20,13 @@ vi.mock("@/lib/db", () => ({
 
 // Mock Anthropic SDK
 const mockAnthropicInstance = createMockAnthropic()
-vi.mock("@anthropic-ai/sdk", () => ({
-  default: vi.fn(() => mockAnthropicInstance),
-}))
+vi.mock("@anthropic-ai/sdk", () => {
+  // Must use a regular function (not arrow) so it works with `new`
+  function MockAnthropic() {
+    return mockAnthropicInstance
+  }
+  return { default: MockAnthropic }
+})
 
 // Mock tool executor
 vi.mock("@/lib/agent-harness/tool-executor", () => ({
@@ -30,7 +34,7 @@ vi.mock("@/lib/agent-harness/tool-executor", () => ({
 }))
 
 // Import after mocks are set up
-const { executeTask } = await import("@/lib/agent-harness/engine")
+const { executeTask, resetAnthropicClient } = await import("@/lib/agent-harness/engine")
 
 /** Helper to create a minimal TaskDefinition for testing */
 function createTestTaskDef(
@@ -64,6 +68,8 @@ describe("executeTask", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset the Anthropic singleton so it picks up the mock on next call
+    resetAnthropicClient()
     // Reset mock Anthropic to return a default text response
     mockAnthropicInstance.messages.create.mockResolvedValue(
       mockTextResponse("AI response text", { input_tokens: 200, output_tokens: 100 })
