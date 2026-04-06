@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback } from "react"
 import { ArrowLeft, Loader2, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
 import useSWR from "swr"
+import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { MessageBubble } from "@/components/chat/message-bubble"
 import { ExtractionCards, type ExtractionGroup } from "@/components/transcripts/extraction-cards"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { acceptExtractionItem, rejectExtractionItem } from "@/actions/transcripts"
 
 // ============================================================================
 // Types
@@ -123,14 +125,16 @@ export function TranscriptSessionClient({
     }
   }
 
-  // Handlers for extraction card actions (client-side state only for now)
-  const handleAccept = useCallback((_type: string, _itemId: string) => {
-    // Future: call server action to finalize item
-  }, [])
+  // Handlers for extraction card actions — persist to database
+  const handleAccept = useCallback((type: string, itemId: string) => {
+    acceptExtractionItem({ projectId, entityType: type, entityId: itemId })
+    toast.success(`${type} accepted`)
+  }, [projectId])
 
-  const handleReject = useCallback((_type: string, _itemId: string) => {
-    // Future: call server action to reject item
-  }, [])
+  const handleReject = useCallback((type: string, itemId: string) => {
+    rejectExtractionItem({ projectId, entityType: type, entityId: itemId })
+    toast.success(`${type} rejected and removed`)
+  }, [projectId])
 
   return (
     <div className="flex h-full flex-col">

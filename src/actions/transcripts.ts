@@ -28,6 +28,12 @@ const getTranscriptSchema = z.object({
   projectId: z.string().min(1),
 })
 
+const extractionItemActionSchema = z.object({
+  projectId: z.string().min(1),
+  entityType: z.string().min(1),
+  entityId: z.string().min(1),
+})
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -185,4 +191,44 @@ export const getTranscript = actionClient
       ...transcript,
       conversation,
     }
+  })
+
+/**
+ * Accept an AI-extracted item. Items are already persisted by agent tools,
+ * so accept is a no-op confirmation. Included for completeness and future
+ * confirmed/unconfirmed tracking.
+ */
+export const acceptExtractionItem = actionClient
+  .schema(extractionItemActionSchema)
+  .action(async ({ parsedInput: { projectId, entityType, entityId } }) => {
+    await getCurrentMember(projectId)
+    // Items are already created in DB by agent tools. Accept = keep as-is.
+    return { accepted: true, entityType, entityId }
+  })
+
+/**
+ * Reject an AI-extracted item by deleting it from the database.
+ * The item was auto-created by AI during transcript processing;
+ * rejecting removes it before it enters the project workflow.
+ */
+export const rejectExtractionItem = actionClient
+  .schema(extractionItemActionSchema)
+  .action(async ({ parsedInput: { projectId, entityType, entityId } }) => {
+    await getCurrentMember(projectId)
+
+    switch (entityType.toLowerCase()) {
+      case "question":
+        await prisma.question.delete({ where: { id: entityId } })
+        break
+      case "decision":
+        await prisma.decision.delete({ where: { id: entityId } })
+        break
+      case "risk":
+        await prisma.risk.delete({ where: { id: entityId } })
+        break
+      default:
+        throw new Error(`Unknown extraction entity type: ${entityType}`)
+    }
+
+    return { rejected: true, entityType, entityId }
   })
