@@ -46,12 +46,13 @@ created: 2026-04-06
 
 ## Spacing Scale
 
-Declared values (must be multiples of 4):
+Declared values (must be multiples of 4, plus one justified intermediate value):
 
 | Token | Value | Usage |
 |-------|-------|-------|
 | xs | 4px | Icon gaps, inline padding, badge internal padding |
 | sm | 8px | Compact element spacing, chat message gap, filter chip padding |
+| sm-plus | 12px | Chat bubble padding. 16px is too roomy for dense conversation flow; 8px is too tight for readability. 12px is standard in chat UIs (Slack, Linear). |
 | md | 16px | Default element spacing, card padding, sidebar nav item padding |
 | lg | 24px | Section padding, dashboard card internal padding |
 | xl | 32px | Layout gaps between major sections |
@@ -62,7 +63,6 @@ Declared values (must be multiples of 4):
 
 | Exception | Value | Justification |
 |-----------|-------|---------------|
-| Chat bubble padding | 12px | 16px is too roomy for dense conversation flow; 8px is too tight for readability. 12px is standard in chat UIs (Slack, Linear). |
 | Chat input min-height | 44px | Touch target compliance for the primary input. Matches mobile HIG 44pt minimum. |
 | Notification panel max-width | 360px | Fixed panel width for the bell dropdown. Standard notification panel width (GitHub, Linear). |
 | Sidebar width | 240px | Carried from Phase 1. Fixed width. |
@@ -74,7 +74,7 @@ Declared values (must be multiples of 4):
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
-| Metadata | 12px | 400 (regular) | 1.4 | Timestamps, token counts, notification metadata, staleness age, chat cost footer |
+| Metadata | 13px | 400 (regular) | 1.4 | Timestamps, token counts, notification metadata, staleness age, chat cost footer |
 | Label | 13px | 600 (semibold) | 1.2 | Form labels, sidebar nav items, badge text, filter labels, column headers |
 | Body | 14px | 400 (regular) | 1.5 | Chat messages, question descriptions, article content, table cells, form inputs |
 | Heading | 18px | 600 (semibold) | 1.2 | Card titles, section headings, article titles, chat session names |
@@ -83,7 +83,8 @@ Declared values (must be multiples of 4):
 Font stack: `"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
 
 Notes:
-- 12px metadata is the smallest text in the system. Used exclusively for secondary information the user glances at, never for primary content. Always `muted-foreground` color.
+- The system uses 4 font sizes: 13px, 14px, 18px, 24px. The 13px size serves two roles distinguished by weight: 400 regular for metadata (timestamps, token counts) and 600 semibold for labels (form labels, badges, column headers).
+- 13px metadata is the smallest text in the system. Used exclusively for secondary information the user glances at, never for primary content. Always `muted-foreground` color when used at 400 weight.
 - Chat messages use 14px/400 body text. AI responses render markdown via standard prose styling at the same size.
 - Question status badges use 13px/600 label style.
 - Health score percentage uses 24px/600 page title style for the number, 13px/600 label for the descriptor.
@@ -104,7 +105,7 @@ Notes:
 | Role | Value | CSS Variable | Usage |
 |------|-------|-------------|-------|
 | Border | hsl(0, 0%, 90%) / #E5E5E5 | `--border` | Card borders, dividers, input borders, chat bubble borders |
-| Muted text | hsl(0, 0%, 45%) / #737373 | `--muted-foreground` | Timestamps, metadata (12px), placeholder text, token counts |
+| Muted text | hsl(0, 0%, 45%) / #737373 | `--muted-foreground` | Timestamps, metadata (13px/400), placeholder text, token counts |
 | Text primary | hsl(0, 0%, 9%) / #171717 | `--foreground` | Headings, body text, primary labels, chat message text |
 | Text secondary | hsl(0, 0%, 32%) / #525252 | `--secondary-foreground` | Descriptions, helper text, question category labels |
 
@@ -139,7 +140,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 |---------|-------|
 | User message bubble | `--muted` (#FAFAFA) background, `--foreground` text |
 | AI message bubble | `--background` (#FFFFFF) background with `--border` left border, `--foreground` text |
-| System message | `--muted-foreground` text, no background, centered, 12px metadata style |
+| System message | `--muted-foreground` text, no background, centered, 13px/400 metadata style |
 | Chat input area | `--muted` background, `--border` top border |
 
 ### Question Status Badge Colors
@@ -149,7 +150,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 | Open | Outline badge, `--muted-foreground` text |
 | Scoped | Outline badge, `--secondary-foreground` text |
 | Owned | Solid badge, `--primary` background |
-| Answered | Solid badge, `--chart-2` (green) background |
+| Answered | Solid badge, #22C55E (Fresh green) background, white text |
 | Reviewed | Solid badge, `--primary` background with checkmark icon |
 
 ---
@@ -237,10 +238,12 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 
 ### Question List View — Table Default (D-02)
 
+**Primary visual anchor:** "Ask Question" accent button in the page action bar (top-right of main content area).
+
 ```
 +--[ 240px Sidebar ]--+--[ Main Content ]----------------------------+
 |                      |                                               |
-| [Questions *3]       |  Questions              [Toggle: Table|Kanban]|
+| [Questions *3]       |  Questions      [Ask Question]  [Table|Kanban]|
 |                      |  ─────────────────────────────────────────── |
 |                      |  [Filters: Status | Category | Owner | Pri ] |
 |                      |  ─────────────────────────────────────────── |
@@ -249,14 +252,13 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 |                      |  | [badge]| ...   | ...      | ...   | ... | |
 |                      |  | [badge]| ...   | ...      | ...   | ... | |
 |                      |                                               |
-|                      |                    [Ask Question] (accent btn)|
 +----------------------+-----------------------------------------------+
 ```
 
 - Table is the default view. Toggle between Table and Kanban via segmented control (top-right).
 - Table uses shadcn Table component with column sorting.
 - Filters rendered as inline dropdowns above the table (status, category, scope, owner, priority).
-- "Ask Question" floating action button in bottom-right corner or top action bar.
+- "Ask Question" accent button in top action bar, right-aligned next to view toggle.
 - Badge count next to "Questions" sidebar label shows pending review count.
 
 ### Question List View — Kanban (D-02)
@@ -264,7 +266,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 ```
 +--[ Sidebar ]--+--[ Main Content ]--------------------------------------------+
 |               |                                                                |
-|               |  Questions                        [Toggle: Table|Kanban]       |
+|               |  Questions        [Ask Question]  [Toggle: Table|Kanban]       |
 |               |  ────────────────────────────────────────────────────────────  |
 |               |  | Open    | Scoped  | Owned   | Answered | Reviewed |        |
 |               |  |---------|---------|---------|----------|----------|        |
@@ -291,7 +293,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 |               |  Description (14px/400)                                         |
 |               |  ──────────────────────────────────────────────                 |
 |               |  Scope: [Epic/Feature link]  Owner: [Avatar + Name]             |
-|               |  Created: [timestamp 12px]   Source: [Manual / Transcript link]  |
+|               |  Created: [timestamp 13px]   Source: [Manual / Transcript link]  |
 |               |  ──────────────────────────────────────────────                 |
 |               |  Linked Entities  [Collapsible]                                 |
 |               |  ──────────────────────────────────────────────                 |
@@ -368,7 +370,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 |               |  |  [User msg]                                           |      |
 |               |  |  ──── Apr 6 ────                                      |      |
 |               |  |  [AI msg]                                             |      |
-|               |  |  tokens: 450 | $0.004           (12px muted)          |      |
+|               |  |  tokens: 450 | $0.004           (13px muted)          |      |
 |               |  |                                                       |      |
 |               |  |  [User msg]                                           |      |
 |               |  |  [AI msg - streaming...]                              |      |
@@ -402,7 +404,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 
 - General chat: full-width message area. Accessible from sidebar "Chat" nav item.
 - Task sessions: split layout with context panel (right, 320px fixed width).
-- Token/cost shown as 12px muted metadata footer per AI message (D-15).
+- Token/cost shown as 13px/400 muted metadata footer per AI message (D-15).
 - Session total in chat header, right-aligned.
 - Chat input: `--muted` background, 44px min-height, `--border` top border.
 - Send button: accent icon button (ArrowUp lucide icon).
@@ -422,7 +424,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 |               |  | Article Title (18px/600)                         |           |
 |               |  | Summary excerpt (14px/400, 2 lines max)          |           |
 |               |  | Sources: 3 questions, 2 decisions, 1 transcript  |           |
-|               |  | Last refreshed: 2 hours ago (12px muted)         |           |
+|               |  | Last refreshed: 2 hours ago (13px muted)         |           |
 |               |  +--------------------------------------------------+          |
 |               |                                                                 |
 |               |  +--[ Article Card ]--------------------------------+           |
@@ -552,7 +554,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
                                            | ─────────────────|
                                            | Today             |
                                            | [icon] Q assigned |
-                                           |  2 min ago (12px) |
+                                           |  2 min ago (13px) |
                                            | ─────────────────|
                                            | [icon] Answer     |
                                            |  posted           |
@@ -568,10 +570,10 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
                                             ScrollArea
 ```
 
-- Bell icon in app header with unread count badge (accent background, white text, 12px).
+- Bell icon in app header with unread count badge (accent background, white text, 13px/600).
 - Popover panel, max-width 360px, max-height 480px with ScrollArea.
 - Notifications grouped by time period (Today, Yesterday, Earlier).
-- Each notification: type icon (lucide), text (14px/400), timestamp (12px muted).
+- Each notification: type icon (lucide), text (14px/400), timestamp (13px/400 muted).
 - Unread notifications: left border accent indicator (2px).
 - Click navigates to relevant entity (D-28).
 - "Mark all read" link at top of panel.
@@ -664,7 +666,7 @@ Accent is NOT used for: knowledge staleness badges (use semantic colors), notifi
 | CHAT-02 | Task-specific sessions with split layout | Chat Interface |
 | CHAT-03 | Persistent message history in ScrollArea | Chat Interface |
 | CHAT-04 | Streaming responses via useChat | Chat Interface |
-| CHAT-05 | Token/cost per message (12px footer) + session total (header) | Chat Interface |
+| CHAT-05 | Token/cost per message (13px/400 footer) + session total (header) | Chat Interface |
 | KNOW-01 | Business process entities linked from article detail | Knowledge Articles |
 | KNOW-02 | Knowledge article list and detail views | Knowledge Articles |
 | KNOW-03 | Staleness badges (Fresh/Aging/Stale) on article cards | Knowledge Articles |
