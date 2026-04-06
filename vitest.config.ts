@@ -6,11 +6,17 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.ts", "src/**/*.test.ts"],
+    exclude: ["node_modules", ".next"],
+    coverage: {
+      provider: "v8",
+      include: ["src/lib/**", "src/actions/**"],
+    },
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@/generated/prisma": path.resolve(__dirname, "./src/generated/prisma"),
     },
   },
 })
