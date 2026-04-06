@@ -86,7 +86,7 @@ Plans:
 - [x] 03-03-PLAN.md -- AI story generation: agent harness task, draft tool, accept/edit/reject cards, STORY_SESSION initiation
 - [x] 03-04-PLAN.md -- Sprint management: CRUD, sprint list, split-view planning with drag-and-drop
 - [x] 03-05-PLAN.md -- Sprint board kanban and dashboard with burndown chart
-- [ ] 03-06-PLAN.md -- Sprint intelligence: conflict detection Inngest function, dependency suggestions
+- [x] 03-06-PLAN.md -- Sprint intelligence: conflict detection Inngest function, dependency suggestions
 
 **UI hint**: yes
 

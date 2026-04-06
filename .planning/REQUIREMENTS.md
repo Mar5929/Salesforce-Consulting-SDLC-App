@@ -114,8 +114,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **SPRT-01**: PM can create sprints with start/end dates and capacity
 - [x] **SPRT-02**: PM can assign stories to sprints
-- [ ] **SPRT-03**: Sprint intelligence detects component-level conflicts between stories in the same sprint
-- [ ] **SPRT-04**: Sprint intelligence suggests dependency ordering and parallelization opportunities
+- [x] **SPRT-03**: Sprint intelligence detects component-level conflicts between stories in the same sprint
+- [x] **SPRT-04**: Sprint intelligence suggests dependency ordering and parallelization opportunities
 - [x] **SPRT-05**: Sprint dashboard shows progress, velocity, and burndown
 
 ### Salesforce Org Connectivity
@@ -289,8 +289,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WORK-07 | Phase 3 | Complete |
 | SPRT-01 | Phase 3 | Complete |
 | SPRT-02 | Phase 3 | Complete |
-| SPRT-03 | Phase 3 | Pending |
-| SPRT-04 | Phase 3 | Pending |
+| SPRT-03 | Phase 3 | Complete |
+| SPRT-04 | Phase 3 | Complete |
 | SPRT-05 | Phase 3 | Complete |
 | ORG-01 | Phase 4 | Pending |
 | ORG-02 | Phase 4 | Pending |
