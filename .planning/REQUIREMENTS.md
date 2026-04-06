@@ -29,7 +29,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **QUES-01**: User can raise a question manually with category, scope assignment, and priority
 - [ ] **QUES-02**: AI can raise questions automatically during transcript processing or story generation
 - [ ] **QUES-03**: Question owner can answer a question with source attribution
-- [ ] **QUES-04**: Answering a question triggers AI impact assessment (unblocks, contradictions, new questions)
+- [x] **QUES-04**: Answering a question triggers AI impact assessment (unblocks, contradictions, new questions)
 - [x] **QUES-05**: Questions have a full lifecycle: Open > Scoped > Owned > Answered > Reviewed
 - [ ] **QUES-06**: Questions are linked to relevant entities (epics, features, stories, decisions)
 - [ ] **QUES-07**: SA can flag answered questions for review when confidence is below threshold
@@ -234,7 +234,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUES-01 | Phase 2 | Pending |
 | QUES-02 | Phase 2 | Pending |
 | QUES-03 | Phase 2 | Pending |
-| QUES-04 | Phase 2 | Pending |
+| QUES-04 | Phase 2 | Complete |
 | QUES-05 | Phase 2 | Complete |
 | QUES-06 | Phase 2 | Pending |
 | QUES-07 | Phase 2 | Pending |
