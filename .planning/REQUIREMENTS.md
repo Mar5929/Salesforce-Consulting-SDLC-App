@@ -63,13 +63,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Knowledge Architecture
 
-- [ ] **KNOW-01**: Structured BusinessProcess relationships are stored in Postgres and queryable
-- [ ] **KNOW-02**: AI-curated KnowledgeArticles synthesize understanding into versioned, persistent documents
-- [ ] **KNOW-03**: Knowledge articles track staleness and trigger re-synthesis when underlying data changes
-- [ ] **KNOW-04**: Article refresh runs as Inngest background jobs, not inline
+- [x] **KNOW-01**: Structured BusinessProcess relationships are stored in Postgres and queryable
+- [x] **KNOW-02**: AI-curated KnowledgeArticles synthesize understanding into versioned, persistent documents
+- [x] **KNOW-03**: Knowledge articles track staleness and trigger re-synthesis when underlying data changes
+- [x] **KNOW-04**: Article refresh runs as Inngest background jobs, not inline
 - [ ] **KNOW-05**: Two-pass context retrieval: load summaries first, then full content for most relevant articles
 - [ ] **KNOW-06**: AI proactively identifies discovery gaps and assesses readiness to start building
-- [ ] **KNOW-07**: New information that contradicts existing decisions is automatically flagged as a conflict
+- [x] **KNOW-07**: New information that contradicts existing decisions is automatically flagged as a conflict
 
 ### Search
 
@@ -256,13 +256,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHAT-03 | Phase 2 | Pending |
 | CHAT-04 | Phase 2 | Pending |
 | CHAT-05 | Phase 2 | Pending |
-| KNOW-01 | Phase 2 | Pending |
-| KNOW-02 | Phase 2 | Pending |
-| KNOW-03 | Phase 2 | Pending |
-| KNOW-04 | Phase 2 | Pending |
+| KNOW-01 | Phase 2 | Complete |
+| KNOW-02 | Phase 2 | Complete |
+| KNOW-03 | Phase 2 | Complete |
+| KNOW-04 | Phase 2 | Complete |
 | KNOW-05 | Phase 2 | Pending |
 | KNOW-06 | Phase 2 | Pending |
-| KNOW-07 | Phase 2 | Pending |
+| KNOW-07 | Phase 2 | Complete |
 | SRCH-01 | Phase 2 | Pending |
 | SRCH-02 | Phase 2 | Pending |
 | SRCH-03 | Phase 2 | Pending |
