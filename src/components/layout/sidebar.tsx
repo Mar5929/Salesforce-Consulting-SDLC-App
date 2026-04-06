@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { FolderKanban, Settings, Users, type LucideIcon } from "lucide-react"
+import { FolderKanban, MessageSquare, Settings, Users, type LucideIcon } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ProjectSwitcher } from "@/components/layout/project-switcher"
 import { UserMenu } from "@/components/layout/user-menu"
@@ -26,6 +26,14 @@ function buildNavItems(activeProjectId?: string): NavItem[] {
       label: "Projects",
       icon: FolderKanban,
       href: "/",
+      roles: undefined, // all roles
+    },
+    {
+      label: "Chat",
+      icon: MessageSquare,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/chat`
+        : "/chat",
       roles: undefined, // all roles
     },
     {
