@@ -5,6 +5,7 @@ import { transcriptProcessingFunction, transcriptProcessingFailure } from "@/lib
 import { stalenessDetectionFunction } from "@/lib/inngest/functions/staleness-detection"
 import { articleRefreshFunction } from "@/lib/inngest/functions/article-refresh"
 import { embeddingBatchFunction } from "@/lib/inngest/functions/embedding-batch"
+import { dashboardSynthesisFunction } from "@/lib/inngest/functions/dashboard-synthesis"
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -15,5 +16,6 @@ export const { GET, POST, PUT } = serve({
     stalenessDetectionFunction,
     articleRefreshFunction,
     embeddingBatchFunction,
+    dashboardSynthesisFunction,
   ],
 })
