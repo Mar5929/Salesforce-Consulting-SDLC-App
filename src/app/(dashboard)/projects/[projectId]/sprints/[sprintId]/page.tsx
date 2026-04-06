@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SprintPlanning, type PlanningStory } from "@/components/sprints/sprint-planning"
 import { SprintBoard, type BoardStory } from "@/components/sprints/sprint-board"
 import { SprintDashboard } from "@/components/sprints/sprint-dashboard"
+import { SprintIntelligencePanel } from "@/components/sprints/sprint-intelligence-panel"
 
 interface SprintDetailPageProps {
   params: Promise<{ projectId: string; sprintId: string }>
@@ -69,6 +70,28 @@ export default async function SprintDetailPage({
     },
     orderBy: { sortOrder: "asc" },
   })
+
+  // Parse cached analysis from sprint intelligence (stored as Json)
+  const cachedAnalysis = sprint.cachedAnalysis as {
+    conflicts?: Array<{
+      id: string
+      storyA: { displayId: string; title: string }
+      storyB: { displayId: string; title: string }
+      componentName: string
+      impactA: string
+      impactB: string
+      severity: string
+      reasoning: string
+      dismissed: boolean
+    }>
+    dependencies?: Array<{
+      order: number
+      storyDisplayId: string
+      storyTitle: string
+      reasoning: string
+    }>
+    analyzedAt?: string
+  } | null
 
   // Serialize for client components
   const sprintStories: PlanningStory[] = sprint.stories.map((s) => ({
@@ -146,9 +169,21 @@ export default async function SprintDetailPage({
             backlogStories={backlog}
             sprintStories={sprintStories}
           />
+          <div className="mt-4">
+            <SprintIntelligencePanel
+              conflicts={cachedAnalysis?.conflicts || []}
+              dependencies={cachedAnalysis?.dependencies || []}
+              variant="plan"
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="board" className="mt-4">
+          <SprintIntelligencePanel
+            conflicts={cachedAnalysis?.conflicts || []}
+            dependencies={cachedAnalysis?.dependencies || []}
+            variant="board"
+          />
           <SprintBoard stories={boardStories} projectId={projectId} />
         </TabsContent>
 
