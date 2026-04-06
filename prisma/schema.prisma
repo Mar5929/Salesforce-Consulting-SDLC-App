@@ -435,6 +435,8 @@ model Project {
   generatedDocuments   GeneratedDocument[]
   attachments          Attachment[]
   storyComponents      StoryComponent[]
+  orgSyncRuns          OrgSyncRun[]
+  apiKeys              ApiKey[]
 }
 
 model ProjectMember {
@@ -469,6 +471,8 @@ model ProjectMember {
   statusTransitions      StatusTransition[]
   versionHistories       VersionHistory[]
   createdConversations   Conversation[]
+
+  apiKeys                ApiKey[]
 
   @@unique([projectId, clerkUserId])
 }
@@ -900,6 +904,72 @@ model BusinessProcessDependency {
   targetProcess    BusinessProcess @relation("DependencyTarget", fields: [targetProcessId], references: [id], onDelete: Cascade)
 
   @@unique([sourceProcessId, targetProcessId])
+}
+
+// ============================================================================
+// Phase 4: Salesforce Org Connectivity
+// ============================================================================
+
+enum SyncType {
+  FULL
+  INCREMENTAL
+}
+
+enum SyncRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model OrgSyncRun {
+  id              String        @id @default(cuid())
+  projectId       String
+  syncType        SyncType
+  status          SyncRunStatus @default(PENDING)
+  componentCounts Json?         // { added: number, modified: number, removed: number, byType: Record<string, number> }
+  errorMessage    String?
+  startedAt       DateTime      @default(now())
+  completedAt     DateTime?
+
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, startedAt])
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  projectId   String
+  memberId    String
+  name        String
+  keyPrefix   String
+  keyHash     String
+  isActive    Boolean   @default(true)
+  lastUsedAt  DateTime?
+  useCount    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  member      ProjectMember  @relation(fields: [memberId], references: [id])
+  requestLogs ApiRequestLog[]
+
+  @@index([keyPrefix])
+  @@index([projectId, isActive])
+}
+
+model ApiRequestLog {
+  id         String   @id @default(cuid())
+  apiKeyId   String
+  endpoint   String
+  method     String
+  statusCode Int?
+  ipAddress  String?
+  timestamp  DateTime @default(now())
+
+  apiKey     ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  @@index([apiKeyId, endpoint, timestamp])
 }
 
 model KnowledgeArticle {

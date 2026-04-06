@@ -28,4 +28,6 @@ export const EVENTS = {
   // Org events (Phase 4)
   ORG_SYNC_REQUESTED: "org/sync-requested",
   ORG_KNOWLEDGE_REFRESH: "org/knowledge-refresh-requested",
+  ORG_INGESTION_REQUESTED: "org/ingestion-requested",
+  ORG_SYNC_COMPLETED: "org/sync-completed",
 } as const
