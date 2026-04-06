@@ -103,12 +103,12 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Epic, Feature, and User Story Management
 
 - [x] **WORK-01**: User can create and manage epics with hierarchy: epic > feature > user story
-- [ ] **WORK-02**: Stories have mandatory fields enforced by validation (acceptance criteria, impacted components, etc.)
+- [x] **WORK-02**: Stories have mandatory fields enforced by validation (acceptance criteria, impacted components, etc.)
 - [x] **WORK-03**: User can edit and delete own stories; PM/SA can edit any story
 - [x] **WORK-04**: Story status workflow: Draft > Ready > Sprint Planned > In Progress > In Review > QA > Done
 - [x] **WORK-05**: PM manages lifecycle states, developers manage execution states, auto-transition on sprint assignment
 - [ ] **WORK-06**: AI-assisted story generation from requirements and discovery context
-- [ ] **WORK-07**: Each story tracks impacted Salesforce components (creates/modifies/deletes) via StoryComponent join
+- [x] **WORK-07**: Each story tracks impacted Salesforce components (creates/modifies/deletes) via StoryComponent join
 
 ### Sprint Management
 
@@ -281,12 +281,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-03 | Phase 2 | Complete |
 | INFRA-04 | Phase 1 | Pending |
 | WORK-01 | Phase 3 | Complete |
-| WORK-02 | Phase 3 | Pending |
+| WORK-02 | Phase 3 | Complete |
 | WORK-03 | Phase 3 | Complete |
 | WORK-04 | Phase 3 | Complete |
 | WORK-05 | Phase 3 | Complete |
 | WORK-06 | Phase 3 | Pending |
-| WORK-07 | Phase 3 | Pending |
+| WORK-07 | Phase 3 | Complete |
 | SPRT-01 | Phase 3 | Pending |
 | SPRT-02 | Phase 3 | Complete |
 | SPRT-03 | Phase 3 | Pending |
