@@ -7,6 +7,8 @@
  * and "Generate Stories" menu option (falls back to toast if not yet available).
  */
 
+import { useRouter } from "next/navigation"
+import { useAction } from "next-safe-action/hooks"
 import { toast } from "sonner"
 import { Sparkles } from "lucide-react"
 import { WorkBreadcrumb } from "@/components/work/work-breadcrumb"
@@ -15,6 +17,7 @@ import { FeatureForm } from "@/components/work/feature-form"
 import { FeatureTable } from "@/components/work/feature-table"
 import { FeatureKanban } from "@/components/work/feature-kanban"
 import { Button } from "@/components/ui/button"
+import { initiateStorySession } from "@/actions/conversations"
 
 interface FeatureRow {
   id: string
@@ -41,7 +44,19 @@ interface EpicDetailClientProps {
 }
 
 export function EpicDetailClient({ projectId, epic }: EpicDetailClientProps) {
+  const router = useRouter()
   const { viewMode } = useViewMode()
+
+  const { execute: executeInitiateSession, isExecuting } = useAction(initiateStorySession, {
+    onSuccess: ({ data }) => {
+      if (data?.conversationId) {
+        router.push(`/projects/${projectId}/chat/${data.conversationId}`)
+      }
+    },
+    onError: ({ error }) => {
+      toast.error(error.serverError ?? "Failed to start story generation session")
+    },
+  })
 
   const breadcrumbSegments = [
     { label: "Work", href: `/projects/${projectId}/work` },
@@ -49,8 +64,7 @@ export function EpicDetailClient({ projectId, epic }: EpicDetailClientProps) {
   ]
 
   function handleGenerateStories() {
-    // initiateStorySession not yet available (Plan 03)
-    toast("Coming soon - story generation will be available after Plan 03 is executed.")
+    executeInitiateSession({ projectId, epicId: epic.id })
   }
 
   return (
@@ -75,6 +89,7 @@ export function EpicDetailClient({ projectId, epic }: EpicDetailClientProps) {
           <Button
             variant="outline"
             onClick={handleGenerateStories}
+            disabled={isExecuting}
             className="gap-1.5"
           >
             <Sparkles className="h-4 w-4" />

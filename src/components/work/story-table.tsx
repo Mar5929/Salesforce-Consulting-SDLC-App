@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { updateStoryStatus, updateStory } from "@/actions/stories"
+import { assignStoriesToSprint } from "@/actions/sprints"
 
 // ────────────────────────────────────────────
 // Types
@@ -134,6 +135,15 @@ export function StoryTable({
   const { execute: executeUpdate } = useAction(updateStory, {
     onSuccess: () => toast.success("Story updated"),
     onError: ({ error }) => toast.error(error.serverError ?? "Failed to update story"),
+  })
+
+  const { execute: executeSprintAssign } = useAction(assignStoriesToSprint, {
+    onSuccess: () => {
+      toast.success("Stories assigned to sprint")
+      setRowSelection({})
+      router.refresh()
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? "Failed to assign stories to sprint"),
   })
 
   // ── Column definitions ──
@@ -280,16 +290,8 @@ export function StoryTable({
   }
 
   async function handleBulkSprintAssign(sprintId: string) {
-    for (const row of selectedRows) {
-      executeUpdate({
-        projectId,
-        storyId: row.original.id,
-        // Use a non-null sprintId -- the updateStory action doesn't have sprintId
-        // We assign sprint via direct update. For now, toast a notice.
-      })
-    }
-    toast.info("Sprint assignment will be available when sprint management is built.")
-    setRowSelection({})
+    const selectedIds = selectedRows.map((row) => row.original.id)
+    executeSprintAssign({ projectId, sprintId, storyIds: selectedIds })
   }
 
   async function handleBulkAssigneeChange(assigneeId: string) {
