@@ -8,6 +8,7 @@ import { embeddingBatchFunction } from "@/lib/inngest/functions/embedding-batch"
 import { dashboardSynthesisFunction } from "@/lib/inngest/functions/dashboard-synthesis"
 import { notificationDispatchFunction } from "@/lib/inngest/functions/notification-dispatch"
 import { questionImpactAssessmentFunction } from "@/lib/inngest/functions/question-impact-assessment"
+import { sprintIntelligence } from "@/lib/inngest/functions/sprint-intelligence"
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -21,5 +22,6 @@ export const { GET, POST, PUT } = serve({
     dashboardSynthesisFunction,
     notificationDispatchFunction,
     questionImpactAssessmentFunction,
+    sprintIntelligence,
   ],
 })

@@ -19,6 +19,7 @@ export { getBlockingRelationships } from "./blocking-relationships"
 export type { BlockingRelationship } from "./blocking-relationships"
 export { getEpicsAndFeatures } from "./epics-features"
 export type { EpicOrFeature } from "./epics-features"
+export { getStoriesInSprintContext } from "./stories-in-sprint"
 
 /**
  * A context loader produces a string section for AI prompt injection.
