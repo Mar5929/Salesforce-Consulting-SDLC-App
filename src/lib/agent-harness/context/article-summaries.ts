@@ -49,12 +49,12 @@ export async function getArticleSummaries(
     orderBy: { updatedAt: "desc" },
   })
 
-  return articles.map((a) => ({
-    id: a.id,
-    title: a.title,
-    summary: a.summary,
-    articleType: a.articleType,
-    confidence: a.confidence,
+  return articles.map((a: Record<string, unknown>) => ({
+    id: a.id as string,
+    title: a.title as string,
+    summary: a.summary as string,
+    articleType: a.articleType as string,
+    confidence: a.confidence as string,
   }))
 }
 
@@ -83,12 +83,12 @@ export async function getRelevantArticles(
     },
   })
 
-  return articles.map((a) => ({
-    id: a.id,
-    title: a.title,
-    content: a.content,
-    summary: a.summary,
-    articleType: a.articleType,
-    confidence: a.confidence,
+  return articles.map((a: Record<string, unknown>) => ({
+    id: a.id as string,
+    title: a.title as string,
+    content: a.content as string,
+    summary: a.summary as string,
+    articleType: a.articleType as string,
+    confidence: a.confidence as string,
   }))
 }

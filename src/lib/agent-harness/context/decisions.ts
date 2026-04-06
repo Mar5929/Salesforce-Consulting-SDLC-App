@@ -43,11 +43,11 @@ export async function getRecentDecisions(
     take: limit,
   })
 
-  return decisions.map((d) => ({
-    id: d.id,
-    displayId: d.displayId,
-    title: d.title,
-    rationale: truncateText(d.rationale, 300),
-    decisionDate: d.decisionDate,
+  return decisions.map((d: Record<string, unknown>) => ({
+    id: d.id as string,
+    displayId: d.displayId as string,
+    title: d.title as string,
+    rationale: truncateText(d.rationale as string, 300),
+    decisionDate: d.decisionDate as Date,
   }))
 }

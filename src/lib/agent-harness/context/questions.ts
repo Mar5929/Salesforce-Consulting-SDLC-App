@@ -63,13 +63,13 @@ export async function getOpenQuestions(
     take: limit,
   })
 
-  return questions.map((q) => ({
-    id: q.id,
-    displayId: q.displayId,
-    questionText: truncateText(q.questionText, 200),
-    status: q.status,
-    scope: q.scope,
-    answerText: q.answerText,
+  return questions.map((q: Record<string, unknown>) => ({
+    id: q.id as string,
+    displayId: q.displayId as string,
+    questionText: truncateText(q.questionText as string, 200),
+    status: q.status as string,
+    scope: q.scope as string,
+    answerText: q.answerText as string | null,
     category: null,
   }))
 }
@@ -153,7 +153,10 @@ export async function getQuestionContext(
     }
   }
 
-  const relatedDecisions = (question.decisionQuestions || []).map((dq) => ({
+  const decisionQuestions = question.decisionQuestions as Array<{
+    decision: { id: string; displayId: string; title: string }
+  }> | undefined
+  const relatedDecisions = (decisionQuestions || []).map((dq) => ({
     id: dq.decision.id,
     displayId: dq.decision.displayId,
     title: dq.decision.title,
