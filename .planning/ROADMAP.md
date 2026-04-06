@@ -63,7 +63,7 @@ Plans:
 - [x] 02-09-PLAN.md -- Notification system: bell icon, dispatch, mark-read
 - [x] 02-10-PLAN.md -- Gap closure: schema migration (QuestionStatus lifecycle + Notification priority)
 - [x] 02-11-PLAN.md -- Gap closure: question 5-state lifecycle UI + AI impact assessment Inngest function
-- [ ] 02-12-PLAN.md -- Gap closure: session tokens, extraction accept/reject, notification priority ordering
+- [x] 02-12-PLAN.md -- Gap closure: session tokens, extraction accept/reject, notification priority ordering
 
 **UI hint**: yes
 

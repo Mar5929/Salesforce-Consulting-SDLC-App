@@ -59,7 +59,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **CHAT-02**: Task-specific chat sessions exist for heavy-lift operations (transcript processing, story generation, briefings)
 - [ ] **CHAT-03**: All conversations persist with full message history
 - [ ] **CHAT-04**: Chat supports streaming AI responses
-- [ ] **CHAT-05**: Token usage and cost are tracked per chat session
+- [x] **CHAT-05**: Token usage and cost are tracked per chat session
 
 ### Knowledge Architecture
 
@@ -255,7 +255,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHAT-02 | Phase 2 | Pending |
 | CHAT-03 | Phase 2 | Pending |
 | CHAT-04 | Phase 2 | Pending |
-| CHAT-05 | Phase 2 | Pending |
+| CHAT-05 | Phase 2 | Complete |
 | KNOW-01 | Phase 2 | Complete |
 | KNOW-02 | Phase 2 | Complete |
 | KNOW-03 | Phase 2 | Complete |
