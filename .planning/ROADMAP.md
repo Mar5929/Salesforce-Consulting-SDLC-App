@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. All data queries return only data belonging to the active project -- no cross-project leakage
   4. Inngest background job infrastructure processes events with automatic retries and step function checkpoints
   5. Full PostgreSQL schema is deployed with all entities, indexes, and vector extensions ready for feature phases
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [x] 01-01: TBD
@@ -49,14 +49,18 @@ Plans:
   3. User can chat with the AI in both general project chat and task-specific sessions, with streaming responses and persistent message history
   4. Knowledge articles are automatically synthesized from project data, track staleness, and refresh via background jobs -- with semantic search returning meaning-based results alongside filtered and full-text search
   5. Discovery dashboard shows outstanding questions, blocked items, health scores, and AI-generated focus summaries
-**Plans**: TBD
+**Plans**: 9 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
-- [ ] 02-04: TBD
-- [ ] 02-05: TBD
+- [ ] 02-01-PLAN.md -- Agent harness core: types, execution engine, tool executor, sanitization
+- [ ] 02-02-PLAN.md -- Context assembly (Layer 3) and task definitions (Layer 1)
+- [ ] 02-03-PLAN.md -- Chat infrastructure: streaming API, conversation persistence, chat UI
+- [ ] 02-04-PLAN.md -- Question system: CRUD, table/kanban views, lifecycle, AI impact assessment
+- [ ] 02-05-PLAN.md -- Transcript processing: upload, AI extraction, interactive review
+- [ ] 02-06-PLAN.md -- Knowledge architecture: articles, staleness, background refresh
+- [ ] 02-07-PLAN.md -- Three-layer search: filtered, full-text, semantic, Cmd+K palette
+- [ ] 02-08-PLAN.md -- Discovery dashboard: stats, health score, AI synthesis
+- [ ] 02-09-PLAN.md -- Notification system: bell icon, dispatch, mark-read
 
 **UI hint**: yes
 
@@ -120,8 +124,8 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Data Layer | 0/3 | Not started | - |
-| 2. Discovery and Knowledge Brain | 0/5 | Not started | - |
+| 1. Foundation and Data Layer | 3/3 | Complete | - |
+| 2. Discovery and Knowledge Brain | 0/9 | Planning complete | - |
 | 3. Story Management and Sprint Intelligence | 0/3 | Not started | - |
 | 4. Salesforce Org Connectivity and Developer Integration | 0/3 | Not started | - |
 | 5. Document Generation, QA, and Administration | 0/3 | Not started | - |
