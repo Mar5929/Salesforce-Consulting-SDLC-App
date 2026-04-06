@@ -3,7 +3,8 @@
  *
  * Server component with three tabs: Plan, Board, Dashboard.
  * Plan tab renders the SprintPlanning split view.
- * Board and Dashboard are placeholders for Plan 05.
+ * Board tab renders the SprintBoard kanban.
+ * Dashboard tab renders the SprintDashboard with burndown chart.
  */
 
 import { notFound } from "next/navigation"
@@ -15,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SprintPlanning, type PlanningStory } from "@/components/sprints/sprint-planning"
 import { SprintBoard, type BoardStory } from "@/components/sprints/sprint-board"
+import { SprintDashboard } from "@/components/sprints/sprint-dashboard"
 
 interface SprintDetailPageProps {
   params: Promise<{ projectId: string; sprintId: string }>
@@ -151,9 +153,20 @@ export default async function SprintDetailPage({
         </TabsContent>
 
         <TabsContent value="dashboard" className="mt-4">
-          <div className="flex items-center justify-center rounded-lg border border-dashed border-[#E5E5E5] py-16 text-[14px] text-[#737373]">
-            Sprint dashboard coming next
-          </div>
+          <SprintDashboard
+            sprint={{
+              name: sprint.name,
+              goal: sprint.goal,
+              startDate: sprint.startDate,
+              endDate: sprint.endDate,
+              stories: sprint.stories.map((s) => ({
+                id: s.id,
+                status: s.status,
+                storyPoints: s.storyPoints,
+                updatedAt: s.updatedAt,
+              })),
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>
