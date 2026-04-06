@@ -10,6 +10,7 @@ import { notificationDispatchFunction } from "@/lib/inngest/functions/notificati
 import { questionImpactAssessmentFunction } from "@/lib/inngest/functions/question-impact-assessment"
 import { sprintIntelligence } from "@/lib/inngest/functions/sprint-intelligence"
 import { metadataSyncFunction } from "@/lib/inngest/functions/metadata-sync"
+import { orgIngestionFunction } from "@/lib/inngest/functions/org-ingestion"
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -25,5 +26,6 @@ export const { GET, POST, PUT } = serve({
     questionImpactAssessmentFunction,
     sprintIntelligence,
     metadataSyncFunction,
+    orgIngestionFunction,
   ],
 })

@@ -44,6 +44,12 @@ export function createMockPrisma() {
     generatedDocument: createModelMock(),
     storyComponent: createModelMock(),
     statusTransition: createModelMock(),
+    orgComponent: createModelMock(),
+    orgRelationship: createModelMock(),
+    domainGrouping: createModelMock(),
+    businessProcess: createModelMock(),
+    businessProcessComponent: createModelMock(),
+    businessProcessDependency: createModelMock(),
     $queryRaw: vi.fn().mockResolvedValue([]),
     $executeRaw: vi.fn().mockResolvedValue(0),
     $transaction: vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => {
