@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { FolderKanban, MessageSquare, Settings, Users, type LucideIcon } from "lucide-react"
+import { FolderKanban, MessageSquare, Settings, Users, CircleHelp, type LucideIcon } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ProjectSwitcher } from "@/components/layout/project-switcher"
 import { UserMenu } from "@/components/layout/user-menu"
@@ -13,20 +13,31 @@ interface NavItem {
   icon: LucideIcon
   href: string
   roles?: string[]
+  badge?: number
 }
 
 interface SidebarProps {
   currentMemberRole?: string
   activeProjectId?: string
+  questionReviewCount?: number
 }
 
-function buildNavItems(activeProjectId?: string): NavItem[] {
+function buildNavItems(activeProjectId?: string, questionReviewCount?: number): NavItem[] {
   return [
     {
       label: "Projects",
       icon: FolderKanban,
       href: "/",
       roles: undefined, // all roles
+    },
+    {
+      label: "Questions",
+      icon: CircleHelp,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/questions`
+        : "/questions",
+      roles: undefined, // all roles
+      badge: questionReviewCount,
     },
     {
       label: "Chat",
@@ -53,10 +64,10 @@ function buildNavItems(activeProjectId?: string): NavItem[] {
   ]
 }
 
-export function Sidebar({ currentMemberRole, activeProjectId }: SidebarProps) {
+export function Sidebar({ currentMemberRole, activeProjectId, questionReviewCount }: SidebarProps) {
   const pathname = usePathname()
 
-  const NAV_ITEMS = buildNavItems(activeProjectId)
+  const NAV_ITEMS = buildNavItems(activeProjectId, questionReviewCount)
 
   const visibleItems = NAV_ITEMS.filter(
     (item) => !item.roles || (currentMemberRole && item.roles.includes(currentMemberRole))
@@ -98,6 +109,11 @@ export function Sidebar({ currentMemberRole, activeProjectId }: SidebarProps) {
                 >
                   <Icon className="size-4" />
                   <span>{item.label}</span>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#FFF7ED] px-1.5 text-[10px] font-medium text-[#EA580C] border border-[#FED7AA]">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               </li>
             )
