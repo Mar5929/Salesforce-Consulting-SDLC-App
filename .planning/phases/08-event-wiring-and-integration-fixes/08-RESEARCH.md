@@ -280,7 +280,7 @@ No new API endpoints, no new user input paths, no credential handling.
 |---|-------|---------|---------------|
 | A1 | `updateQuestion` action (L138-186) is the correct location for "updateQuestionStatus" referenced in CONTEXT.md D-01 | Code Examples / Pitfall 4 | LOW -- Verified no separate updateQuestionStatus exists. If a separate action is added later, it would also need instrumentation. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Additional question lifecycle transitions (Claude's Discretion)**
    - What we know: D-01 specifies createQuestion, answerQuestion, updateQuestionStatus. The `updateQuestion` action handles status changes AND content edits.

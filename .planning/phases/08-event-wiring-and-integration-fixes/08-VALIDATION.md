@@ -2,8 +2,8 @@
 phase: 8
 slug: event-wiring-and-integration-fixes
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-07
 ---
 
@@ -38,11 +38,11 @@ created: 2026-04-07
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 08-01-01 | 01 | 1 | DASH-05 | — | N/A | integration | `grep -r "PROJECT_STATE_CHANGED" src/actions/questions.ts` | ❌ W0 | ⬜ pending |
-| 08-01-02 | 01 | 1 | DASH-05 | — | N/A | integration | `grep -r "PROJECT_STATE_CHANGED" src/lib/inngest/functions/transcript-processing.ts` | ❌ W0 | ⬜ pending |
-| 08-01-03 | 01 | 1 | ADMIN-01 | — | N/A | unit | `grep "newStatus" src/actions/stories.ts` | ❌ W0 | ⬜ pending |
-| 08-01-04 | 01 | 1 | ADMIN-01 | — | N/A | unit | `grep "fromStatus" src/app/api/v1/stories/*/status/route.ts` | ❌ W0 | ⬜ pending |
-| 08-01-05 | 01 | 1 | ADMIN-01 | — | N/A | integration | `grep "jiraSyncRetryFunction" src/app/api/inngest/route.ts` | ❌ W0 | ⬜ pending |
+| 08-01-01 | 01 | 1 | DASH-05 | — | N/A | structural | `grep -r "PROJECT_STATE_CHANGED" src/actions/questions.ts` | ✅ | ⬜ pending |
+| 08-01-02 | 01 | 1 | DASH-05 | — | N/A | structural | `grep -r "PROJECT_STATE_CHANGED" src/lib/inngest/functions/transcript-processing.ts` | ✅ | ⬜ pending |
+| 08-01-03 | 01 | 1 | ADMIN-01 | — | N/A | structural | `grep "newStatus" src/actions/stories.ts` | ✅ | ⬜ pending |
+| 08-01-04 | 01 | 1 | ADMIN-01 | — | N/A | structural | `grep "fromStatus" src/app/api/v1/stories/*/status/route.ts` | ✅ | ⬜ pending |
+| 08-01-05 | 01 | 1 | ADMIN-01 | — | N/A | structural | `grep "jiraSyncRetryFunction" src/app/api/inngest/route.ts` | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
