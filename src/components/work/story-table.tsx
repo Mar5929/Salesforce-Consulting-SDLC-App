@@ -318,13 +318,14 @@ export function StoryTable({
   // ── Bulk actions ──
 
   async function handleBulkStatusChange(status: string) {
-    for (const row of selectedRows) {
+    const promises = selectedRows.map((row) =>
       executeStatusChange({
         projectId,
         storyId: row.original.id,
         status: status as typeof ALL_STATUSES[number],
       })
-    }
+    )
+    await Promise.allSettled(promises)
     setRowSelection({})
     router.refresh()
   }
