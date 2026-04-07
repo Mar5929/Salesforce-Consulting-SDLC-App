@@ -189,7 +189,7 @@ export const updateDefect = actionClient
         name: EVENTS.NOTIFICATION_SEND,
         data: {
           projectId: existing.projectId,
-          type: "DEFECT_CREATED",
+          type: "DEFECT_ASSIGNED",
           recipientId: updateFields.assigneeId,
           entityId: id,
           entityType: "Defect",
