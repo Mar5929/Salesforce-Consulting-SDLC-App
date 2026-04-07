@@ -9,40 +9,40 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Authentication and Security
 
-- [ ] **AUTH-01**: User can sign up and log in with email/password via Clerk
-- [ ] **AUTH-02**: User session persists across browser refresh
-- [ ] **AUTH-03**: User is assigned a project-level role (SA, PM, BA, Developer, QA) that controls visible features
-- [ ] **AUTH-04**: All data queries are scoped to the active project — no cross-project data leakage
-- [ ] **AUTH-05**: Salesforce org credentials are encrypted at rest using per-project derived keys (HKDF-SHA256)
-- [ ] **AUTH-06**: Access to sensitive operations is logged for audit trail
+- [x] **AUTH-01**: User can sign up and log in with email/password via Clerk
+- [x] **AUTH-02**: User session persists across browser refresh
+- [x] **AUTH-03**: User is assigned a project-level role (SA, PM, BA, Developer, QA) that controls visible features
+- [x] **AUTH-04**: All data queries are scoped to the active project — no cross-project data leakage
+- [x] **AUTH-05**: Salesforce org credentials are encrypted at rest using per-project derived keys (HKDF-SHA256)
+- [x] **AUTH-06**: Access to sensitive operations is logged for audit trail
 
 ### Project Management
 
 - [ ] **PROJ-01**: User can create a new project with name, client, engagement type, and sandbox strategy
-- [ ] **PROJ-02**: User can view and edit project settings and team membership
-- [ ] **PROJ-03**: User can invite team members and assign project-level roles
+- [x] **PROJ-02**: User can view and edit project settings and team membership
+- [x] **PROJ-03**: User can invite team members and assign project-level roles
 - [x] **PROJ-04**: PM can archive a completed project (read-only state, data retained)
 - [x] **PROJ-05**: PM can reactivate an archived project for follow-on engagements
 
 ### Question System
 
-- [ ] **QUES-01**: User can raise a question manually with category, scope assignment, and priority
-- [ ] **QUES-02**: AI can raise questions automatically during transcript processing or story generation
-- [ ] **QUES-03**: Question owner can answer a question with source attribution
+- [x] **QUES-01**: User can raise a question manually with category, scope assignment, and priority
+- [x] **QUES-02**: AI can raise questions automatically during transcript processing or story generation
+- [x] **QUES-03**: Question owner can answer a question with source attribution
 - [x] **QUES-04**: Answering a question triggers AI impact assessment (unblocks, contradictions, new questions)
 - [x] **QUES-05**: Questions have a full lifecycle: Open > Scoped > Owned > Answered > Reviewed
-- [ ] **QUES-06**: Questions are linked to relevant entities (epics, features, stories, decisions)
-- [ ] **QUES-07**: SA can flag answered questions for review when confidence is below threshold
+- [x] **QUES-06**: Questions are linked to relevant entities (epics, features, stories, decisions)
+- [x] **QUES-07**: SA can flag answered questions for review when confidence is below threshold
 - [ ] **QUES-08**: User can filter and search questions by status, category, scope, owner, and priority
 
 ### AI Agent Harness
 
-- [ ] **AGENT-01**: Three-layer architecture: task definitions, execution engine, context assembly
-- [ ] **AGENT-02**: Task definitions specify required context, token budget, output schema, and validation rules
-- [ ] **AGENT-03**: Execution engine manages AI calls with retry logic, token tracking, and cost recording
-- [ ] **AGENT-04**: Context assembly builds scoped context packages from multiple data sources within token budgets
-- [ ] **AGENT-05**: AI handles ambiguity context-dependently: ask inline when user present, best-guess + flag in task sessions, flag-only in background jobs
-- [ ] **AGENT-06**: All AI interactions are logged with token usage, cost, and session linkage
+- [x] **AGENT-01**: Three-layer architecture: task definitions, execution engine, context assembly
+- [x] **AGENT-02**: Task definitions specify required context, token budget, output schema, and validation rules
+- [x] **AGENT-03**: Execution engine manages AI calls with retry logic, token tracking, and cost recording
+- [x] **AGENT-04**: Context assembly builds scoped context packages from multiple data sources within token budgets
+- [x] **AGENT-05**: AI handles ambiguity context-dependently: ask inline when user present, best-guess + flag in task sessions, flag-only in background jobs
+- [x] **AGENT-06**: All AI interactions are logged with token usage, cost, and session linkage
 
 ### Transcript Processing
 
@@ -55,10 +55,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Chat Interface
 
-- [ ] **CHAT-01**: Each project has one general chat for quick discovery and ad-hoc AI interaction
-- [ ] **CHAT-02**: Task-specific chat sessions exist for heavy-lift operations (transcript processing, story generation, briefings)
-- [ ] **CHAT-03**: All conversations persist with full message history
-- [ ] **CHAT-04**: Chat supports streaming AI responses
+- [x] **CHAT-01**: Each project has one general chat for quick discovery and ad-hoc AI interaction
+- [x] **CHAT-02**: Task-specific chat sessions exist for heavy-lift operations (transcript processing, story generation, briefings)
+- [x] **CHAT-03**: All conversations persist with full message history
+- [x] **CHAT-04**: Chat supports streaming AI responses
 - [x] **CHAT-05**: Token usage and cost are tracked per chat session
 
 ### Knowledge Architecture
@@ -67,7 +67,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **KNOW-02**: AI-curated KnowledgeArticles synthesize understanding into versioned, persistent documents
 - [x] **KNOW-03**: Knowledge articles track staleness and trigger re-synthesis when underlying data changes
 - [x] **KNOW-04**: Article refresh runs as Inngest background jobs, not inline
-- [ ] **KNOW-05**: Two-pass context retrieval: load summaries first, then full content for most relevant articles
+- [x] **KNOW-05**: Two-pass context retrieval: load summaries first, then full content for most relevant articles
 - [x] **KNOW-06**: AI proactively identifies discovery gaps and assesses readiness to start building
 - [x] **KNOW-07**: New information that contradicts existing decisions is automatically flagged as a conflict
 
@@ -84,7 +84,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **DASH-02**: Dashboard shows blocked items and dependency chains
 - [x] **DASH-03**: Dashboard shows project health score derived from discovery completeness
 - [x] **DASH-04**: AI synthesis cache provides "Current Focus" and "Recommended Focus" summaries
-- [x] **DASH-05**: Dashboard data refreshes via Inngest-triggered cached synthesis
+- [ ] **DASH-05**: Dashboard data refreshes via Inngest-triggered cached synthesis
 
 ### Notifications
 
@@ -95,10 +95,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Background Infrastructure
 
-- [ ] **INFRA-01**: Inngest event-driven background job infrastructure with automatic retries
-- [ ] **INFRA-02**: Step functions with checkpoints for long-running operations (transcript processing, embedding gen)
+- [x] **INFRA-01**: Inngest event-driven background job infrastructure with automatic retries
+- [x] **INFRA-02**: Step functions with checkpoints for long-running operations (transcript processing, embedding gen)
 - [x] **INFRA-03**: Background jobs for: article refresh, dashboard synthesis, embedding generation, notification dispatch
-- [ ] **INFRA-04**: Optimistic concurrency control with version-based conflict detection on concurrent edits
+- [x] **INFRA-04**: Optimistic concurrency control with version-based conflict detection on concurrent edits
 
 ### Epic, Feature, and User Story Management
 
@@ -107,7 +107,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **WORK-03**: User can edit and delete own stories; PM/SA can edit any story
 - [x] **WORK-04**: Story status workflow: Draft > Ready > Sprint Planned > In Progress > In Review > QA > Done
 - [x] **WORK-05**: PM manages lifecycle states, developers manage execution states, auto-transition on sprint assignment
-- [x] **WORK-06**: AI-assisted story generation from requirements and discovery context
+- [ ] **WORK-06**: AI-assisted story generation from requirements and discovery context
 - [x] **WORK-07**: Each story tracks impacted Salesforce components (creates/modifies/deletes) via StoryComponent join
 
 ### Sprint Management
@@ -150,7 +150,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Project Administration
 
-- [x] **ADMIN-01**: Optional one-directional push sync to client Jira instance
+- [ ] **ADMIN-01**: Optional one-directional push sync to client Jira instance
 - [x] **ADMIN-02**: PM dashboard with aggregated views across project dimensions
 - [x] **ADMIN-03**: Usage and cost tracking for AI token consumption per project
 
@@ -220,47 +220,47 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
-| AUTH-05 | Phase 1 | Pending |
-| AUTH-06 | Phase 1 | Pending |
-| PROJ-01 | Phase 1 | Pending |
-| PROJ-02 | Phase 1 | Pending |
-| PROJ-03 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
+| AUTH-04 | Phase 1 | Complete |
+| AUTH-05 | Phase 1 | Complete |
+| AUTH-06 | Phase 1 | Complete |
+| PROJ-01 | Phase 6 | Pending |
+| PROJ-02 | Phase 1 | Complete |
+| PROJ-03 | Phase 1 | Complete |
 | PROJ-04 | Phase 5 | Complete |
 | PROJ-05 | Phase 5 | Complete |
-| QUES-01 | Phase 2 | Pending |
-| QUES-02 | Phase 2 | Pending |
-| QUES-03 | Phase 2 | Pending |
+| QUES-01 | Phase 2 | Complete |
+| QUES-02 | Phase 2 | Complete |
+| QUES-03 | Phase 2 | Complete |
 | QUES-04 | Phase 2 | Complete |
 | QUES-05 | Phase 2 | Complete |
-| QUES-06 | Phase 2 | Pending |
-| QUES-07 | Phase 2 | Pending |
-| QUES-08 | Phase 2 | Pending |
-| AGENT-01 | Phase 2 | Pending |
-| AGENT-02 | Phase 2 | Pending |
-| AGENT-03 | Phase 2 | Pending |
-| AGENT-04 | Phase 2 | Pending |
-| AGENT-05 | Phase 2 | Pending |
-| AGENT-06 | Phase 2 | Pending |
+| QUES-06 | Phase 2 | Complete |
+| QUES-07 | Phase 2 | Complete |
+| QUES-08 | Phase 6 | Pending |
+| AGENT-01 | Phase 2 | Complete |
+| AGENT-02 | Phase 2 | Complete |
+| AGENT-03 | Phase 2 | Complete |
+| AGENT-04 | Phase 2 | Complete |
+| AGENT-05 | Phase 2 | Complete |
+| AGENT-06 | Phase 2 | Complete |
 | TRNS-01 | Phase 2 | Complete |
 | TRNS-02 | Phase 2 | Complete |
 | TRNS-03 | Phase 2 | Complete |
 | TRNS-04 | Phase 2 | Complete |
 | TRNS-05 | Phase 2 | Complete |
 | TRNS-06 | Phase 2 | Complete |
-| CHAT-01 | Phase 2 | Pending |
-| CHAT-02 | Phase 2 | Pending |
-| CHAT-03 | Phase 2 | Pending |
-| CHAT-04 | Phase 2 | Pending |
+| CHAT-01 | Phase 2 | Complete |
+| CHAT-02 | Phase 2 | Complete |
+| CHAT-03 | Phase 2 | Complete |
+| CHAT-04 | Phase 2 | Complete |
 | CHAT-05 | Phase 2 | Complete |
 | KNOW-01 | Phase 2 | Complete |
 | KNOW-02 | Phase 2 | Complete |
 | KNOW-03 | Phase 2 | Complete |
 | KNOW-04 | Phase 2 | Complete |
-| KNOW-05 | Phase 2 | Pending |
+| KNOW-05 | Phase 2 | Complete |
 | KNOW-06 | Phase 2 | Complete |
 | KNOW-07 | Phase 2 | Complete |
 | SRCH-01 | Phase 2 | Complete |
@@ -271,21 +271,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-02 | Phase 2 | Complete |
 | DASH-03 | Phase 2 | Complete |
 | DASH-04 | Phase 2 | Complete |
-| DASH-05 | Phase 2 | Complete |
+| DASH-05 | Phase 8 | Pending |
 | NOTF-01 | Phase 2 | Complete |
 | NOTF-02 | Phase 2 | Complete |
 | NOTF-03 | Phase 2 | Complete |
 | NOTF-04 | Phase 2 | Complete |
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-02 | Phase 1 | Complete |
 | INFRA-03 | Phase 2 | Complete |
-| INFRA-04 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Complete |
 | WORK-01 | Phase 3 | Complete |
 | WORK-02 | Phase 3 | Complete |
 | WORK-03 | Phase 3 | Complete |
 | WORK-04 | Phase 3 | Complete |
 | WORK-05 | Phase 3 | Complete |
-| WORK-06 | Phase 3 | Complete |
+| WORK-06 | Phase 7 | Pending |
 | WORK-07 | Phase 3 | Complete |
 | SPRT-01 | Phase 3 | Complete |
 | SPRT-02 | Phase 3 | Complete |
@@ -310,7 +310,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QA-01 | Phase 5 | Complete |
 | QA-02 | Phase 5 | Complete |
 | QA-03 | Phase 5 | Complete |
-| ADMIN-01 | Phase 5 | Complete |
+| ADMIN-01 | Phase 8 | Pending |
 | ADMIN-02 | Phase 5 | Complete |
 | ADMIN-03 | Phase 5 | Complete |
 
@@ -318,7 +318,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v1 requirements: 93 total
 - Mapped to phases: 93
 - Unmapped: 0
+- Complete: 88
+- Pending (gap closure): 5 (PROJ-01, QUES-08, WORK-06, DASH-05, ADMIN-01)
 
 ---
 *Requirements defined: 2026-04-04*
-*Last updated: 2026-04-04 after roadmap creation*
+*Last updated: 2026-04-07 after gap closure phase creation*

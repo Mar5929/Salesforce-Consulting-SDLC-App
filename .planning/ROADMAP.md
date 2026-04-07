@@ -17,6 +17,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 3: Story Management and Sprint Intelligence** - Epic/feature/story CRUD, AI-assisted story generation, sprint management and intelligence
 - [ ] **Phase 4: Salesforce Org Connectivity and Developer Integration** - Org OAuth, metadata sync, brownfield ingestion, REST API for Claude Code
 - [ ] **Phase 5: Document Generation, QA, and Administration** - Branded documents, QA workflow, Jira sync, PM dashboard, project archival
+- [ ] **Phase 6: Schema Fixes** - sandboxStrategy persistence and question category filter
+- [ ] **Phase 7: Story Generation E2E Wiring** - Cross-component wiring to complete AI story generation flow
+- [ ] **Phase 8: Event Wiring and Integration Fixes** - Dashboard auto-refresh, Jira sync field fix, event consumers
+- [ ] **Phase 9: Navigation and Badge Fixes** - Sidebar team link and badge count wiring
 
 ## Phase Details
 
@@ -136,6 +140,45 @@ Plans:
 
 **UI hint**: yes
 
+### Phase 6: Schema Fixes
+**Goal**: Fix data model gaps where user input is silently discarded (sandboxStrategy) and filtering is incomplete (question category)
+**Depends on**: Phase 1
+**Requirements**: PROJ-01, QUES-08
+**Gap Closure:** Closes gaps from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. sandboxStrategy field exists on Project model and is persisted through create and update actions
+  2. category field exists on Question model and category filter works in question list UI
+
+### Phase 7: Story Generation E2E Wiring
+**Goal**: Wire the complete AI story generation flow end-to-end so epicId reaches the API, StoryDraftCards render, and buildStorySessionPrompt activates
+**Depends on**: Phase 3
+**Requirements**: WORK-06
+**Gap Closure:** Closes gaps from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. epicId/featureId are passed as search params in redirect URL from epic detail to chat
+  2. ChatInterface has a STORY_SESSION variant that forwards epicId to the API
+  3. /api/chat receives epicId and calls buildStorySessionPrompt
+  4. StoryDraftCards component is imported and rendered in story session chat
+
+### Phase 8: Event Wiring and Integration Fixes
+**Goal**: Fix broken event chains so discovery dashboard auto-refreshes, Jira sync works from web UI, and retry mechanism functions
+**Depends on**: Phase 5
+**Requirements**: DASH-05, ADMIN-01
+**Gap Closure:** Closes gaps from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. PROJECT_STATE_CHANGED event is sent by state-changing actions, triggering dashboard synthesis
+  2. stories.ts sends newStatus (not toStatus) in STORY_STATUS_CHANGED event
+  3. JIRA_SYNC_REQUESTED event has an Inngest consumer for manual retry
+
+### Phase 9: Navigation and Badge Fixes
+**Goal**: Fix broken sidebar navigation and wire missing badge counts
+**Depends on**: Phase 5
+**Requirements**: PROJ-02
+**Gap Closure:** Closes gaps from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. Sidebar Team link navigates to /projects/{id}/settings/team (not /team)
+  2. AppShell fetches and passes questionReviewCount and openDefectCount to Sidebar
+
 ## Progress
 
 **Execution Order:**
@@ -148,3 +191,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | 3. Story Management and Sprint Intelligence | 0/9 | Planned | - |
 | 4. Salesforce Org Connectivity and Developer Integration | 0/7 | Planned | - |
 | 5. Document Generation, QA, and Administration | 0/9 | Planned | - |
+| 6. Schema Fixes | 0/0 | Planned | - |
+| 7. Story Generation E2E Wiring | 0/0 | Planned | - |
+| 8. Event Wiring and Integration Fixes | 0/0 | Planned | - |
+| 9. Navigation and Badge Fixes | 0/0 | Planned | - |
