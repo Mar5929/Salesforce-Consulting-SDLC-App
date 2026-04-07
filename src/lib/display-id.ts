@@ -11,7 +11,7 @@
 import type { PrismaClient } from "@/generated/prisma"
 
 /** Entity types that support display IDs */
-export type DisplayIdEntityType = "Question" | "Decision" | "Risk" | "Requirement" | "Story"
+export type DisplayIdEntityType = "Question" | "Decision" | "Risk" | "Requirement" | "Story" | "Defect"
 
 /** Entity types that use fixed-prefix display IDs (not Story, which uses epic prefix) */
 type FixedPrefixEntityType = Exclude<DisplayIdEntityType, "Story">
@@ -22,6 +22,7 @@ const ENTITY_PREFIXES: Record<FixedPrefixEntityType, string> = {
   Decision: "D",
   Risk: "R",
   Requirement: "REQ",
+  Defect: "DEF",
 }
 
 /**
@@ -94,6 +95,12 @@ async function getMaxDisplayNumber(
       break
     case "Requirement":
       records = await prismaClient.requirement.findMany({
+        where: { projectId },
+        select: { displayId: true },
+      })
+      break
+    case "Defect":
+      records = await prismaClient.defect.findMany({
         where: { projectId },
         select: { displayId: true },
       })
