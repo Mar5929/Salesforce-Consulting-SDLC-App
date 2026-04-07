@@ -14,7 +14,7 @@ import { format } from "date-fns"
 import { ArrowLeft, Download } from "lucide-react"
 import { getCurrentMember } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { getDocumentDownloadUrl } from "@/actions/documents"
+import { getDownloadUrl } from "@/lib/documents/s3-storage"
 import { Button } from "@/components/ui/button"
 import {
   DocumentPreview,
@@ -60,8 +60,8 @@ export default async function DocumentDetailPage({
   const version = docsOfType.findIndex((d) => d.id === documentId) + 1
 
   // Get presigned download URL (T-05-12: 5-minute TTL)
-  const urlResult = await getDocumentDownloadUrl({ documentId })
-  const downloadUrl = urlResult?.data?.url ?? ""
+  // Membership already verified above, so call s3-storage directly
+  const downloadUrl = doc.s3Key ? await getDownloadUrl(doc.s3Key, 300) : ""
 
   const documentDetail: GeneratedDocumentDetail = {
     id: doc.id,
