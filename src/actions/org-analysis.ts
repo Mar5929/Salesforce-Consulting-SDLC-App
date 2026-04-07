@@ -99,6 +99,9 @@ export const confirmDomainGrouping = actionClient
 
     await verifyAnalysisRole(projectId, ctx.userId)
 
+    // Verify grouping belongs to this project before updating
+    await verifyDomainGroupingOwnership(domainGroupingId, projectId)
+
     await prisma.domainGrouping.update({
       where: { id: domainGroupingId },
       data: { isConfirmed: true },
@@ -124,9 +127,12 @@ export const rejectDomainGrouping = actionClient
 
     await verifyAnalysisRole(projectId, ctx.userId)
 
+    // Verify grouping belongs to this project before deleting
+    await verifyDomainGroupingOwnership(domainGroupingId, projectId)
+
     // Unassign components from this grouping
     await prisma.orgComponent.updateMany({
-      where: { domainGroupingId },
+      where: { domainGroupingId, projectId },
       data: { domainGroupingId: null },
     })
 
@@ -156,6 +162,7 @@ export const editDomainGrouping = actionClient
     const { domainGroupingId, projectId, name, description } = parsedInput
 
     await verifyAnalysisRole(projectId, ctx.userId)
+    await verifyDomainGroupingOwnership(domainGroupingId, projectId)
 
     await prisma.domainGrouping.update({
       where: { id: domainGroupingId },
@@ -184,6 +191,7 @@ export const confirmBusinessProcess = actionClient
     const { businessProcessId, projectId } = parsedInput
 
     await verifyAnalysisRole(projectId, ctx.userId)
+    await verifyBusinessProcessOwnership(businessProcessId, projectId)
 
     await prisma.businessProcess.update({
       where: { id: businessProcessId },
@@ -209,6 +217,7 @@ export const rejectBusinessProcess = actionClient
     const { businessProcessId, projectId } = parsedInput
 
     await verifyAnalysisRole(projectId, ctx.userId)
+    await verifyBusinessProcessOwnership(businessProcessId, projectId)
 
     // Delete the business process (cascade deletes BusinessProcessComponent join records)
     await prisma.businessProcess.delete({
@@ -236,6 +245,7 @@ export const editBusinessProcess = actionClient
     const { businessProcessId, projectId, name, description } = parsedInput
 
     await verifyAnalysisRole(projectId, ctx.userId)
+    await verifyBusinessProcessOwnership(businessProcessId, projectId)
 
     await prisma.businessProcess.update({
       where: { id: businessProcessId },
@@ -317,5 +327,39 @@ async function verifyAnalysisRole(
     throw new Error(
       "Only Solution Architects and Project Managers can manage org analysis"
     )
+  }
+}
+
+/**
+ * Verify that a domain grouping belongs to the specified project.
+ * Prevents cross-project manipulation via crafted IDs.
+ */
+async function verifyDomainGroupingOwnership(
+  domainGroupingId: string,
+  projectId: string
+): Promise<void> {
+  const grouping = await prisma.domainGrouping.findFirst({
+    where: { id: domainGroupingId, projectId },
+    select: { id: true },
+  })
+  if (!grouping) {
+    throw new Error("Domain grouping not found in this project")
+  }
+}
+
+/**
+ * Verify that a business process belongs to the specified project.
+ * Prevents cross-project manipulation via crafted IDs.
+ */
+async function verifyBusinessProcessOwnership(
+  businessProcessId: string,
+  projectId: string
+): Promise<void> {
+  const process = await prisma.businessProcess.findFirst({
+    where: { id: businessProcessId, projectId },
+    select: { id: true },
+  })
+  if (!process) {
+    throw new Error("Business process not found in this project")
   }
 }
