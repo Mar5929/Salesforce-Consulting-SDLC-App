@@ -80,12 +80,26 @@ export const articleRefreshFunction = inngest.createFunction(
       }
     })
 
-    // Step 3: Update article with new content and clear staleness
+    // Step 3: Update article with new content, summary, and clear staleness
     const updated = await step.run("update-article", async () => {
+      // Parse structured output from article synthesis task
+      let content: string
+      let summary: string
+      try {
+        const parsed = JSON.parse(synthesisResult.output.trim())
+        content = parsed.content
+        summary = parsed.summary
+      } catch {
+        // Fallback: use raw output as content if JSON parsing fails
+        content = synthesisResult.output
+        summary = content.slice(0, 200).replace(/\n/g, " ").trim()
+      }
+
       const updatedArticle = await prisma.knowledgeArticle.update({
         where: { id: articleId },
         data: {
-          content: synthesisResult.output,
+          content,
+          summary,
           version: { increment: 1 },
           isStale: false,
           staleReason: null,

@@ -142,7 +142,11 @@ Update the knowledge article based on all available source information. You must
 5. Structure the content with markdown headings
 
 ## Output Format
-Return the updated article content as markdown. At the end, include a brief "Changes in this version" section listing what was updated.
+Return a JSON object with exactly two fields:
+- "content": The updated article content as markdown. At the end, include a brief "Changes in this version" section listing what was updated.
+- "summary": A 1-2 sentence plain-text summary of what this article covers, suitable for display in a list view.
+
+Return ONLY the JSON object, no markdown code fences or other wrapping.
 
 Be thorough but concise. Focus on actionable understanding that helps the project team.`,
 
@@ -155,6 +159,21 @@ Be thorough but concise. Focus on actionable understanding that helps the projec
 
     if (!output || output.trim().length < 50) {
       errors.push("Output is too short to be a valid article")
+    }
+
+    // Validate JSON structure with content and summary fields
+    try {
+      const parsed = JSON.parse(output.trim())
+      if (typeof parsed.content !== "string" || !parsed.content.trim()) {
+        errors.push("Output JSON must include a non-empty 'content' field")
+      }
+      if (typeof parsed.summary !== "string" || !parsed.summary.trim()) {
+        errors.push("Output JSON must include a non-empty 'summary' field")
+      }
+    } catch {
+      errors.push(
+        "Output must be valid JSON with 'content' and 'summary' fields"
+      )
     }
 
     return {
