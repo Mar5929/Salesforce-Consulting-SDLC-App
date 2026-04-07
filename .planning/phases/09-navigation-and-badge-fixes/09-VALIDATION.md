@@ -1,9 +1,9 @@
 ---
 phase: 9
 slug: navigation-and-badge-fixes
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: approved
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-07
 ---
 
@@ -38,8 +38,8 @@ created: 2026-04-07
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 09-01-01 | 01 | 1 | PROJ-02 | — | N/A | manual | Verify Team link href contains `/settings/team` | N/A | ⬜ pending |
-| 09-01-02 | 01 | 1 | PROJ-02 | — | N/A | manual | Verify AppShell passes questionReviewCount and openDefectCount to Sidebar | N/A | ⬜ pending |
+| 09-01-01 | 01 | 1 | PROJ-02 | — | N/A | automated | `grep -n "settings/team" src/components/layout/sidebar.tsx` | ✅ | ⬜ pending |
+| 09-01-02 | 01 | 1 | PROJ-02 | — | N/A | automated | `grep -n "questionReviewCount\|openDefectCount" src/components/layout/app-shell.tsx && npx tsc --noEmit` | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -53,20 +53,17 @@ created: 2026-04-07
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| Team link navigates to /projects/{id}/settings/team | PROJ-02 | Simple href change — grep verification sufficient | `grep "settings/team" src/components/layout/sidebar.tsx` |
-| Badge counts rendered in sidebar | PROJ-02 | Prop wiring — grep verification sufficient | `grep "questionReviewCount" src/components/layout/app-shell.tsx` |
+*All phase behaviors have automated verification (grep + tsc).*
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 10s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 10s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-04-07
