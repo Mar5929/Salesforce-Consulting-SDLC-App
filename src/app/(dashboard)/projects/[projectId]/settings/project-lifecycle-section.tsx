@@ -163,7 +163,7 @@ export function ProjectLifecycleSection({
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  variant="destructive"
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   onClick={() => executeArchive({ projectId })}
                   disabled={isArchiving}
                 >
