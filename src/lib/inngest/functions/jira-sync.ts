@@ -72,11 +72,12 @@ export const jiraSyncOnStatusChange = inngest.createFunction(
       )
 
       // Step 4: Sync story status (transition in Jira)
+      // Use newStatus from event payload, not potentially-stale DB value
       await step.run("sync-story-status", async () => {
         return syncStoryStatus(
           jiraConfig as unknown as JiraConfig,
           storyId,
-          story.status
+          newStatus
         )
       })
 
@@ -228,6 +229,8 @@ export const jiraSyncRetryFunction = inngest.createFunction(
       )
 
       // Step 4: Sync story status (transition in Jira)
+      // Intentionally uses current DB status (not event payload) for retry:
+      // manual retry should re-sync the story's actual current state to Jira.
       await step.run("sync-story-status", async () => {
         return syncStoryStatus(
           jiraConfig as unknown as JiraConfig,
