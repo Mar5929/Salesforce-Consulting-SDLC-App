@@ -112,6 +112,12 @@ export const uploadTranscript = actionClient
         },
       })
 
+      // Link conversation back to transcript via FK
+      await prisma.transcript.update({
+        where: { id: transcript.id },
+        data: { conversationId: conversation.id },
+      })
+
       // Send Inngest event to trigger processing (T-02-20)
       await inngest.send({
         name: EVENTS.TRANSCRIPT_UPLOADED,
@@ -166,6 +172,13 @@ export const getTranscript = actionClient
       where: { id: transcriptId },
       include: {
         sessionLog: true,
+        conversation: {
+          include: {
+            messages: {
+              orderBy: { createdAt: "asc" },
+            },
+          },
+        },
       },
     })
 
@@ -173,23 +186,9 @@ export const getTranscript = actionClient
       throw new Error("Transcript not found")
     }
 
-    // Find the linked conversation
-    const conversation = await prisma.conversation.findFirst({
-      where: {
-        projectId,
-        conversationType: "TRANSCRIPT_SESSION",
-        title: { startsWith: `Processing: ${transcript.title}` },
-      },
-      include: {
-        messages: {
-          orderBy: { createdAt: "asc" },
-        },
-      },
-    })
-
     return {
       ...transcript,
-      conversation,
+      conversation: transcript.conversation,
     }
   })
 

@@ -1051,7 +1051,8 @@ model Conversation {
   sessionLog       SessionLog?   @relation(fields: [sessionLogId], references: [id])
 
   // Relations
-  messages ChatMessage[]
+  messages    ChatMessage[]
+  transcript  Transcript?
 }
 
 model ChatMessage {
@@ -1098,10 +1099,12 @@ model Transcript {
   s3Key            String?
   processingStatus TranscriptStatus @default(PENDING)
   sessionLogId     String?
+  conversationId   String?          @unique
 
   project          Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   uploadedBy       ProjectMember @relation(fields: [uploadedById], references: [id])
   sessionLog       SessionLog?   @relation(fields: [sessionLogId], references: [id])
+  conversation     Conversation? @relation(fields: [conversationId], references: [id])
 }
 
 model SessionLog {
