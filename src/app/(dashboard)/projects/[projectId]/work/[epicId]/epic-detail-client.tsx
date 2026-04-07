@@ -50,7 +50,10 @@ export function EpicDetailClient({ projectId, epic }: EpicDetailClientProps) {
   const { execute: executeInitiateSession, isExecuting } = useAction(initiateStorySession, {
     onSuccess: ({ data }) => {
       if (data?.conversationId) {
-        router.push(`/projects/${projectId}/chat/${data.conversationId}`)
+        const params = new URLSearchParams()
+        params.set("epicId", epic.id)
+        if (data.featureId) params.set("featureId", data.featureId)
+        router.push(`/projects/${projectId}/chat/${data.conversationId}?${params.toString()}`)
       }
     },
     onError: ({ error }) => {

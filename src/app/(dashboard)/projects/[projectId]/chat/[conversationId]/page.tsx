@@ -6,6 +6,7 @@ import type { UIMessage } from "ai"
 
 interface ConversationPageProps {
   params: Promise<{ projectId: string; conversationId: string }>
+  searchParams: Promise<{ epicId?: string; featureId?: string }>
 }
 
 /**
@@ -15,8 +16,10 @@ interface ConversationPageProps {
  */
 export default async function ConversationPage({
   params,
+  searchParams,
 }: ConversationPageProps) {
   const { projectId, conversationId } = await params
+  const { epicId, featureId } = await searchParams
 
   const result = await getConversation({ conversationId, projectId })
 
@@ -26,8 +29,12 @@ export default async function ConversationPage({
 
   const conversation = result.data
 
-  // Determine conversation type for layout
-  const isTaskSession = conversation.conversationType !== "GENERAL_CHAT"
+  // Map DB conversation type to ChatInterface variant
+  const chatType = conversation.conversationType === "GENERAL_CHAT"
+    ? "GENERAL_CHAT"
+    : conversation.conversationType === "STORY_SESSION"
+      ? "STORY_SESSION"
+      : "TASK_SESSION"
 
   // Convert DB messages to UIMessage format
   const initialMessages: UIMessage[] = conversation.messages.map((msg) => ({
@@ -51,9 +58,11 @@ export default async function ConversationPage({
       <ChatInterface
         conversationId={conversation.id}
         projectId={projectId}
-        conversationType={isTaskSession ? "TASK_SESSION" : "GENERAL_CHAT"}
+        conversationType={chatType}
         initialMessages={initialMessages}
         sessionTitle={conversation.title ?? undefined}
+        epicId={epicId}
+        featureId={featureId}
       />
     </div>
   )

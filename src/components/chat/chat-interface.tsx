@@ -14,9 +14,11 @@ import { ContextPanel } from "./context-panel"
 interface ChatInterfaceProps {
   conversationId: string
   projectId: string
-  conversationType: "GENERAL_CHAT" | "TASK_SESSION"
+  conversationType: "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION"
   initialMessages?: UIMessage[]
   sessionTitle?: string
+  epicId?: string
+  featureId?: string
 }
 
 /**
@@ -30,6 +32,8 @@ export function ChatInterface({
   conversationType,
   initialMessages = [],
   sessionTitle,
+  epicId,
+  featureId,
 }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState("")
 
@@ -37,7 +41,7 @@ export function ChatInterface({
     id: conversationId,
     transport: new DefaultChatTransport({
       api: "/api/chat",
-      body: { projectId, conversationId },
+      body: { projectId, conversationId, ...(epicId && { epicId }), ...(featureId && { featureId }) },
     }),
     messages: initialMessages,
     onError: (err) => {
@@ -88,7 +92,7 @@ export function ChatInterface({
     createdAt: new Date(),
   }))
 
-  const isTaskSession = conversationType === "TASK_SESSION"
+  const isTaskSession = conversationType === "TASK_SESSION" || conversationType === "STORY_SESSION"
   const title =
     sessionTitle ??
     (isTaskSession ? "Task Session" : "Project Chat")
