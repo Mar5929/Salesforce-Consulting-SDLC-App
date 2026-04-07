@@ -4,8 +4,13 @@
  * Generates human-readable, sequential display IDs for project entities.
  * Format: PREFIX-NUMBER (e.g., Q-1, Q-2, D-1, REQ-1, R-1)
  *
- * Uses a transaction with retry on unique constraint violation to prevent
- * duplicate IDs under concurrent creation (T-02-15).
+ * Uses retry on unique constraint violation to mitigate duplicate IDs
+ * under concurrent creation (T-02-15).
+ *
+ * KNOWN LIMITATION: The read-and-create is not wrapped in a serializable
+ * transaction. Under high concurrency (e.g., bulk defect import), the single
+ * retry may not be sufficient. Consider migrating to a database-level sequence
+ * for display IDs in a future iteration if bulk creation is needed.
  */
 
 import type { PrismaClient } from "@/generated/prisma"
