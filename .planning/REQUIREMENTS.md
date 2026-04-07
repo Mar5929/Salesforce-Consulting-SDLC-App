@@ -84,7 +84,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **DASH-02**: Dashboard shows blocked items and dependency chains
 - [x] **DASH-03**: Dashboard shows project health score derived from discovery completeness
 - [x] **DASH-04**: AI synthesis cache provides "Current Focus" and "Recommended Focus" summaries
-- [ ] **DASH-05**: Dashboard data refreshes via Inngest-triggered cached synthesis
+- [x] **DASH-05**: Dashboard data refreshes via Inngest-triggered cached synthesis
 
 ### Notifications
 
@@ -150,7 +150,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Project Administration
 
-- [ ] **ADMIN-01**: Optional one-directional push sync to client Jira instance
+- [x] **ADMIN-01**: Optional one-directional push sync to client Jira instance
 - [x] **ADMIN-02**: PM dashboard with aggregated views across project dimensions
 - [x] **ADMIN-03**: Usage and cost tracking for AI token consumption per project
 
@@ -271,7 +271,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-02 | Phase 2 | Complete |
 | DASH-03 | Phase 2 | Complete |
 | DASH-04 | Phase 2 | Complete |
-| DASH-05 | Phase 8 | Pending |
+| DASH-05 | Phase 8 | Complete |
 | NOTF-01 | Phase 2 | Complete |
 | NOTF-02 | Phase 2 | Complete |
 | NOTF-03 | Phase 2 | Complete |
@@ -310,7 +310,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QA-01 | Phase 5 | Complete |
 | QA-02 | Phase 5 | Complete |
 | QA-03 | Phase 5 | Complete |
-| ADMIN-01 | Phase 8 | Pending |
+| ADMIN-01 | Phase 8 | Complete |
 | ADMIN-02 | Phase 5 | Complete |
 | ADMIN-03 | Phase 5 | Complete |
 

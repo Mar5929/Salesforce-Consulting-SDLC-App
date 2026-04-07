@@ -181,7 +181,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 08-01-PLAN.md -- Wire PROJECT_STATE_CHANGED sends, fix STORY_STATUS_CHANGED field names, create Jira retry consumer
+- [x] 08-01-PLAN.md -- Wire PROJECT_STATE_CHANGED sends, fix STORY_STATUS_CHANGED field names, create Jira retry consumer
 
 ### Phase 9: Navigation and Badge Fixes
 **Goal**: Fix broken sidebar navigation and wire missing badge counts
