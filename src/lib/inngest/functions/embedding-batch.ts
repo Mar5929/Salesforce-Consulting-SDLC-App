@@ -66,6 +66,66 @@ async function markFailed(
   }
 }
 
+/**
+ * Resolve entities from caller payload shapes into EmbeddingEntity[].
+ *
+ * Callers send two different shapes:
+ *   - transcript-processing.ts: { projectId, sourceEntityType: "transcript", sourceEntityId }
+ *   - article-refresh.ts:      { projectId, entityType: "KNOWLEDGE_ARTICLE", entityIds: string[] }
+ *
+ * This function normalises both into EmbeddingEntity[] by querying the database.
+ */
+async function resolveEntities(data: Record<string, unknown>): Promise<EmbeddingEntity[]> {
+  const projectId = data.projectId as string
+
+  // Shape 1: caller already provides fully-formed entities (future-proofing)
+  if (Array.isArray(data.entities) && data.entities.length > 0) {
+    return data.entities as EmbeddingEntity[]
+  }
+
+  // Shape 2: transcript-processing sends { sourceEntityType, sourceEntityId }
+  // Find all KnowledgeArticles in this project with PENDING embedding status.
+  // Transcript processing creates questions/decisions/risks but triggers
+  // downstream article synthesis — those articles land with PENDING status.
+  if (data.sourceEntityType === "transcript") {
+    const articles = await prisma.knowledgeArticle.findMany({
+      where: {
+        projectId,
+        embeddingStatus: "PENDING",
+      },
+      select: { id: true, title: true, content: true, summary: true },
+    })
+
+    return articles.map((a) => ({
+      type: "KnowledgeArticle" as const,
+      id: a.id,
+      text: `${a.title}\n\n${a.content}`,
+    }))
+  }
+
+  // Shape 3: article-refresh sends { entityType: "KNOWLEDGE_ARTICLE", entityIds }
+  if (data.entityType === "KNOWLEDGE_ARTICLE" && Array.isArray(data.entityIds)) {
+    const entityIds = data.entityIds as string[]
+    if (entityIds.length === 0) return []
+
+    const articles = await prisma.knowledgeArticle.findMany({
+      where: {
+        id: { in: entityIds },
+        projectId,
+      },
+      select: { id: true, title: true, content: true, summary: true },
+    })
+
+    return articles.map((a) => ({
+      type: "KnowledgeArticle" as const,
+      id: a.id,
+      text: `${a.title}\n\n${a.content}`,
+    }))
+  }
+
+  return []
+}
+
 export const embeddingBatchFunction = inngest.createFunction(
   {
     id: "embedding-batch",
@@ -80,18 +140,28 @@ export const embeddingBatchFunction = inngest.createFunction(
     triggers: [{ event: EVENTS.EMBEDDING_BATCH_REQUESTED }],
   },
   async ({ event, step }: { event: any; step: any }) => {
-    const { projectId, entities } = event.data as {
-      projectId: string
-      entities: EmbeddingEntity[]
-    }
+    const projectId = event.data.projectId as string
+
+    // Step 1: Resolve entities from whichever payload shape the caller sent
+    const entities = await step.run("resolve-entities", async () => {
+      try {
+        return await resolveEntities(event.data as Record<string, unknown>)
+      } catch (error) {
+        console.error(
+          `[embedding-batch] Failed to resolve entities for project ${projectId}:`,
+          error
+        )
+        return []
+      }
+    })
 
     if (!entities || entities.length === 0) {
       return { status: "skipped", reason: "No entities to embed" }
     }
 
-    // Step 1: Generate embeddings via Voyage AI
+    // Step 2: Generate embeddings via Voyage AI
     const embeddings = await step.run("generate-embeddings", async () => {
-      const texts = entities.map((e) => e.text)
+      const texts = entities.map((e: EmbeddingEntity) => e.text)
       const result = await generateEmbeddings(texts)
 
       if (!result) {
@@ -108,13 +178,13 @@ export const embeddingBatchFunction = inngest.createFunction(
       return { status: "skipped", reason: "Voyage API not configured or failed" }
     }
 
-    // Step 2: Store embeddings in database via raw SQL
+    // Step 3: Store embeddings in database via raw SQL
     const storeResult = await step.run("store-embeddings", async () => {
       let succeeded = 0
       let failed = 0
 
       for (let i = 0; i < entities.length; i++) {
-        const entity = entities[i]
+        const entity = entities[i] as EmbeddingEntity
         const embedding = embeddings[i]
 
         if (!embedding) {
