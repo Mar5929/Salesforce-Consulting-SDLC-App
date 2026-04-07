@@ -5,27 +5,39 @@
 
 **Date:** 2026-04-07
 **Phase:** 09-navigation-and-badge-fixes
-**Areas discussed:** Scope assessment
+**Areas discussed:** Badge fetch strategy, Badge count definitions
 
 ---
 
-## Scope Assessment
+## Badge Fetch Strategy
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Create context now | Both fixes are clear from success criteria and codebase. No gray areas. | ✓ |
-| Discuss badge fetching | Talk through how/where to fetch badge counts | |
-| Discuss both areas | Walk through Team link fix and badge wiring details | |
+| Layout server component query | Add Prisma count() calls in layout.tsx, pass through AppShell props — follows existing pattern | ✓ |
+| Server action | Client-side fetch via server action on mount | |
+| API route | Dedicated /api endpoint for badge counts | |
 
-**User's choice:** Create context now (Recommended)
-**Notes:** Phase is two clear-cut fixes with no design ambiguity. User confirmed no discussion needed.
+**User's choice:** Claude's recommendation — layout server component query
+**Notes:** User delegated all decisions to Claude. Layout query chosen because the existing data flow pattern already passes currentMemberRole and activeProjectId from layout → AppShell → Sidebar. Badge counts follow the same path with zero new infrastructure.
+
+---
+
+## Badge Count Definitions
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Actionable counts only | questionReviewCount = ANSWERED status, openDefectCount = OPEN status | ✓ |
+| Broader counts | Include multiple statuses (e.g., all non-closed) | |
+
+**User's choice:** Claude's recommendation — actionable counts only
+**Notes:** ANSWERED questions are awaiting review (the actionable step in the 5-state lifecycle). OPEN defects are unresolved. These represent "things that need attention" — the purpose of badge counts.
 
 ---
 
 ## Claude's Discretion
 
-- Badge count fetching strategy (server action vs API route vs layout data pass)
+None remaining — all areas resolved in this update session.
 
 ## Deferred Ideas
 
-None
+None — discussion stayed within phase scope.
