@@ -54,6 +54,7 @@ export interface StoryRow {
   status: string
   priority: string
   storyPoints: number | null
+  defectCount?: number
   assignee?: { id: string; displayName: string; email: string } | null
   feature?: { id: string; name: string; prefix: string } | null
   sprint?: { id: string; name: string } | null
@@ -67,6 +68,8 @@ export interface StoryRow {
 interface StoryTableProps {
   stories: StoryRow[]
   projectId: string
+  epicId?: string
+  featureId?: string
   onRowClick?: (storyId: string) => void
   sprints?: Array<{ id: string; name: string }>
   members?: Array<{ id: string; displayName: string; email: string }>
@@ -120,6 +123,8 @@ const ALL_STATUSES = [
 export function StoryTable({
   stories,
   projectId,
+  epicId,
+  featureId,
   onRowClick,
   sprints = [],
   members = [],
@@ -259,6 +264,20 @@ export function StoryTable({
           ),
         size: 120,
       },
+      {
+        id: "defects",
+        header: "Defects",
+        cell: ({ row }) =>
+          row.original.defectCount && row.original.defectCount > 0 ? (
+            <Badge
+              variant="outline"
+              className="bg-red-50 text-red-600 border-red-200 text-[12px]"
+            >
+              {row.original.defectCount}
+            </Badge>
+          ) : null,
+        size: 80,
+      },
     ],
     []
   )
@@ -307,6 +326,10 @@ export function StoryTable({
   }
 
   function handleRowClick(storyId: string) {
+    if (epicId && featureId) {
+      router.push(`/projects/${projectId}/work/${epicId}/${featureId}/stories/${storyId}`)
+      return
+    }
     if (onRowClick) {
       onRowClick(storyId)
     }

@@ -115,6 +115,8 @@ export function FeatureDetailClient({
         <StoryTable
           stories={stories}
           projectId={projectId}
+          epicId={epicId}
+          featureId={feature.id}
           onRowClick={handleStoryClick}
         />
       ) : (
