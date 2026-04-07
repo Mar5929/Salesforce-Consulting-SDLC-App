@@ -23,7 +23,7 @@ export const articleRefreshFunction = inngest.createFunction(
     concurrency: [
       {
         limit: 2,
-        scope: "env",
+        scope: "fn",
         key: "event.data.projectId",
       },
     ],
