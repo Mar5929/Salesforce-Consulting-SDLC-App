@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { FolderKanban, MessageSquare, Settings, Users, CircleHelp, FileText, BookOpen, LayoutDashboard, Layers, Inbox, Timer, Cloud, Microscope, type LucideIcon } from "lucide-react"
+import { FolderKanban, MessageSquare, Settings, Users, CircleHelp, FileText, BookOpen, LayoutDashboard, Layers, Inbox, Timer, Cloud, Microscope, FileOutput, Bug, BarChart3, type LucideIcon } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ProjectSwitcher } from "@/components/layout/project-switcher"
 import { UserMenu } from "@/components/layout/user-menu"
@@ -20,9 +20,10 @@ interface SidebarProps {
   currentMemberRole?: string
   activeProjectId?: string
   questionReviewCount?: number
+  openDefectCount?: number
 }
 
-function buildNavItems(activeProjectId?: string, questionReviewCount?: number): NavItem[] {
+function buildNavItems(activeProjectId?: string, questionReviewCount?: number, openDefectCount?: number): NavItem[] {
   return [
     {
       label: "Projects",
@@ -112,6 +113,31 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number): 
       roles: undefined, // all roles
     },
     {
+      label: "Documents",
+      icon: FileOutput,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/documents`
+        : "/documents",
+      roles: ["PM", "SOLUTION_ARCHITECT"],
+    },
+    {
+      label: "Defects",
+      icon: Bug,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/defects`
+        : "/defects",
+      roles: undefined, // all roles
+      badge: openDefectCount,
+    },
+    {
+      label: "PM Dashboard",
+      icon: BarChart3,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/pm-dashboard`
+        : "/pm-dashboard",
+      roles: ["PM", "SOLUTION_ARCHITECT"],
+    },
+    {
       label: "Settings",
       icon: Settings,
       href: activeProjectId
@@ -128,10 +154,10 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number): 
   ]
 }
 
-export function Sidebar({ currentMemberRole, activeProjectId, questionReviewCount }: SidebarProps) {
+export function Sidebar({ currentMemberRole, activeProjectId, questionReviewCount, openDefectCount }: SidebarProps) {
   const pathname = usePathname()
 
-  const NAV_ITEMS = buildNavItems(activeProjectId, questionReviewCount)
+  const NAV_ITEMS = buildNavItems(activeProjectId, questionReviewCount, openDefectCount)
 
   const visibleItems = NAV_ITEMS.filter(
     (item) => !item.roles || (currentMemberRole && item.roles.includes(currentMemberRole))
