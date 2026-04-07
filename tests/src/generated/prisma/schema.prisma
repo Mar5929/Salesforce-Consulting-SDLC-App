@@ -1,0 +1,1374 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum EngagementType {
+  GREENFIELD
+  BUILD_PHASE
+  MANAGED_SERVICES
+  RESCUE_TAKEOVER
+}
+
+enum ProjectPhase {
+  DISCOVERY
+  REQUIREMENTS
+  SOLUTION_DESIGN
+  BUILD
+  TESTING
+  DEPLOYMENT
+  HYPERCARE
+  ARCHIVE
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ProjectRole {
+  SOLUTION_ARCHITECT
+  DEVELOPER
+  PM
+  BA
+  QA
+}
+
+enum MemberStatus {
+  ACTIVE
+  REMOVED
+}
+
+enum EpicStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+}
+
+enum EpicPhaseType {
+  DISCOVERY
+  DESIGN
+  BUILD
+  TEST
+  DEPLOY
+}
+
+enum EpicPhaseStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+  SKIPPED
+}
+
+enum FeatureStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+}
+
+enum StoryStatus {
+  DRAFT
+  READY
+  SPRINT_PLANNED
+  IN_PROGRESS
+  IN_REVIEW
+  QA
+  DONE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum QuestionScope {
+  ENGAGEMENT
+  EPIC
+  FEATURE
+}
+
+enum QuestionCategory {
+  BUSINESS_PROCESS
+  TECHNICAL
+  DATA
+  INTEGRATION
+  SECURITY
+  COMPLIANCE
+  DESIGN
+  GENERAL
+}
+
+enum QuestionStatus {
+  OPEN
+  SCOPED
+  OWNED
+  ANSWERED
+  REVIEWED
+  PARKED
+}
+
+enum Confidence {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum RequirementStatus {
+  CAPTURED
+  MAPPED
+  DEFERRED
+}
+
+enum RiskLikelihood {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RiskImpact {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RiskSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskStatus {
+  OPEN
+  MITIGATED
+  CLOSED
+  ACCEPTED
+}
+
+enum MilestoneStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+}
+
+enum SprintStatus {
+  PLANNING
+  ACTIVE
+  COMPLETE
+}
+
+enum TestType {
+  HAPPY_PATH
+  EDGE_CASE
+  NEGATIVE
+  BULK
+}
+
+enum TestSource {
+  AI_GENERATED
+  MANUAL
+}
+
+enum TestResult {
+  PASS
+  FAIL
+  BLOCKED
+}
+
+enum DefectSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DefectStatus {
+  OPEN
+  ASSIGNED
+  FIXED
+  VERIFIED
+  CLOSED
+}
+
+enum ComponentType {
+  OBJECT
+  FIELD
+  APEX_CLASS
+  APEX_TRIGGER
+  FLOW
+  PROCESS_BUILDER
+  WORKFLOW_RULE
+  VALIDATION_RULE
+  LWC
+  AURA
+  PERMISSION_SET
+  PROFILE
+  PERMISSION_SET_GROUP
+  CONNECTED_APP
+  NAMED_CREDENTIAL
+  REMOTE_SITE_SETTING
+  PLATFORM_EVENT
+  CUSTOM_METADATA_TYPE
+  RECORD_TYPE
+  PAGE_LAYOUT
+  INSTALLED_PACKAGE
+  OTHER
+}
+
+enum OrgRelationshipType {
+  LOOKUP
+  MASTER_DETAIL
+  TRIGGER_ON
+  FLOW_ON
+  REFERENCES
+}
+
+enum ComponentStatus {
+  EXISTING
+  PLANNED
+  DEPRECATED
+}
+
+enum EmbeddingStatus {
+  PENDING
+  GENERATED
+  FAILED
+}
+
+enum BusinessProcessStatus {
+  DISCOVERED
+  DOCUMENTED
+  CONFIRMED
+  DEPRECATED
+}
+
+enum Complexity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BusinessProcessDependencyType {
+  TRIGGERS
+  FEEDS_DATA
+  REQUIRES_COMPLETION
+  SHARED_COMPONENTS
+}
+
+enum KnowledgeArticleType {
+  BUSINESS_PROCESS
+  INTEGRATION
+  ARCHITECTURE_DECISION
+  DOMAIN_OVERVIEW
+  CROSS_CUTTING_CONCERN
+  STAKEHOLDER_CONTEXT
+}
+
+enum KnowledgeAuthorType {
+  AI_GENERATED
+  HUMAN_AUTHORED
+  AI_GENERATED_HUMAN_EDITED
+}
+
+enum KnowledgeArticleRefEntityType {
+  BUSINESS_PROCESS
+  ORG_COMPONENT
+  EPIC
+  STORY
+  QUESTION
+  DECISION
+}
+
+enum ConversationType {
+  GENERAL_CHAT
+  TRANSCRIPT_SESSION
+  STORY_SESSION
+  BRIEFING_SESSION
+  QUESTION_SESSION
+  ENRICHMENT_SESSION
+}
+
+enum ConversationStatus {
+  ACTIVE
+  COMPLETE
+  FAILED
+}
+
+enum ChatMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum NotificationType {
+  QUESTION_ANSWERED
+  WORK_ITEM_UNBLOCKED
+  SPRINT_CONFLICT_DETECTED
+  AI_PROCESSING_COMPLETE
+  QUESTION_AGING
+  HEALTH_SCORE_CHANGED
+  QUESTION_ASSIGNED
+  STORY_STATUS_CHANGED
+  STORY_MOVED_TO_QA
+  STORY_REASSIGNED
+  DECISION_RECORDED
+  RISK_CHANGED
+  ARTICLE_FLAGGED_STALE
+  METADATA_SYNC_COMPLETE
+}
+
+enum NotificationEntityType {
+  QUESTION
+  STORY
+  SPRINT
+  PROJECT
+  ARTICLE
+  BUSINESS_PROCESS
+  DECISION
+  RISK
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ImpactType {
+  CREATE
+  MODIFY
+  DELETE
+}
+
+enum TranscriptStatus {
+  PENDING
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
+enum SessionLogTaskType {
+  TRANSCRIPT_PROCESSING
+  QUESTION_ANSWERING
+  STORY_GENERATION
+  STORY_ENRICHMENT
+  BRIEFING_GENERATION
+  STATUS_REPORT_GENERATION
+  DOCUMENT_GENERATION
+  SPRINT_ANALYSIS
+  CONTEXT_PACKAGE_ASSEMBLY
+  ORG_QUERY
+  DASHBOARD_SYNTHESIS
+}
+
+enum SessionLogStatus {
+  RUNNING
+  COMPLETE
+  FAILED
+  PARTIAL
+}
+
+enum DocumentType {
+  BRD
+  SDD
+  SOW
+  STATUS_REPORT
+  PRESENTATION
+  TEST_SCRIPT
+  DEPLOYMENT_RUNBOOK
+  TRAINING_MATERIAL
+  OTHER
+}
+
+enum DocumentFormat {
+  DOCX
+  PPTX
+  PDF
+}
+
+// ============================================================================
+// Models
+// ============================================================================
+
+model Project {
+  id                        String         @id @default(cuid())
+  name                      String
+  clientName                String
+  engagementType            EngagementType
+  currentPhase              ProjectPhase   @default(DISCOVERY)
+  startDate                 DateTime
+  targetEndDate             DateTime?
+  sandboxStrategy           String?
+  status                    ProjectStatus  @default(ACTIVE)
+  sfOrgInstanceUrl          String?
+  sfOrgAccessToken          String?
+  sfOrgRefreshToken         String?
+  sfOrgLastSyncAt           DateTime?
+  sfOrgSyncIntervalHours    Int            @default(4)
+  cachedBriefingContent     Json?
+  cachedBriefingGeneratedAt DateTime?
+  healthScoreThresholds     Json?
+  keyVersion                Int            @default(1)
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+
+  // Relations
+  members            ProjectMember[]
+  epics              Epic[]
+  features           Feature[]
+  stories            Story[]
+  questions          Question[]
+  decisions          Decision[]
+  requirements       Requirement[]
+  risks              Risk[]
+  milestones         Milestone[]
+  sprints            Sprint[]
+  defects            Defect[]
+  orgComponents      OrgComponent[]
+  domainGroupings    DomainGrouping[]
+  businessProcesses  BusinessProcess[]
+  knowledgeArticles  KnowledgeArticle[]
+  conversations      Conversation[]
+  notifications      Notification[]
+  transcripts        Transcript[]
+  sessionLogs        SessionLog[]
+  generatedDocuments GeneratedDocument[]
+  attachments        Attachment[]
+  storyComponents    StoryComponent[]
+  orgSyncRuns        OrgSyncRun[]
+  apiKeys            ApiKey[]
+  jiraConfig         JiraConfig?
+  jiraSyncRecords    JiraSyncRecord[]
+}
+
+model ProjectMember {
+  id          String       @id @default(cuid())
+  projectId   String
+  clerkUserId String
+  displayName String
+  email       String
+  role        ProjectRole
+  status      MemberStatus @default(ACTIVE)
+  joinedAt    DateTime     @default(now())
+  removedAt   DateTime?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Relations for ownership/assignment
+  ownedQuestions       Question[]                  @relation("QuestionOwner")
+  answeredQuestions    Question[]                  @relation("QuestionAnswerer")
+  madeDecisions        Decision[]                  @relation("DecisionMaker")
+  ownedRisks           Risk[]                      @relation("RiskOwner")
+  assignedStories      Story[]                     @relation("StoryAssignee")
+  testAssignedStories  Story[]                     @relation("StoryTestAssignee")
+  assignedDefects      Defect[]                    @relation("DefectAssignee")
+  createdDefects       Defect[]                    @relation("DefectCreator")
+  testExecutions       TestExecution[]
+  businessAnnotations  BusinessContextAnnotation[]
+  uploadedTranscripts  Transcript[]
+  sessionLogs          SessionLog[]
+  generatedDocuments   GeneratedDocument[]
+  uploadedAttachments  Attachment[]
+  notifications        Notification[]
+  statusTransitions    StatusTransition[]
+  versionHistories     VersionHistory[]
+  createdConversations Conversation[]
+
+  apiKeys ApiKey[]
+
+  @@unique([projectId, clerkUserId])
+}
+
+model Epic {
+  id          String     @id @default(cuid())
+  projectId   String
+  name        String
+  prefix      String
+  description String?
+  status      EpicStatus @default(NOT_STARTED)
+  sortOrder   Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Relations
+  phases              EpicPhase[]
+  features            Feature[]
+  stories             Story[]
+  questions           Question[]           @relation("QuestionScopeEpic")
+  questionBlocksEpics QuestionBlocksEpic[]
+  questionAffects     QuestionAffects[]
+  decisionScopes      DecisionScope[]
+  requirementEpics    RequirementEpic[]
+  riskEpics           RiskEpic[]
+
+  @@unique([projectId, prefix])
+}
+
+model EpicPhase {
+  id        String          @id @default(cuid())
+  epicId    String
+  phase     EpicPhaseType
+  status    EpicPhaseStatus @default(NOT_STARTED)
+  sortOrder Int
+
+  epic Epic @relation(fields: [epicId], references: [id], onDelete: Cascade)
+
+  @@unique([epicId, phase])
+}
+
+model Feature {
+  id          String        @id @default(cuid())
+  projectId   String
+  epicId      String
+  prefix      String
+  name        String
+  description String?
+  status      FeatureStatus @default(NOT_STARTED)
+  sortOrder   Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  epic    Epic    @relation(fields: [epicId], references: [id], onDelete: Cascade)
+
+  // Relations
+  stories                Story[]
+  questions              Question[]              @relation("QuestionScopeFeature")
+  questionBlocksFeatures QuestionBlocksFeature[]
+  questionAffects        QuestionAffects[]
+  decisionScopes         DecisionScope[]
+
+  @@unique([epicId, prefix])
+}
+
+model Story {
+  id                 String      @id @default(cuid())
+  projectId          String
+  epicId             String
+  featureId          String?
+  sprintId           String?
+  assigneeId         String?
+  testAssigneeId     String?
+  displayId          String
+  title              String
+  persona            String?
+  description        String?
+  acceptanceCriteria String?
+  storyPoints        Int?
+  priority           Priority    @default(MEDIUM)
+  status             StoryStatus @default(DRAFT)
+  dependencies       String?
+  notes              String?
+  sortOrder          Int
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  epic         Epic           @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  feature      Feature?       @relation(fields: [featureId], references: [id])
+  sprint       Sprint?        @relation(fields: [sprintId], references: [id])
+  assignee     ProjectMember? @relation("StoryAssignee", fields: [assigneeId], references: [id])
+  testAssignee ProjectMember? @relation("StoryTestAssignee", fields: [testAssigneeId], references: [id])
+
+  // Relations
+  testCases             TestCase[]
+  defects               Defect[]
+  storyComponents       StoryComponent[]
+  questionBlocksStories QuestionBlocksStory[]
+  requirementStories    RequirementStory[]
+  milestoneStories      MilestoneStory[]
+  jiraSyncRecords       JiraSyncRecord[]
+
+  @@unique([projectId, displayId])
+}
+
+model Question {
+  id               String           @id @default(cuid())
+  projectId        String
+  displayId        String
+  questionText     String
+  scope            QuestionScope
+  category         QuestionCategory @default(GENERAL)
+  scopeEpicId      String?
+  scopeFeatureId   String?
+  ownerId          String?
+  ownerDescription String?
+  status           QuestionStatus   @default(OPEN)
+  askedDate        DateTime         @default(now())
+  answerText       String?
+  answeredDate     DateTime?
+  answeredById     String?
+  impactAssessment String?
+  parkedReason     String?
+  confidence       Confidence       @default(HIGH)
+  needsReview      Boolean          @default(false)
+  reviewReason     String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scopeEpic    Epic?          @relation("QuestionScopeEpic", fields: [scopeEpicId], references: [id])
+  scopeFeature Feature?       @relation("QuestionScopeFeature", fields: [scopeFeatureId], references: [id])
+  owner        ProjectMember? @relation("QuestionOwner", fields: [ownerId], references: [id])
+  answeredBy   ProjectMember? @relation("QuestionAnswerer", fields: [answeredById], references: [id])
+
+  // Relations
+  questionBlocksStories  QuestionBlocksStory[]
+  questionBlocksEpics    QuestionBlocksEpic[]
+  questionBlocksFeatures QuestionBlocksFeature[]
+  questionAffects        QuestionAffects[]
+  decisionQuestions      DecisionQuestion[]
+}
+
+model Decision {
+  id           String     @id @default(cuid())
+  projectId    String
+  displayId    String
+  title        String
+  rationale    String
+  decisionDate DateTime
+  madeById     String?
+  confidence   Confidence @default(HIGH)
+  needsReview  Boolean    @default(false)
+  reviewReason String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  madeBy  ProjectMember? @relation("DecisionMaker", fields: [madeById], references: [id])
+
+  // Relations
+  decisionQuestions DecisionQuestion[]
+  decisionScopes    DecisionScope[]
+}
+
+model Requirement {
+  id           String            @id @default(cuid())
+  projectId    String
+  displayId    String
+  description  String
+  source       String?
+  priority     Priority          @default(MEDIUM)
+  status       RequirementStatus @default(CAPTURED)
+  confidence   Confidence        @default(HIGH)
+  needsReview  Boolean           @default(false)
+  reviewReason String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Relations
+  requirementEpics   RequirementEpic[]
+  requirementStories RequirementStory[]
+}
+
+model Risk {
+  id                 String         @id @default(cuid())
+  projectId          String
+  displayId          String
+  description        String
+  likelihood         RiskLikelihood
+  impact             RiskImpact
+  severity           RiskSeverity
+  mitigationStrategy String?
+  status             RiskStatus     @default(OPEN)
+  ownerId            String?
+  confidence         Confidence     @default(HIGH)
+  needsReview        Boolean        @default(false)
+  reviewReason       String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner   ProjectMember? @relation("RiskOwner", fields: [ownerId], references: [id])
+
+  // Relations
+  riskEpics RiskEpic[]
+}
+
+model Milestone {
+  id          String          @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  targetDate  DateTime?
+  status      MilestoneStatus @default(NOT_STARTED)
+  sortOrder   Int
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Relations
+  milestoneStories MilestoneStory[]
+}
+
+model Sprint {
+  id             String       @id @default(cuid())
+  projectId      String
+  name           String
+  goal           String?
+  startDate      DateTime
+  endDate        DateTime
+  status         SprintStatus @default(PLANNING)
+  cachedAnalysis Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Relations
+  stories Story[]
+}
+
+model TestCase {
+  id             String     @id @default(cuid())
+  storyId        String
+  title          String
+  steps          String?
+  expectedResult String
+  testType       TestType
+  source         TestSource
+  sortOrder      Int
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  // Relations
+  testExecutions TestExecution[]
+  defects        Defect[]
+}
+
+model TestExecution {
+  id           String     @id @default(cuid())
+  testCaseId   String
+  executedById String
+  executedAt   DateTime
+  result       TestResult
+  notes        String?
+  defectId     String?
+  environment  String?
+
+  testCase   TestCase      @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  executedBy ProjectMember @relation(fields: [executedById], references: [id])
+  defect     Defect?       @relation(fields: [defectId], references: [id])
+}
+
+model Defect {
+  id               String         @id @default(cuid())
+  projectId        String
+  storyId          String?
+  testCaseId       String?
+  displayId        String
+  title            String
+  severity         DefectSeverity
+  stepsToReproduce String
+  expectedBehavior String
+  actualBehavior   String
+  environment      String?
+  status           DefectStatus   @default(OPEN)
+  assigneeId       String?
+  duplicateOfId    String?
+  createdById      String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  story       Story?         @relation(fields: [storyId], references: [id])
+  testCase    TestCase?      @relation(fields: [testCaseId], references: [id])
+  assignee    ProjectMember? @relation("DefectAssignee", fields: [assigneeId], references: [id])
+  duplicateOf Defect?        @relation("DefectDuplicate", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates  Defect[]       @relation("DefectDuplicate")
+  createdBy   ProjectMember  @relation("DefectCreator", fields: [createdById], references: [id])
+
+  // Relations
+  testExecutions TestExecution[]
+}
+
+model OrgComponent {
+  id                String                       @id @default(cuid())
+  projectId         String
+  apiName           String
+  label             String?
+  componentType     ComponentType
+  parentComponentId String?
+  namespace         String?
+  apiVersion        String?
+  isActive          Boolean                      @default(true)
+  domainGroupingId  String?
+  componentStatus   ComponentStatus              @default(EXISTING)
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  lastSyncedAt      DateTime?
+  embedding         Unsupported("vector(1536)")? // Runtime: vector(1024) via SQL migration for Voyage AI
+  embeddingStatus   EmbeddingStatus              @default(PENDING)
+  needsAssignment   Boolean                      @default(false)
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentComponent OrgComponent?   @relation("OrgComponentParent", fields: [parentComponentId], references: [id])
+  childComponents OrgComponent[]  @relation("OrgComponentParent")
+  domainGrouping  DomainGrouping? @relation(fields: [domainGroupingId], references: [id])
+
+  // Relations
+  sourceRelationships OrgRelationship[]           @relation("OrgRelationshipSource")
+  targetRelationships OrgRelationship[]           @relation("OrgRelationshipTarget")
+  annotations         BusinessContextAnnotation[]
+  storyComponents     StoryComponent[]
+  processComponents   BusinessProcessComponent[]
+
+  @@unique([projectId, apiName, componentType])
+}
+
+model OrgRelationship {
+  id                String              @id @default(cuid())
+  projectId         String
+  sourceComponentId String
+  targetComponentId String
+  relationshipType  OrgRelationshipType
+
+  sourceComponent OrgComponent @relation("OrgRelationshipSource", fields: [sourceComponentId], references: [id], onDelete: Cascade)
+  targetComponent OrgComponent @relation("OrgRelationshipTarget", fields: [targetComponentId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceComponentId, targetComponentId, relationshipType])
+}
+
+model DomainGrouping {
+  id            String  @id @default(cuid())
+  projectId     String
+  name          String
+  description   String?
+  isAiSuggested Boolean @default(true)
+  isConfirmed   Boolean @default(false)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Relations
+  orgComponents     OrgComponent[]
+  businessProcesses BusinessProcess[]
+}
+
+model BusinessContextAnnotation {
+  id             String   @id @default(cuid())
+  orgComponentId String
+  annotationText String
+  createdById    String
+  createdAt      DateTime @default(now())
+
+  orgComponent OrgComponent  @relation(fields: [orgComponentId], references: [id], onDelete: Cascade)
+  createdBy    ProjectMember @relation(fields: [createdById], references: [id])
+}
+
+model BusinessProcess {
+  id               String                @id @default(cuid())
+  projectId        String
+  name             String
+  description      String?
+  domainGroupingId String?
+  status           BusinessProcessStatus @default(DISCOVERED)
+  complexity       Complexity?
+  isAiSuggested    Boolean               @default(true)
+  isConfirmed      Boolean               @default(false)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  domainGrouping DomainGrouping? @relation(fields: [domainGroupingId], references: [id])
+
+  // Relations
+  processComponents  BusinessProcessComponent[]
+  sourceDependencies BusinessProcessDependency[] @relation("DependencySource")
+  targetDependencies BusinessProcessDependency[] @relation("DependencyTarget")
+
+  @@unique([projectId, name])
+}
+
+model BusinessProcessComponent {
+  id                String  @id @default(cuid())
+  businessProcessId String
+  orgComponentId    String
+  role              String
+  isRequired        Boolean @default(true)
+
+  businessProcess BusinessProcess @relation(fields: [businessProcessId], references: [id], onDelete: Cascade)
+  orgComponent    OrgComponent    @relation(fields: [orgComponentId], references: [id], onDelete: Cascade)
+
+  @@unique([businessProcessId, orgComponentId])
+}
+
+model BusinessProcessDependency {
+  id              String                        @id @default(cuid())
+  sourceProcessId String
+  targetProcessId String
+  dependencyType  BusinessProcessDependencyType
+  description     String?
+
+  sourceProcess BusinessProcess @relation("DependencySource", fields: [sourceProcessId], references: [id], onDelete: Cascade)
+  targetProcess BusinessProcess @relation("DependencyTarget", fields: [targetProcessId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceProcessId, targetProcessId])
+}
+
+// ============================================================================
+// Phase 4: Salesforce Org Connectivity
+// ============================================================================
+
+enum SyncType {
+  FULL
+  INCREMENTAL
+}
+
+enum SyncRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model OrgSyncRun {
+  id              String        @id @default(cuid())
+  projectId       String
+  syncType        SyncType
+  status          SyncRunStatus @default(PENDING)
+  componentCounts Json? // { added: number, modified: number, removed: number, byType: Record<string, number> }
+  errorMessage    String?
+  startedAt       DateTime      @default(now())
+  completedAt     DateTime?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, startedAt])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  projectId  String
+  memberId   String
+  name       String
+  keyPrefix  String
+  keyHash    String
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  useCount   Int       @default(0)
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  member      ProjectMember   @relation(fields: [memberId], references: [id])
+  requestLogs ApiRequestLog[]
+
+  @@index([keyPrefix])
+  @@index([projectId, isActive])
+}
+
+model ApiRequestLog {
+  id         String   @id @default(cuid())
+  apiKeyId   String
+  endpoint   String
+  method     String
+  statusCode Int?
+  ipAddress  String?
+  timestamp  DateTime @default(now())
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  @@index([apiKeyId, endpoint, timestamp])
+}
+
+model KnowledgeArticle {
+  id                 String                       @id @default(cuid())
+  projectId          String
+  articleType        KnowledgeArticleType
+  title              String
+  content            String
+  summary            String
+  confidence         Confidence                   @default(MEDIUM)
+  version            Int                          @default(1)
+  isStale            Boolean                      @default(false)
+  staleReason        String?
+  staleSince         DateTime?
+  lastRefreshedAt    DateTime?
+  authorType         KnowledgeAuthorType          @default(AI_GENERATED)
+  embedding          Unsupported("vector(1536)")? // Runtime: vector(1024) via SQL migration for Voyage AI
+  embeddingStatus    EmbeddingStatus              @default(PENDING)
+  useCount           Int                          @default(0)
+  thumbsUpCount      Int                          @default(0)
+  thumbsDownCount    Int                          @default(0)
+  effectivenessScore Float?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Relations
+  references KnowledgeArticleReference[]
+
+  @@unique([projectId, articleType, title])
+}
+
+model KnowledgeArticleReference {
+  id         String                        @id @default(cuid())
+  articleId  String
+  entityType KnowledgeArticleRefEntityType
+  entityId   String
+
+  article KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, entityType, entityId])
+  @@index([entityType, entityId])
+}
+
+model Conversation {
+  id               String             @id @default(cuid())
+  projectId        String
+  conversationType ConversationType
+  title            String?
+  status           ConversationStatus @default(ACTIVE)
+  createdById      String
+  sessionLogId     String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy  ProjectMember @relation(fields: [createdById], references: [id])
+  sessionLog SessionLog?   @relation(fields: [sessionLogId], references: [id])
+
+  // Relations
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id             String          @id @default(cuid())
+  conversationId String
+  role           ChatMessageRole
+  content        String
+  senderId       String?
+  toolCalls      Json?
+  inputTokens    Int?
+  outputTokens   Int?
+  cost           Float?
+  createdAt      DateTime        @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String                 @id @default(cuid())
+  projectId   String
+  recipientId String
+  type        NotificationType
+  priority    NotificationPriority   @default(NORMAL)
+  title       String
+  body        String?
+  entityType  NotificationEntityType
+  entityId    String
+  isRead      Boolean                @default(false)
+  createdAt   DateTime               @default(now())
+
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  recipient ProjectMember @relation(fields: [recipientId], references: [id])
+
+  @@index([recipientId, isRead, priority, createdAt])
+}
+
+model Transcript {
+  id               String           @id @default(cuid())
+  projectId        String
+  uploadedById     String
+  uploadedAt       DateTime         @default(now())
+  title            String?
+  rawContent       String?
+  s3Key            String?
+  processingStatus TranscriptStatus @default(PENDING)
+  sessionLogId     String?
+
+  project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy ProjectMember @relation(fields: [uploadedById], references: [id])
+  sessionLog SessionLog?   @relation(fields: [sessionLogId], references: [id])
+}
+
+model SessionLog {
+  id               String             @id @default(cuid())
+  projectId        String
+  userId           String
+  taskType         SessionLogTaskType
+  status           SessionLogStatus   @default(RUNNING)
+  startedAt        DateTime           @default(now())
+  completedAt      DateTime?
+  model            String?            @default("claude-sonnet-4-20250514")
+  inputTokens      Int                @default(0)
+  outputTokens     Int                @default(0)
+  totalIterations  Int                @default(1)
+  summary          String?
+  entitiesCreated  Json?
+  entitiesModified Json?
+  errorMessage     String?
+
+  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    ProjectMember @relation(fields: [userId], references: [id])
+
+  // Relations
+  transcripts        Transcript[]
+  conversations      Conversation[]
+  generatedDocuments GeneratedDocument[]
+}
+
+model GeneratedDocument {
+  id            String         @id @default(cuid())
+  projectId     String
+  title         String
+  documentType  DocumentType
+  format        DocumentFormat
+  s3Key         String
+  templateUsed  String?
+  generatedById String
+  sessionLogId  String?
+  createdAt     DateTime       @default(now())
+
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  generatedBy ProjectMember @relation(fields: [generatedById], references: [id])
+  sessionLog  SessionLog?   @relation(fields: [sessionLogId], references: [id])
+}
+
+model Attachment {
+  id               String   @id @default(cuid())
+  projectId        String
+  entityType       String
+  entityId         String
+  s3Key            String
+  originalFilename String
+  contentType      String
+  fileSizeBytes    Int
+  uploadedById     String
+  uploadedAt       DateTime @default(now())
+
+  project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy ProjectMember @relation(fields: [uploadedById], references: [id])
+
+  @@index([entityType, entityId])
+}
+
+model VersionHistory {
+  id            String   @id @default(cuid())
+  entityType    String
+  entityId      String
+  version       Int
+  previousState Json
+  modifiedById  String
+  modifiedAt    DateTime @default(now())
+
+  modifiedBy ProjectMember @relation(fields: [modifiedById], references: [id])
+
+  @@index([entityType, entityId])
+}
+
+model StatusTransition {
+  id                 String   @id @default(cuid())
+  entityType         String
+  entityId           String
+  fromStatus         String
+  toStatus           String
+  transitionedById   String
+  transitionedByRole String
+  reason             String?
+  createdAt          DateTime @default(now())
+
+  transitionedBy ProjectMember @relation(fields: [transitionedById], references: [id])
+
+  @@index([entityType, entityId, createdAt])
+}
+
+// ============================================================================
+// Phase 5: Jira Integration
+// ============================================================================
+
+model JiraConfig {
+  id             String   @id @default(cuid())
+  projectId      String   @unique
+  instanceUrl    String
+  email          String
+  encryptedToken String
+  jiraProjectKey String
+  enabled        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model JiraSyncRecord {
+  id           String    @id @default(cuid())
+  projectId    String
+  storyId      String
+  jiraIssueId  String?
+  jiraIssueKey String?
+  status       String    @default("PENDING") // PENDING, SYNCED, FAILED
+  lastSyncAt   DateTime?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  story   Story   @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, storyId])
+  @@index([projectId, status])
+}
+
+// ============================================================================
+// Join Tables
+// ============================================================================
+
+model QuestionBlocksStory {
+  id         String @id @default(cuid())
+  questionId String
+  storyId    String
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  story    Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, storyId])
+}
+
+model QuestionBlocksEpic {
+  id         String @id @default(cuid())
+  questionId String
+  epicId     String
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  epic     Epic     @relation(fields: [epicId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, epicId])
+}
+
+model QuestionBlocksFeature {
+  id         String @id @default(cuid())
+  questionId String
+  featureId  String
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, featureId])
+}
+
+model QuestionAffects {
+  id         String  @id @default(cuid())
+  questionId String
+  epicId     String?
+  featureId  String?
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  epic     Epic?    @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  feature  Feature? @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, epicId, featureId])
+}
+
+model DecisionQuestion {
+  id         String @id @default(cuid())
+  decisionId String
+  questionId String
+
+  decision Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([decisionId, questionId])
+}
+
+model DecisionScope {
+  id         String  @id @default(cuid())
+  decisionId String
+  epicId     String?
+  featureId  String?
+
+  decision Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  epic     Epic?    @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  feature  Feature? @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([decisionId, epicId, featureId])
+}
+
+model RequirementEpic {
+  id            String @id @default(cuid())
+  requirementId String
+  epicId        String
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  epic        Epic        @relation(fields: [epicId], references: [id], onDelete: Cascade)
+
+  @@unique([requirementId, epicId])
+}
+
+model RequirementStory {
+  id            String @id @default(cuid())
+  requirementId String
+  storyId       String
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  story       Story       @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([requirementId, storyId])
+}
+
+model RiskEpic {
+  id     String @id @default(cuid())
+  riskId String
+  epicId String
+
+  risk Risk @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  epic Epic @relation(fields: [epicId], references: [id], onDelete: Cascade)
+
+  @@unique([riskId, epicId])
+}
+
+model StoryComponent {
+  id             String     @id @default(cuid())
+  storyId        String
+  projectId      String
+  orgComponentId String?
+  componentName  String?
+  impactType     ImpactType
+
+  story        Story         @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  orgComponent OrgComponent? @relation(fields: [orgComponentId], references: [id])
+
+  @@unique([storyId, orgComponentId])
+}
+
+model MilestoneStory {
+  id          String @id @default(cuid())
+  milestoneId String
+  storyId     String
+
+  milestone Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  story     Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([milestoneId, storyId])
+}
+
+/// Short-lived OAuth state tokens for CSRF protection in Salesforce OAuth flow.
+/// Tokens are single-use and expire after 10 minutes.
+model OauthState {
+  token       String   @id
+  projectId   String
+  clerkUserId String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
