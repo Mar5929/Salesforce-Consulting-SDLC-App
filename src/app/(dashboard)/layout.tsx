@@ -31,6 +31,8 @@ export default async function DashboardLayout({
     try {
       const [member, qCount, dCount] = await Promise.all([
         getCurrentMember(projectId),
+        // Count questions answered (by AI or human) that are awaiting human review/approval.
+        // Status flow: OPEN -> SCOPED -> OWNED -> ANSWERED -> REVIEWED
         prisma.question.count({
           where: { projectId, status: "ANSWERED" },
         }),
