@@ -17,6 +17,10 @@ export default async function DashboardLayout({
   const headersList = await headers()
   const pathname = headersList.get("x-pathname") ?? headersList.get("x-invoke-path") ?? ""
 
+  if (process.env.NODE_ENV === "development" && !pathname) {
+    console.warn("[DashboardLayout] x-pathname header missing — is middleware injecting it?")
+  }
+
   const projectId = extractProjectId(pathname)
 
   let currentMemberRole: string | undefined
