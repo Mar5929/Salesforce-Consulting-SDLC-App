@@ -379,6 +379,10 @@ export const transcriptProcessingFunction = inngest.createFunction(
           sourceEntityId: transcriptId,
         },
       },
+      {
+        name: EVENTS.PROJECT_STATE_CHANGED,
+        data: { projectId },
+      },
     ])
 
     return {

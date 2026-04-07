@@ -131,6 +131,13 @@ export const createQuestion = actionClient
       })
     }
 
+    await inngest.send({
+      name: EVENTS.PROJECT_STATE_CHANGED,
+      data: {
+        projectId: parsedInput.projectId,
+      },
+    })
+
     revalidatePath(`/projects/${parsedInput.projectId}/questions`)
     return { question }
   })
@@ -181,6 +188,13 @@ export const updateQuestion = actionClient
       },
     })
 
+    await inngest.send({
+      name: EVENTS.PROJECT_STATE_CHANGED,
+      data: {
+        projectId,
+      },
+    })
+
     revalidatePath(`/projects/${projectId}/questions`)
     return { question }
   })
@@ -226,6 +240,13 @@ export const answerQuestion = actionClient
         },
       })
     }
+
+    await inngest.send({
+      name: EVENTS.PROJECT_STATE_CHANGED,
+      data: {
+        projectId: parsedInput.projectId,
+      },
+    })
 
     revalidatePath(`/projects/${parsedInput.projectId}/questions`)
     revalidatePath(`/projects/${parsedInput.projectId}/questions/${parsedInput.questionId}`)

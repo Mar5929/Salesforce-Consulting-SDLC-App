@@ -112,6 +112,12 @@ export const articleRefreshFunction = inngest.createFunction(
       },
     })
 
+    // Step 5: Trigger dashboard re-synthesis after article refresh
+    await step.sendEvent("trigger-dashboard-refresh", {
+      name: EVENTS.PROJECT_STATE_CHANGED,
+      data: { projectId },
+    })
+
     return {
       articleId,
       projectId,
