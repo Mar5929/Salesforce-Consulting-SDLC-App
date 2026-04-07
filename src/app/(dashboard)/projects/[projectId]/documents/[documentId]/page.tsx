@@ -99,16 +99,8 @@ export default async function DocumentDetailPage({
         </div>
 
         {downloadUrl && (
-          <Button
-            className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white"
-            onClick={undefined}
-          >
-            <a
-              href={downloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2"
-            >
+          <Button asChild className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white">
+            <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
               <Download className="h-4 w-4" />
               Download {formatLabel}
             </a>
