@@ -134,7 +134,8 @@ export async function classifyComponents(
       data: {
         projectId,
         name: grouping.name,
-        description: `${grouping.description} (confidence: ${grouping.confidence}%)`,
+        description: grouping.description,
+        confidence: grouping.confidence / 100,
         isAiSuggested: true,
         isConfirmed: false,
       },

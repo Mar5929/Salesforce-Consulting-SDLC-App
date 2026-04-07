@@ -855,6 +855,7 @@ model DomainGrouping {
   projectId      String
   name           String
   description    String?
+  confidence     Float?
   isAiSuggested  Boolean @default(true)
   isConfirmed    Boolean @default(false)
 
@@ -881,6 +882,7 @@ model BusinessProcess {
   projectId        String
   name             String
   description      String?
+  confidence       Float?
   domainGroupingId String?
   status           BusinessProcessStatus @default(DISCOVERED)
   complexity       Complexity?

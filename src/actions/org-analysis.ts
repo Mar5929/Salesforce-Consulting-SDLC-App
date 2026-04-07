@@ -269,14 +269,13 @@ export const editBusinessProcess = actionClient
   })
 
 /**
- * Bulk confirm all unconfirmed AI suggestions.
- * Confirms all unconfirmed domain groupings or business processes.
+ * Bulk confirm high-confidence unconfirmed AI suggestions.
+ * Only confirms domain groupings or business processes whose confidence
+ * score meets the HIGH_CONFIDENCE_THRESHOLD (0.8 / 80%).
  * SA or PM role required.
- *
- * Note: Confidence filtering is not supported because DomainGrouping and
- * BusinessProcess models do not store a numeric confidence score. The function
- * name is kept for API compatibility but confirms ALL unconfirmed records.
  */
+const HIGH_CONFIDENCE_THRESHOLD = 0.8
+
 export const bulkConfirmHighConfidence = actionClient
   .schema(
     z.object({
@@ -292,21 +291,23 @@ export const bulkConfirmHighConfidence = actionClient
     let confirmed: number
 
     if (type === "domain") {
-      // Confirm all unconfirmed domain groupings for this project
+      // Confirm unconfirmed high-confidence domain groupings for this project
       const result = await prisma.domainGrouping.updateMany({
         where: {
           projectId,
           isConfirmed: false,
+          confidence: { gte: HIGH_CONFIDENCE_THRESHOLD },
         },
         data: { isConfirmed: true },
       })
       confirmed = result.count
     } else {
-      // Confirm all unconfirmed business processes for this project
+      // Confirm unconfirmed high-confidence business processes for this project
       const result = await prisma.businessProcess.updateMany({
         where: {
           projectId,
           isConfirmed: false,
+          confidence: { gte: HIGH_CONFIDENCE_THRESHOLD },
         },
         data: { isConfirmed: true },
       })
