@@ -148,6 +148,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. sandboxStrategy field exists on Project model and is persisted through create and update actions
   2. category field exists on Question model and category filter works in question list UI
+**Plans**: 1 plan
+
+Plans:
+- [ ] 06-01-PLAN.md -- Add sandboxStrategy to Project, QuestionCategory enum + category field/filter to Question
 
 ### Phase 7: Story Generation E2E Wiring
 **Goal**: Wire the complete AI story generation flow end-to-end so epicId reaches the API, StoryDraftCards render, and buildStorySessionPrompt activates
@@ -196,7 +200,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | 3. Story Management and Sprint Intelligence | 0/9 | Planned | - |
 | 4. Salesforce Org Connectivity and Developer Integration | 0/7 | Planned | - |
 | 5. Document Generation, QA, and Administration | 0/9 | Planned | - |
-| 6. Schema Fixes | 0/0 | Planned | - |
+| 6. Schema Fixes | 0/1 | Planned | - |
 | 7. Story Generation E2E Wiring | 0/1 | Planned | - |
 | 8. Event Wiring and Integration Fixes | 0/0 | Planned | - |
 | 9. Navigation and Badge Fixes | 0/0 | Planned | - |
