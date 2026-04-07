@@ -48,7 +48,7 @@ export function ProjectLifecycleSection({
       onSuccess: () => {
         toast.success("Project archived successfully")
         setShowArchiveDialog(false)
-        router.push("/projects")
+        router.push("/")
       },
       onError: ({ error }) => {
         toast.error(error.serverError ?? "Failed to archive project")
