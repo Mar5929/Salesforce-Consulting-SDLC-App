@@ -52,6 +52,7 @@ export const createProject = actionClient
         targetEndDate: parsedInput.targetEndDate
           ? new Date(parsedInput.targetEndDate)
           : null,
+        sandboxStrategy: parsedInput.sandboxStrategy ?? null,
         status: "ACTIVE",
         currentPhase: "DISCOVERY",
       },
@@ -137,6 +138,8 @@ export const updateProject = actionClient
       updateData.targetEndDate = parsedInput.targetEndDate
         ? new Date(parsedInput.targetEndDate)
         : null
+    if (parsedInput.sandboxStrategy !== undefined)
+      updateData.sandboxStrategy = parsedInput.sandboxStrategy || null
 
     const project = await prisma.project.update({
       where: { id: parsedInput.projectId },

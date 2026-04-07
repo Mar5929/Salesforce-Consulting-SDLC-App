@@ -399,6 +399,7 @@ model Project {
   currentPhase             ProjectPhase    @default(DISCOVERY)
   startDate                DateTime
   targetEndDate            DateTime?
+  sandboxStrategy          String?
   status                   ProjectStatus   @default(ACTIVE)
   sfOrgInstanceUrl         String?
   sfOrgAccessToken         String?

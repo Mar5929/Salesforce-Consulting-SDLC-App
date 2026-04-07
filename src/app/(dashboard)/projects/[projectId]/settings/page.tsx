@@ -67,7 +67,7 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
                   engagementType: project.engagementType,
                   startDate: formatDateForInput(project.startDate),
                   targetEndDate: formatDateForInput(project.targetEndDate),
-                  sandboxStrategy: "",
+                  sandboxStrategy: project.sandboxStrategy ?? "",
                 }}
               />
 
