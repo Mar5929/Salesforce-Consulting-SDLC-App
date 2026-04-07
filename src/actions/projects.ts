@@ -4,7 +4,7 @@ import { z } from "zod"
 import { redirect } from "next/navigation"
 import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
-import { getCurrentMember } from "@/lib/auth"
+import { getCurrentMember, requireRole } from "@/lib/auth"
 import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
 import { createId } from "@paralleldrive/cuid2"
@@ -121,8 +121,8 @@ const updateProjectSchema = z.object({
 export const updateProject = actionClient
   .schema(updateProjectSchema)
   .action(async ({ parsedInput, ctx }) => {
-    // Verify the user is a member of this project
-    await getCurrentMember(parsedInput.projectId)
+    // Restrict project settings updates to PM and SA only
+    await requireRole(parsedInput.projectId, ["PM", "SOLUTION_ARCHITECT"])
 
     const updateData: Record<string, unknown> = {}
 
