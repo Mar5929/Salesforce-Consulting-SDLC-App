@@ -12,6 +12,7 @@ import { sprintIntelligence } from "@/lib/inngest/functions/sprint-intelligence"
 import { metadataSyncFunction } from "@/lib/inngest/functions/metadata-sync"
 import { orgIngestionFunction } from "@/lib/inngest/functions/org-ingestion"
 import { generateDocumentFunction } from "@/lib/inngest/functions/document-generation"
+import { synthesizePmDashboard } from "@/lib/inngest/functions/pm-dashboard-synthesis"
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -29,5 +30,6 @@ export const { GET, POST, PUT } = serve({
     metadataSyncFunction,
     orgIngestionFunction,
     generateDocumentFunction,
+    synthesizePmDashboard,
   ],
 })
