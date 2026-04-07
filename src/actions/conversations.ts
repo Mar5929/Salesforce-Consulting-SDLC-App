@@ -233,6 +233,7 @@ export const initiateStorySession = actionClient
         conversationType: "STORY_SESSION",
         title: `AI Story Generation - ${epicLabel}`,
         createdById: member.id,
+        metadata: { epicId, ...(featureId && { featureId }) },
       },
     })
 

@@ -113,12 +113,17 @@ export async function POST(request: Request) {
     // Determine system prompt based on conversation type
     let systemPrompt: string
 
-    if (conversation.conversationType === "STORY_SESSION" && epicId) {
+    // Resolve epicId/featureId: prefer request body, fall back to persisted metadata
+    const meta = (conversation.metadata ?? {}) as Record<string, string | undefined>
+    const resolvedEpicId = epicId ?? meta.epicId
+    const resolvedFeatureId = featureId ?? meta.featureId
+
+    if (conversation.conversationType === "STORY_SESSION" && resolvedEpicId) {
       // Story generation session: use story generation task's prompt with context
       systemPrompt = await buildStorySessionPrompt(
         projectId,
-        epicId,
-        featureId || undefined
+        resolvedEpicId,
+        resolvedFeatureId || undefined
       )
     } else {
       // General chat: use standard context assembly (T-02-11)

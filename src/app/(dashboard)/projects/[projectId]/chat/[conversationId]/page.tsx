@@ -29,6 +29,11 @@ export default async function ConversationPage({
 
   const conversation = result.data
 
+  // Fall back to persisted metadata when URL search params are missing (revisit)
+  const meta = (conversation.metadata ?? {}) as Record<string, string | undefined>
+  const resolvedEpicId = epicId ?? meta.epicId
+  const resolvedFeatureId = featureId ?? meta.featureId
+
   // Map DB conversation type to ChatInterface variant
   const chatType = conversation.conversationType === "GENERAL_CHAT"
     ? "GENERAL_CHAT"
@@ -61,8 +66,8 @@ export default async function ConversationPage({
         conversationType={chatType}
         initialMessages={initialMessages}
         sessionTitle={conversation.title ?? undefined}
-        epicId={epicId}
-        featureId={featureId}
+        epicId={resolvedEpicId}
+        featureId={resolvedFeatureId}
       />
     </div>
   )

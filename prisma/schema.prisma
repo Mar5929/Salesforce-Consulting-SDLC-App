@@ -1043,6 +1043,7 @@ model Conversation {
   status           ConversationStatus @default(ACTIVE)
   createdById      String
   sessionLogId     String?
+  metadata         Json?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
