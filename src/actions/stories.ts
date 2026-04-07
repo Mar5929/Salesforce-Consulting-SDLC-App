@@ -272,7 +272,7 @@ export const updateStoryStatus = actionClient
     // Get current story
     const existing = await prisma.story.findUnique({
       where: { id: parsedInput.storyId },
-      select: { projectId: true, status: true, displayId: true },
+      select: { projectId: true, status: true, displayId: true, assigneeId: true },
     })
     if (!existing || existing.projectId !== parsedInput.projectId) {
       throw new Error("Story not found")
@@ -313,17 +313,20 @@ export const updateStoryStatus = actionClient
       },
     })
 
-    await inngest.send({
-      name: EVENTS.NOTIFICATION_SEND,
-      data: {
-        projectId: parsedInput.projectId,
-        type: "STORY_STATUS_CHANGED",
-        recipientId: member.id,
-        entityId: parsedInput.storyId,
-        entityType: "Story",
-        message: `Story ${existing.displayId} moved to ${parsedInput.status}`,
-      },
-    })
+    // Notify the story assignee (if different from actor) about status change
+    if (existing.assigneeId && existing.assigneeId !== member.id) {
+      await inngest.send({
+        name: EVENTS.NOTIFICATION_SEND,
+        data: {
+          projectId: parsedInput.projectId,
+          type: "STORY_STATUS_CHANGED",
+          recipientId: existing.assigneeId,
+          entityId: parsedInput.storyId,
+          entityType: "Story",
+          message: `Story ${existing.displayId} moved to ${parsedInput.status}`,
+        },
+      })
+    }
 
     revalidatePath(`/projects/${parsedInput.projectId}/work`)
     return { story }
