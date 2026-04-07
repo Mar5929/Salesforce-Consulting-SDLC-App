@@ -1,5 +1,5 @@
 import { anthropic } from "@ai-sdk/anthropic"
-import { streamText, tool } from "ai"
+import { streamText, tool, convertToModelMessages } from "ai"
 import { z } from "zod"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
@@ -90,14 +90,21 @@ export async function POST(request: Request) {
     // Save the user's message to DB
     const lastUserMessage = messages[messages.length - 1]
     if (lastUserMessage?.role === "user") {
+      // AI SDK v6 UIMessage uses `parts` array instead of `content`
+      const content =
+        typeof lastUserMessage.content === "string"
+          ? lastUserMessage.content
+          : Array.isArray(lastUserMessage.parts)
+            ? lastUserMessage.parts
+                .filter((p: { type: string }) => p.type === "text")
+                .map((p: { text: string }) => p.text)
+                .join("")
+            : JSON.stringify(lastUserMessage.content ?? "")
       await prisma.chatMessage.create({
         data: {
           conversationId,
           role: "USER",
-          content:
-            typeof lastUserMessage.content === "string"
-              ? lastUserMessage.content
-              : JSON.stringify(lastUserMessage.content),
+          content,
           senderId: member.id,
         },
       })
@@ -140,10 +147,14 @@ export async function POST(request: Request) {
       }),
     })
 
+    // Convert UIMessages (with `parts`) from the client to ModelMessages
+    // (with `content`) that streamText expects
+    const modelMessages = await convertToModelMessages(messages)
+
     const result = streamText({
       model: anthropic("claude-sonnet-4-20250514"),
       system: systemPrompt,
-      messages,
+      messages: modelMessages,
       ...(isStorySession
         ? { tools: { create_story_draft: storyDraftTool } }
         : {}),
