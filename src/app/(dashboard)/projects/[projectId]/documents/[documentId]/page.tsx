@@ -15,7 +15,8 @@ import { ArrowLeft, Download } from "lucide-react"
 import { getCurrentMember } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { getDownloadUrl } from "@/lib/documents/s3-storage"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   DocumentPreview,
   type GeneratedDocumentDetail,
@@ -99,12 +100,15 @@ export default async function DocumentDetailPage({
         </div>
 
         {downloadUrl && (
-          <Button asChild className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white">
-            <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
-              <Download className="h-4 w-4" />
-              Download {formatLabel}
-            </a>
-          </Button>
+          <a
+            href={downloadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants(), "bg-[#2563EB] hover:bg-[#1d4ed8] text-white")}
+          >
+            <Download className="h-4 w-4" />
+            Download {formatLabel}
+          </a>
         )}
       </div>
 
