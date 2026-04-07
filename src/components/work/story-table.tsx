@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { SyncStatusBadge } from "@/components/jira/sync-status-badge"
 import { updateStoryStatus, updateStory } from "@/actions/stories"
 import { assignStoriesToSprint } from "@/actions/sprints"
 
@@ -55,6 +56,7 @@ export interface StoryRow {
   priority: string
   storyPoints: number | null
   defectCount?: number
+  jiraSyncStatus?: { status: string; lastSyncAt: Date | null; jiraIssueKey: string | null } | null
   assignee?: { id: string; displayName: string; email: string } | null
   feature?: { id: string; name: string; prefix: string } | null
   sprint?: { id: string; name: string } | null
@@ -73,6 +75,7 @@ interface StoryTableProps {
   onRowClick?: (storyId: string) => void
   sprints?: Array<{ id: string; name: string }>
   members?: Array<{ id: string; displayName: string; email: string }>
+  hasJiraConfig?: boolean
 }
 
 // ────────────────────────────────────────────
@@ -128,6 +131,7 @@ export function StoryTable({
   onRowClick,
   sprints = [],
   members = [],
+  hasJiraConfig = false,
 }: StoryTableProps) {
   const router = useRouter()
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
@@ -278,8 +282,25 @@ export function StoryTable({
           ) : null,
         size: 80,
       },
+      // Jira column -- only included when project has Jira config (per D-17)
+      ...(hasJiraConfig
+        ? [
+            {
+              id: "jira" as const,
+              header: "Jira",
+              cell: ({ row }: { row: { original: StoryRow } }) => (
+                <SyncStatusBadge
+                  status={row.original.jiraSyncStatus?.status}
+                  lastSyncAt={row.original.jiraSyncStatus?.lastSyncAt}
+                  jiraIssueKey={row.original.jiraSyncStatus?.jiraIssueKey}
+                />
+              ),
+              size: 100,
+            },
+          ]
+        : []),
     ],
-    []
+    [hasJiraConfig]
   )
 
   const table = useReactTable({
