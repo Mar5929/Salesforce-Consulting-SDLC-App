@@ -55,10 +55,10 @@ export function JiraSettingsSection({
   )
 
   function handleDisconnect() {
-    // Disconnect would remove the config -- for now show toast
-    // Full disconnect action can be added as a future enhancement
-    toast.info("Jira disconnected")
-    router.refresh()
+    // TODO: Implement deleteJiraConfig server action to actually remove the config.
+    // Until then, this handler is a no-op placeholder. The disconnect button is
+    // disabled in JiraConfigForm to prevent user confusion.
+    toast.info("Jira disconnect is not yet implemented")
   }
 
   return (
