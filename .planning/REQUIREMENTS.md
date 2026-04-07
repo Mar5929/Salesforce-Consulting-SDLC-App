@@ -21,8 +21,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **PROJ-01**: User can create a new project with name, client, engagement type, and sandbox strategy
 - [ ] **PROJ-02**: User can view and edit project settings and team membership
 - [ ] **PROJ-03**: User can invite team members and assign project-level roles
-- [ ] **PROJ-04**: PM can archive a completed project (read-only state, data retained)
-- [ ] **PROJ-05**: PM can reactivate an archived project for follow-on engagements
+- [x] **PROJ-04**: PM can archive a completed project (read-only state, data retained)
+- [x] **PROJ-05**: PM can reactivate an archived project for follow-on engagements
 
 ### Question System
 
@@ -137,22 +137,22 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Document Generation
 
-- [ ] **DOC-01**: PM can generate branded documents (Word, PowerPoint, PDF) from project context
-- [ ] **DOC-02**: Documents are populated by AI using project knowledge base content
-- [ ] **DOC-03**: Generated documents are stored in S3/R2 with version tracking
-- [ ] **DOC-04**: Branding templates enforce firm visual identity
+- [x] **DOC-01**: PM can generate branded documents (Word, PowerPoint, PDF) from project context
+- [x] **DOC-02**: Documents are populated by AI using project knowledge base content
+- [x] **DOC-03**: Generated documents are stored in S3/R2 with version tracking
+- [x] **DOC-04**: Branding templates enforce firm visual identity
 
 ### QA Workflow
 
-- [ ] **QA-01**: QA can record test execution results (Pass/Fail/Blocked) with notes per test case
-- [ ] **QA-02**: QA can create and manage defects linked to stories
-- [ ] **QA-03**: Defect lifecycle: Open > In Progress > Fixed > Verified > Closed
+- [x] **QA-01**: QA can record test execution results (Pass/Fail/Blocked) with notes per test case
+- [x] **QA-02**: QA can create and manage defects linked to stories
+- [x] **QA-03**: Defect lifecycle: Open > In Progress > Fixed > Verified > Closed
 
 ### Project Administration
 
-- [ ] **ADMIN-01**: Optional one-directional push sync to client Jira instance
-- [ ] **ADMIN-02**: PM dashboard with aggregated views across project dimensions
-- [ ] **ADMIN-03**: Usage and cost tracking for AI token consumption per project
+- [x] **ADMIN-01**: Optional one-directional push sync to client Jira instance
+- [x] **ADMIN-02**: PM dashboard with aggregated views across project dimensions
+- [x] **ADMIN-03**: Usage and cost tracking for AI token consumption per project
 
 ## v2 Requirements
 
@@ -229,8 +229,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROJ-01 | Phase 1 | Pending |
 | PROJ-02 | Phase 1 | Pending |
 | PROJ-03 | Phase 1 | Pending |
-| PROJ-04 | Phase 5 | Pending |
-| PROJ-05 | Phase 5 | Pending |
+| PROJ-04 | Phase 5 | Complete |
+| PROJ-05 | Phase 5 | Complete |
 | QUES-01 | Phase 2 | Pending |
 | QUES-02 | Phase 2 | Pending |
 | QUES-03 | Phase 2 | Pending |
@@ -303,16 +303,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEV-03 | Phase 4 | Complete |
 | DEV-04 | Phase 4 | Complete |
 | DEV-05 | Phase 4 | Complete |
-| DOC-01 | Phase 5 | Pending |
-| DOC-02 | Phase 5 | Pending |
-| DOC-03 | Phase 5 | Pending |
-| DOC-04 | Phase 5 | Pending |
-| QA-01 | Phase 5 | Pending |
-| QA-02 | Phase 5 | Pending |
-| QA-03 | Phase 5 | Pending |
-| ADMIN-01 | Phase 5 | Pending |
-| ADMIN-02 | Phase 5 | Pending |
-| ADMIN-03 | Phase 5 | Pending |
+| DOC-01 | Phase 5 | Complete |
+| DOC-02 | Phase 5 | Complete |
+| DOC-03 | Phase 5 | Complete |
+| DOC-04 | Phase 5 | Complete |
+| QA-01 | Phase 5 | Complete |
+| QA-02 | Phase 5 | Complete |
+| QA-03 | Phase 5 | Complete |
+| ADMIN-01 | Phase 5 | Complete |
+| ADMIN-02 | Phase 5 | Complete |
+| ADMIN-03 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 93 total
