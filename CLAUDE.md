@@ -251,3 +251,15 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 > Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
 > This section is managed by `generate-claude-profile` -- do not edit manually.
 <!-- GSD:profile-end -->
+
+## Bug Detailer Config
+
+- **Dev server command:** `npm run dev`
+- **Dev server port:** 3000
+- **App URL:** http://localhost:3000
+- **Auth required:** Yes (Clerk, Google OAuth — click michael@rihm.com)
+- **Login URL:** http://localhost:3000/sign-in
+- **Bug output:** `.planning/bugs/` (local files)
+- **Bug index:** `.planning/BUGS.md`
+- **Next bug ID:** BUG-033
+- **Context files:** `.planning/` folder (PRD, tech spec, requirements, roadmap)

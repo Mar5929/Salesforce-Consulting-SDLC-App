@@ -1,0 +1,13 @@
+[     347ms] Error: [nuqs] nuqs requires an adapter to work with your framework.
+  See https://nuqs.dev/NUQS-404
+    at Object.useAdapter (https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0t3jw3nkthlpd.js:2:81)
+    at https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0t3jw3nkthlpd.js:2:8997
+    at parse (https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0t3jw3nkthlpd.js:2:9011)
+    at https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0t3jw3nkthlpd.js:2:12092
+    at T (https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0t3jw3nkthlpd.js:2:21901)
+    at ay (https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0rwwge57xnfls.js:1:56839)
+    at oZ (https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0rwwge57xnfls.js:1:77096)
+    at iu (https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0rwwge57xnfls.js:1:88698)
+    at sd (https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0rwwge57xnfls.js:1:131938)
+    at https://salesforce-consulting-sdlc-app.vercel.app/_next/static/chunks/0rwwge57xnfls.js:1:131783
+[     502ms] [WARNING] Clerk: Clerk has been loaded with development keys. Development instances have strict usage limits and should not be used when deploying your application to production. Learn more: https://clerk.com/docs/deployments/overview @ https://casual-filly-85.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js:11
