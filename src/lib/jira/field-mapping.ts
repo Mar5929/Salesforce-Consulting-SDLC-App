@@ -43,8 +43,6 @@ export function mapStoryToJiraFields(story: {
         },
       ],
     },
-    ...(story.storyPoints
-      ? { customfield_story_points: story.storyPoints }
-      : {}),
+    // TODO: Add configurable story points field ID (customfield_NNNNN varies per Jira instance)
   }
 }
