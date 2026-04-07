@@ -125,7 +125,7 @@ Plans:
 
 Plans:
 - [x] 05-00-PLAN.md -- Wave 0: test stubs for all Phase 5 modules (TDD RED), mock helpers for S3 and Jira
-- [ ] 05-01-PLAN.md -- Foundation: dependencies, Inngest events, defect status machine, S3 utilities, branding config, sidebar nav
+- [x] 05-01-PLAN.md -- Foundation: dependencies, Inngest events, defect status machine, S3 utilities, branding config, sidebar nav
 - [ ] 05-02-PLAN.md -- QA server actions: test case CRUD, test execution recording, defect CRUD with status transitions
 - [ ] 05-03-PLAN.md -- QA UI: story detail page with QA tab, defect list page (table+kanban), defect creation sheet
 - [ ] 05-04-PLAN.md -- Document generation backend: template definitions, format renderers (with DOC-04 branding), AI task, Inngest pipeline
