@@ -371,6 +371,7 @@ enum SessionLogTaskType {
   CONTEXT_PACKAGE_ASSEMBLY
   ORG_QUERY
   DASHBOARD_SYNTHESIS
+  ARTICLE_SYNTHESIS
 }
 
 enum SessionLogStatus {

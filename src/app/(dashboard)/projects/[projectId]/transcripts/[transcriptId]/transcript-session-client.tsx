@@ -211,9 +211,9 @@ export function TranscriptSessionClient({
                     <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#DC2626]" />
                     <div>
                       <p className="text-[14px] font-medium text-[#DC2626]">{msg.content}</p>
-                      {tc.message && (
+                      {typeof tc.message === "string" && (
                         <p className="mt-1 text-[13px] text-[#DC2626]/80">
-                          {String(tc.message)}
+                          {tc.message}
                         </p>
                       )}
                     </div>

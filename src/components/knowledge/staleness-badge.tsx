@@ -67,12 +67,14 @@ export function StalenessBadge({
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[13px] font-semibold text-white ${style.bg}`}
-          >
-            {style.label}
-          </span>
+        <TooltipTrigger
+          render={
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[13px] font-semibold text-white ${style.bg}`}
+            />
+          }
+        >
+          {style.label}
         </TooltipTrigger>
         <TooltipContent>{tooltipText}</TooltipContent>
       </Tooltip>

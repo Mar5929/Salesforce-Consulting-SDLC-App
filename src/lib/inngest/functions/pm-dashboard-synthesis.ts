@@ -103,9 +103,9 @@ export const synthesizePmDashboard = inngest.createFunction(
         key: "event.data.projectId",
       },
     ],
+    triggers: [{ event: EVENTS.PM_DASHBOARD_SYNTHESIS_REQUESTED }],
   },
-  { event: EVENTS.PM_DASHBOARD_SYNTHESIS_REQUESTED },
-  async ({ event, step }) => {
+  async ({ event, step }: { event: any; step: any }) => {
     const { projectId } = event.data as { projectId: string }
 
     // Step 1: Aggregate stories by status

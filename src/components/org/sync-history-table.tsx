@@ -103,9 +103,6 @@ export function SyncHistoryTable({ syncRuns }: SyncHistoryTableProps) {
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusConfig.className}`}
                         >
-                          {run.status === "RUNNING" && (
-                            <span className="mr-1.5 inline-block size-1.5 rounded-full bg-primary animate-pulse" />
-                          )}
                           {statusConfig.label}
                         </span>
                       </TooltipTrigger>

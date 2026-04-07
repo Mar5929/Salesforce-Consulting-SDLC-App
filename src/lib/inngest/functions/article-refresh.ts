@@ -27,9 +27,9 @@ export const articleRefreshFunction = inngest.createFunction(
         key: "event.data.projectId",
       },
     ],
+    triggers: [{ event: EVENTS.ARTICLE_FLAGGED_STALE }],
   },
-  { event: EVENTS.ARTICLE_FLAGGED_STALE },
-  async ({ event, step }) => {
+  async ({ event, step }: { event: any; step: any }) => {
     const { projectId, articleId } = event.data as {
       projectId: string
       articleId: string

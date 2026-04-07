@@ -33,9 +33,9 @@ export const dashboardSynthesisFunction = inngest.createFunction(
       period: "30s",
       key: "event.data.projectId",
     },
+    triggers: [{ event: EVENTS.PROJECT_STATE_CHANGED }],
   },
-  { event: EVENTS.PROJECT_STATE_CHANGED },
-  async ({ event, step }) => {
+  async ({ event, step }: { event: any; step: any }) => {
     const { projectId } = event.data as { projectId: string }
 
     // Step 1: Compute dashboard metrics
@@ -57,7 +57,7 @@ export const dashboardSynthesisFunction = inngest.createFunction(
           {
             userMessage: JSON.stringify({
               questionStats: metrics.questionStats,
-              blockedItems: metrics.blockedItems.map((b) => ({
+              blockedItems: metrics.blockedItems.map((b: any) => ({
                 questionDisplayId: b.questionDisplayId,
                 questionText: b.questionText,
                 questionStatus: b.questionStatus,

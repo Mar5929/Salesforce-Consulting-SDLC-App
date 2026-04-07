@@ -1,4 +1,4 @@
-import jsforce from "jsforce"
+import jsforce, { Connection } from "jsforce"
 import { prisma } from "@/lib/db"
 import { decrypt, encrypt } from "@/lib/encryption"
 
@@ -8,12 +8,12 @@ import { decrypt, encrypt } from "@/lib/encryption"
  * and persists the new access token when Salesforce rotates it.
  *
  * @param projectId - Project whose SF org credentials to use
- * @returns Authenticated jsforce.Connection
+ * @returns Authenticated Connection
  * @throws Error if project has no SF org connected
  */
 export async function getSalesforceConnection(
   projectId: string
-): Promise<jsforce.Connection> {
+): Promise<Connection> {
   const project = await prisma.project.findUniqueOrThrow({
     where: { id: projectId },
     select: {
@@ -38,7 +38,7 @@ export async function getSalesforceConnection(
     redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/salesforce/callback`,
   })
 
-  const conn = new jsforce.Connection({
+  const conn = new Connection({
     oauth2,
     instanceUrl: project.sfOrgInstanceUrl,
     accessToken,

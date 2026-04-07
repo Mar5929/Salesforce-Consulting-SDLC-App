@@ -3,7 +3,7 @@ import { EVENTS } from "../events"
 import { prisma } from "@/lib/db"
 import { pushStoryToJira, syncStoryStatus } from "@/lib/jira/sync"
 import type { StoryWithDetails } from "@/lib/jira/sync"
-import type { JiraConfig } from "@/generated/prisma"
+import type { JiraConfig, StoryStatus } from "@/generated/prisma"
 
 /**
  * Jira Sync on Story Status Change
@@ -77,7 +77,7 @@ export const jiraSyncOnStatusChange = inngest.createFunction(
         return syncStoryStatus(
           jiraConfig as unknown as JiraConfig,
           storyId,
-          newStatus
+          newStatus as StoryStatus
         )
       })
 

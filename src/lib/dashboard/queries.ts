@@ -143,7 +143,7 @@ export async function getBlockedItems(
       questionBlocksFeatures: {
         include: {
           feature: {
-            select: { id: true, displayId: true, name: true },
+            select: { id: true, prefix: true, name: true },
           },
         },
       },
@@ -175,7 +175,7 @@ export async function getBlockedItems(
       blockedEntities.push({
         entityType: "FEATURE",
         entityId: bf.feature.id,
-        entityDisplayId: bf.feature.displayId,
+        entityDisplayId: bf.feature.prefix,
         entityTitle: bf.feature.name,
       })
     }

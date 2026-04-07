@@ -88,7 +88,7 @@ export function JiraConfigForm({
     handleSubmit,
     formState: { errors },
   } = useForm<JiraConfigFormData>({
-    resolver: zodResolver(existingConfig ? jiraConfigUpdateSchema : jiraConfigCreateSchema),
+    resolver: zodResolver(existingConfig ? jiraConfigUpdateSchema : jiraConfigCreateSchema) as any,
     defaultValues: {
       instanceUrl: existingConfig?.instanceUrl ?? "",
       email: existingConfig?.email ?? "",
@@ -225,10 +225,8 @@ export function JiraConfigForm({
 
           {existingConfig && (
             <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button type="button" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/5">
-                  Disconnect
-                </Button>
+              <AlertDialogTrigger render={<Button type="button" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/5" />}>
+                Disconnect
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>

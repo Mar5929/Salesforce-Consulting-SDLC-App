@@ -22,9 +22,9 @@ export const questionImpactAssessmentFunction = inngest.createFunction(
   {
     id: "question-impact-assessment",
     retries: 2,
+    triggers: [{ event: EVENTS.ENTITY_CONTENT_CHANGED }],
   },
-  { event: EVENTS.ENTITY_CONTENT_CHANGED },
-  async ({ event, step }) => {
+  async ({ event, step }: { event: any; step: any }) => {
     const { projectId, entityType, entityId, userId, action } = event.data as {
       projectId: string
       entityType: string
@@ -46,6 +46,7 @@ export const questionImpactAssessmentFunction = inngest.createFunction(
       return executeTask(
         questionAnsweringTask,
         {
+          userMessage: `Assess the impact of answering question ${entityId}`,
           entityId,
           metadata: { projectId },
         },

@@ -119,12 +119,14 @@ export function FeatureForm({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button className="bg-[#2563EB] text-white hover:bg-[#1d4ed8]">
-            New Feature
-          </Button>
-        )}
+      <DialogTrigger
+        render={
+          (trigger as React.ReactElement) ?? (
+            <Button className="bg-[#2563EB] text-white hover:bg-[#1d4ed8]" />
+          )
+        }
+      >
+        {trigger ? undefined : "New Feature"}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>

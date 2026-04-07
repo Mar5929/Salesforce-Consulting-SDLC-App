@@ -10,7 +10,7 @@
  * - T-04-10: Sequential type processing; Inngest step retries handle 429/503
  */
 
-import type jsforce from "jsforce"
+import type { Connection } from "jsforce"
 import { prisma } from "@/lib/db"
 import { getSalesforceConnection } from "@/lib/salesforce/client"
 import {
@@ -52,7 +52,7 @@ function getRelationshipType(
  * @returns Counts of added and modified components
  */
 export async function syncMetadataType(
-  conn: jsforce.Connection,
+  conn: Connection,
   projectId: string,
   typeConfig: MetadataTypeConfig,
   sinceDate?: Date
@@ -127,7 +127,7 @@ export async function syncMetadataType(
  * Creates OrgRelationship records for lookup/masterDetail fields.
  */
 async function describeAndUpsertFields(
-  conn: jsforce.Connection,
+  conn: Connection,
   projectId: string,
   objectApiName: string,
   parentComponentId: string

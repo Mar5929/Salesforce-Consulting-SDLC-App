@@ -113,12 +113,14 @@ export function EpicForm({ projectId, epic, trigger, onSuccess }: EpicFormProps)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button className="bg-[#2563EB] text-white hover:bg-[#1d4ed8]">
-            New Epic
-          </Button>
-        )}
+      <DialogTrigger
+        render={
+          (trigger as React.ReactElement) ?? (
+            <Button className="bg-[#2563EB] text-white hover:bg-[#1d4ed8]" />
+          )
+        }
+      >
+        {trigger ? undefined : "New Epic"}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>

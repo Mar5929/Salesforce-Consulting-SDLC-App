@@ -19,9 +19,9 @@ export const stalenessDetectionFunction = inngest.createFunction(
   {
     id: "staleness-detection",
     retries: 2,
+    triggers: [{ event: EVENTS.ENTITY_CONTENT_CHANGED }],
   },
-  { event: EVENTS.ENTITY_CONTENT_CHANGED },
-  async ({ event, step }) => {
+  async ({ event, step }: { event: any; step: any }) => {
     const { projectId, entityType, entityId, description } = event.data as {
       projectId: string
       entityType: string
@@ -111,7 +111,7 @@ export const stalenessDetectionFunction = inngest.createFunction(
 
         await prisma.knowledgeArticle.updateMany({
           where: {
-            id: { in: affectedArticles.map((a) => a.id) },
+            id: { in: affectedArticles.map((a: any) => a.id) },
             projectId,
           },
           data: {
@@ -124,7 +124,7 @@ export const stalenessDetectionFunction = inngest.createFunction(
         return {
           bootstrapped: false,
           flaggedCount: affectedArticles.length,
-          flaggedArticleIds: affectedArticles.map((a) => a.id),
+          flaggedArticleIds: affectedArticles.map((a: any) => a.id),
         }
       }
 

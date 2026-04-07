@@ -77,9 +77,9 @@ export const embeddingBatchFunction = inngest.createFunction(
         key: "event.data.projectId",
       },
     ],
+    triggers: [{ event: EVENTS.EMBEDDING_BATCH_REQUESTED }],
   },
-  { event: EVENTS.EMBEDDING_BATCH_REQUESTED },
-  async ({ event, step }) => {
+  async ({ event, step }: { event: any; step: any }) => {
     const { projectId, entities } = event.data as {
       projectId: string
       entities: EmbeddingEntity[]

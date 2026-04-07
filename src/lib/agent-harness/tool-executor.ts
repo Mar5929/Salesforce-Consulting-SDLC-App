@@ -13,6 +13,13 @@
  */
 
 import { prisma } from "@/lib/db"
+
+export class ToolNotImplementedError extends Error {
+  constructor(toolName: string) {
+    super(`Unknown tool: ${toolName}`)
+    this.name = "ToolNotImplementedError"
+  }
+}
 import { sanitizeToolInput } from "./sanitize"
 import { executeCreateQuestion } from "./tools/create-question"
 import { executeAnswerQuestion } from "./tools/answer-question"
@@ -75,9 +82,7 @@ export async function executeToolCall(
       return executeCreateStoryDraft(sanitizedInput, projectId)
 
     default:
-      throw new Error(
-        `Unknown tool: ${toolName}. Available tools: create_question, answer_question, update_question_status, create_decision, create_requirement, create_risk, flag_conflict, create_story_draft`
-      )
+      throw new ToolNotImplementedError(toolName)
   }
 }
 

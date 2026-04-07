@@ -64,7 +64,7 @@ export function QuestionForm({
   const [open, setOpen] = useState(false)
 
   const form = useForm<QuestionFormValues>({
-    resolver: zodResolver(questionFormSchema),
+    resolver: zodResolver(questionFormSchema) as any,
     defaultValues: {
       questionText: "",
       scope: "ENGAGEMENT",
@@ -95,12 +95,14 @@ export function QuestionForm({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button className="bg-[#2563EB] text-white hover:bg-[#1d4ed8]">
-            Ask Question
-          </Button>
-        )}
+      <DialogTrigger
+        render={
+          (trigger as React.ReactElement) ?? (
+            <Button className="bg-[#2563EB] text-white hover:bg-[#1d4ed8]" />
+          )
+        }
+      >
+        {trigger ? undefined : "Ask Question"}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
@@ -151,7 +153,7 @@ export function QuestionForm({
             <div className="flex flex-col gap-1.5">
               <Label className="text-[13px] font-semibold">Epic</Label>
               <Select
-                onValueChange={(v) => form.setValue("scopeEpicId", v)}
+                onValueChange={(v) => form.setValue("scopeEpicId", v as string)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select epic" />
@@ -172,7 +174,7 @@ export function QuestionForm({
             <div className="flex flex-col gap-1.5">
               <Label className="text-[13px] font-semibold">Feature</Label>
               <Select
-                onValueChange={(v) => form.setValue("scopeFeatureId", v)}
+                onValueChange={(v) => form.setValue("scopeFeatureId", v as string)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select feature" />
@@ -235,7 +237,7 @@ export function QuestionForm({
             <div className="flex flex-col gap-1.5">
               <Label className="text-[13px] font-semibold">Assign to</Label>
               <Select
-                onValueChange={(v) => form.setValue("assigneeId", v)}
+                onValueChange={(v) => form.setValue("assigneeId", v as string)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Unassigned" />

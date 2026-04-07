@@ -24,9 +24,9 @@ export const metadataSyncFunction = inngest.createFunction(
         limit: 1,
       },
     ],
+    triggers: [{ event: EVENTS.ORG_SYNC_REQUESTED }],
   },
-  { event: EVENTS.ORG_SYNC_REQUESTED },
-  async ({ event, step }) => {
+  async ({ event, step }: { event: any; step: any }) => {
     const { projectId, syncType } = event.data as {
       projectId: string
       syncType: "FULL" | "INCREMENTAL"

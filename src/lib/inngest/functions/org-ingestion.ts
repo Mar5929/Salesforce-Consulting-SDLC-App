@@ -264,9 +264,9 @@ export const orgIngestionFunction = inngest.createFunction(
         limit: 1,
       },
     ],
+    triggers: [{ event: EVENTS.ORG_INGESTION_REQUESTED }],
   },
-  { event: EVENTS.ORG_INGESTION_REQUESTED },
-  async ({ event, step }) => {
+  async ({ event, step }: { event: any; step: any }) => {
     const { projectId, userId } = event.data as {
       projectId: string
       userId: string
@@ -278,7 +278,7 @@ export const orgIngestionFunction = inngest.createFunction(
     })
 
     // Check if we have any components to process
-    const totalComponents = Object.values(groupedComponents).reduce(
+    const totalComponents = Object.values(groupedComponents as Record<string, unknown[]>).reduce(
       (sum, arr) => sum + arr.length,
       0
     )
