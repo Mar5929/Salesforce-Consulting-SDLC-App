@@ -43,9 +43,17 @@ export default async function DashboardLayout({
       currentMemberRole = member.role
       questionReviewCount = qCount
       openDefectCount = dCount
-    } catch {
-      // User is not a member of this project — redirect to dashboard root
-      redirect("/")
+    } catch (err) {
+      // Only redirect for auth/membership errors; let infrastructure errors surface
+      if (
+        err instanceof Error &&
+        (err.message === "Not a member of this project" ||
+          err.message === "Unauthorized" ||
+          err.message === "Insufficient permissions")
+      ) {
+        redirect("/")
+      }
+      throw err // Re-throw unexpected errors so Next.js error boundary handles them
     }
   }
 
