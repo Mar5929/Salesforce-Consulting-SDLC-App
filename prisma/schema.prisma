@@ -603,6 +603,7 @@ model Question {
   questionText      String
   scope             QuestionScope
   category          QuestionCategory @default(GENERAL)
+  priority          Priority         @default(MEDIUM)
   scopeEpicId       String?
   scopeFeatureId    String?
   ownerId           String?
