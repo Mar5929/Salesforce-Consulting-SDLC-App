@@ -21,9 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Bug, Plus } from "lucide-react"
+import { Bug, Plus, ClipboardList } from "lucide-react"
 import { getStoryTestCases } from "@/actions/test-executions"
 import { RecordResultForm } from "@/components/qa/record-result-form"
+import { TestCaseCreateForm } from "@/components/qa/test-case-create-form"
 import { format } from "date-fns"
 
 // ────────────────────────────────────────────
@@ -97,6 +98,7 @@ export function TestExecutionTable({
   const [testCases, setTestCases] = useState<TestCaseWithExecution[]>([])
   const [loading, setLoading] = useState(true)
   const [showRecordForm, setShowRecordForm] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
 
   const { execute: fetchTestCases } = useAction(getStoryTestCases, {
     onSuccess: ({ data }) => {
@@ -125,6 +127,11 @@ export function TestExecutionTable({
     loadTestCases()
   }
 
+  function handleCreateComplete() {
+    setShowCreateForm(false)
+    loadTestCases()
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12 text-[14px] text-muted-foreground">
@@ -134,23 +141,33 @@ export function TestExecutionTable({
   }
 
   // Empty state
-  if (testCases.length === 0 && !showRecordForm) {
+  if (testCases.length === 0 && !showRecordForm && !showCreateForm) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3">
         <h3 className="text-[16px] font-medium text-foreground">
-          No test results
+          No test cases
         </h3>
         <p className="text-[14px] text-muted-foreground text-center max-w-md">
-          Record test execution results to track quality. Mark each test case as
-          Pass, Fail, or Blocked.
+          Create test cases to define what needs testing, then record execution
+          results to track quality.
         </p>
-        <Button
-          onClick={() => setShowRecordForm(true)}
-          className="mt-2 bg-[#2563EB] text-white hover:bg-[#1d4ed8] gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          Record Result
-        </Button>
+        <div className="flex items-center gap-2 mt-2">
+          <Button
+            onClick={() => setShowCreateForm(true)}
+            className="bg-[#2563EB] text-white hover:bg-[#1d4ed8] gap-1.5"
+          >
+            <ClipboardList className="h-4 w-4" />
+            Create Test Case
+          </Button>
+          <Button
+            onClick={() => setShowRecordForm(true)}
+            variant="outline"
+            className="gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            Record Result
+          </Button>
+        </div>
       </div>
     )
   }
@@ -162,15 +179,35 @@ export function TestExecutionTable({
         <h3 className="text-[16px] font-medium text-foreground">
           Test Execution
         </h3>
-        <Button
-          onClick={() => setShowRecordForm(true)}
-          className="bg-[#2563EB] text-white hover:bg-[#1d4ed8] gap-1.5"
-          size="sm"
-        >
-          <Plus className="h-4 w-4" />
-          Record Result
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setShowCreateForm(true)}
+            variant="outline"
+            className="gap-1.5"
+            size="sm"
+          >
+            <ClipboardList className="h-4 w-4" />
+            Create Test Case
+          </Button>
+          <Button
+            onClick={() => setShowRecordForm(true)}
+            className="bg-[#2563EB] text-white hover:bg-[#1d4ed8] gap-1.5"
+            size="sm"
+          >
+            <Plus className="h-4 w-4" />
+            Record Result
+          </Button>
+        </div>
       </div>
+
+      {/* Create test case form */}
+      {showCreateForm && (
+        <TestCaseCreateForm
+          storyId={storyId}
+          onComplete={handleCreateComplete}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      )}
 
       {/* Record result form */}
       {showRecordForm && (
