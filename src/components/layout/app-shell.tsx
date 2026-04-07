@@ -8,18 +8,24 @@ interface AppShellProps {
   children: React.ReactNode
   currentMemberRole?: string
   activeProjectId?: string
+  questionReviewCount?: number
+  openDefectCount?: number
 }
 
 export function AppShell({
   children,
   currentMemberRole,
   activeProjectId,
+  questionReviewCount,
+  openDefectCount,
 }: AppShellProps) {
   return (
     <div className="flex h-screen">
       <Sidebar
         currentMemberRole={currentMemberRole}
         activeProjectId={activeProjectId}
+        questionReviewCount={questionReviewCount}
+        openDefectCount={openDefectCount}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* App header bar — search trigger, notifications, avatar */}
