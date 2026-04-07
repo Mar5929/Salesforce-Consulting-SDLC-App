@@ -29,7 +29,8 @@ export async function withApiAuth(
 
   // Apply rate limiting (T-04-15)
   const endpoint = new URL(request.url).pathname
-  const rateResult = await checkRateLimit(apiKeyId, endpoint, rateLimit)
+  const method = request.method ?? "GET"
+  const rateResult = await checkRateLimit(apiKeyId, endpoint, rateLimit, 60_000, method)
   if (!rateResult.allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded" },
