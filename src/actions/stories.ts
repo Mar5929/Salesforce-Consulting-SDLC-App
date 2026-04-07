@@ -313,6 +313,13 @@ export const updateStoryStatus = actionClient
       },
     })
 
+    await inngest.send({
+      name: EVENTS.PROJECT_STATE_CHANGED,
+      data: {
+        projectId: parsedInput.projectId,
+      },
+    })
+
     // Notify the story assignee (if different from actor) about status change
     if (existing.assigneeId && existing.assigneeId !== member.id) {
       await inngest.send({
