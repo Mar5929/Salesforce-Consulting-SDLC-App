@@ -159,7 +159,10 @@ export const createStory = actionClient
 
 export const updateStory = actionClient
   .schema(updateStorySchema)
-  .action(async ({ parsedInput, ctx }) => {
+  .action(async ({ parsedInput }) => {
+    // Consistent membership + suspension check via canonical helper (T-03-01)
+    const member = await getCurrentMember(parsedInput.projectId)
+
     // Validate storyId belongs to project
     const existing = await prisma.story.findUnique({
       where: { id: parsedInput.storyId },
@@ -168,12 +171,6 @@ export const updateStory = actionClient
     if (!existing || existing.projectId !== parsedInput.projectId) {
       throw new Error("Story not found")
     }
-
-    // Look up member for role check (T-03-01)
-    const member = await prisma.projectMember.findFirst({
-      where: { projectId: parsedInput.projectId, clerkUserId: ctx.userId },
-    })
-    if (!member) throw new Error("Not a member of this project")
 
     // Role check: PM/SA can edit any, others only their own
     if (member.role !== "PM" && member.role !== "SOLUTION_ARCHITECT") {
