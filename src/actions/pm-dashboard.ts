@@ -41,7 +41,7 @@ export const getPmDashboardData = actionClient
 
     // Verify project membership and PM/SA role (T-05-14)
     const member = await getCurrentMember(projectId)
-    if (!["PM", "SA"].includes(member.role)) {
+    if (!["PM", "SOLUTION_ARCHITECT"].includes(member.role)) {
       throw new Error("PM Dashboard requires PM or SA role")
     }
 
@@ -80,7 +80,7 @@ export const requestDashboardRefresh = actionClient
 
     // Verify project membership
     const member = await getCurrentMember(projectId)
-    if (!["PM", "SA"].includes(member.role)) {
+    if (!["PM", "SOLUTION_ARCHITECT"].includes(member.role)) {
       throw new Error("PM Dashboard requires PM or SA role")
     }
 
