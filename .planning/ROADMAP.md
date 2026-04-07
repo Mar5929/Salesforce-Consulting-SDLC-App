@@ -166,7 +166,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 07-01-PLAN.md — Wire epicId through redirect, ChatInterface STORY_SESSION variant, and StoryDraftCards rendering
+- [x] 07-01-PLAN.md — Wire epicId through redirect, ChatInterface STORY_SESSION variant, and StoryDraftCards rendering
 
 
 ### Phase 8: Event Wiring and Integration Fixes

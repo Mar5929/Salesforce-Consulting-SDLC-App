@@ -107,7 +107,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **WORK-03**: User can edit and delete own stories; PM/SA can edit any story
 - [x] **WORK-04**: Story status workflow: Draft > Ready > Sprint Planned > In Progress > In Review > QA > Done
 - [x] **WORK-05**: PM manages lifecycle states, developers manage execution states, auto-transition on sprint assignment
-- [ ] **WORK-06**: AI-assisted story generation from requirements and discovery context
+- [x] **WORK-06**: AI-assisted story generation from requirements and discovery context
 - [x] **WORK-07**: Each story tracks impacted Salesforce components (creates/modifies/deletes) via StoryComponent join
 
 ### Sprint Management
@@ -285,7 +285,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WORK-03 | Phase 3 | Complete |
 | WORK-04 | Phase 3 | Complete |
 | WORK-05 | Phase 3 | Complete |
-| WORK-06 | Phase 7 | Pending |
+| WORK-06 | Phase 7 | Complete |
 | WORK-07 | Phase 3 | Complete |
 | SPRT-01 | Phase 3 | Complete |
 | SPRT-02 | Phase 3 | Complete |
