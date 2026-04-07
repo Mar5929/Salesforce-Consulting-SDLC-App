@@ -250,16 +250,19 @@ export const editBusinessProcess = actionClient
   })
 
 /**
- * Bulk confirm all high-confidence AI suggestions.
+ * Bulk confirm all unconfirmed AI suggestions.
  * Confirms all unconfirmed domain groupings or business processes.
  * SA or PM role required.
+ *
+ * Note: Confidence filtering is not supported because DomainGrouping and
+ * BusinessProcess models do not store a numeric confidence score. The function
+ * name is kept for API compatibility but confirms ALL unconfirmed records.
  */
 export const bulkConfirmHighConfidence = actionClient
   .schema(
     z.object({
       projectId: z.string(),
       type: z.enum(["domain", "process"]),
-      minConfidence: z.number().default(80),
     })
   )
   .action(async ({ parsedInput, ctx }) => {

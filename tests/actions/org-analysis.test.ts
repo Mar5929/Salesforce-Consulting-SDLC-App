@@ -211,7 +211,6 @@ describe("Org Analysis Actions", () => {
       const result = await bulkConfirmHighConfidence({
         projectId: "project-1",
         type: "domain",
-        minConfidence: 80,
       })
 
       expect(mockPrisma.domainGrouping.updateMany).toHaveBeenCalledWith({
