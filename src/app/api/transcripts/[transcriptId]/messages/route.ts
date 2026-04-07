@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db"
  * Polling endpoint for transcript processing messages.
  * Used by SWR in the transcript session view to get updated messages.
  *
- * Query params: projectId, conversationId
+ * Query params: projectId
  */
 export async function GET(
   request: NextRequest,
@@ -22,9 +22,8 @@ export async function GET(
   const { transcriptId } = await params
   const searchParams = request.nextUrl.searchParams
   const projectId = searchParams.get("projectId")
-  const conversationId = searchParams.get("conversationId")
 
-  if (!projectId || !conversationId) {
+  if (!projectId) {
     return NextResponse.json([], { status: 400 })
   }
 
@@ -36,7 +35,21 @@ export async function GET(
     return NextResponse.json([], { status: 403 })
   }
 
-  // Verify conversation belongs to project
+  // Verify transcript exists and belongs to this project
+  const transcript = await prisma.transcript.findFirst({
+    where: { id: transcriptId, projectId },
+  })
+  if (!transcript) {
+    return NextResponse.json([], { status: 404 })
+  }
+
+  // Derive conversationId from the transcript's FK instead of trusting client input
+  const conversationId = transcript.conversationId
+  if (!conversationId) {
+    return NextResponse.json([], { status: 404 })
+  }
+
+  // Fetch conversation messages
   const conversation = await prisma.conversation.findFirst({
     where: {
       id: conversationId,

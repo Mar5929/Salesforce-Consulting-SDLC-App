@@ -87,8 +87,8 @@ export function TranscriptSessionClient({
 
   // Poll for new messages while processing
   const { data: polledMessages } = useSWR(
-    isProcessing && conversationId
-      ? `/api/transcripts/${transcriptId}/messages?projectId=${projectId}&conversationId=${conversationId}`
+    isProcessing
+      ? `/api/transcripts/${transcriptId}/messages?projectId=${projectId}`
       : null,
     fetchMessages,
     {
