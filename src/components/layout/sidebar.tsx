@@ -148,7 +148,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
     {
       label: "Team",
       icon: Users,
-      href: activeProjectId ? `/projects/${activeProjectId}/team` : "/team",
+      href: activeProjectId ? `/projects/${activeProjectId}/settings/team` : "/settings/team",
       roles: ["SOLUTION_ARCHITECT", "PM"],
     },
   ]
