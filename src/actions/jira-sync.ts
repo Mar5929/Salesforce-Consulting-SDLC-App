@@ -13,7 +13,7 @@ const saveJiraConfigSchema = z.object({
   projectId: z.string(),
   instanceUrl: z.string().url("Must be a valid URL"),
   email: z.string().email("Must be a valid email"),
-  apiToken: z.string().min(1, "API token is required"),
+  apiToken: z.string().optional().default(""),
   jiraProjectKey: z
     .string()
     .min(1, "Jira project key is required")
@@ -36,8 +36,24 @@ export const saveJiraConfig = actionClient
     // T-05-18: Restricted to PM or SA role
     await requireRole(projectId, ["PM", "SOLUTION_ARCHITECT"])
 
-    // Encrypt the API token before storage
-    const encryptedToken = await encrypt(apiToken, projectId)
+    // Build update data -- only overwrite token if a new one was provided
+    const updateData: Record<string, unknown> = {
+      instanceUrl,
+      email,
+      jiraProjectKey,
+    }
+    if (apiToken && apiToken.length > 0) {
+      updateData.encryptedToken = await encrypt(apiToken, projectId)
+    }
+
+    // For create, a token is required
+    const existingConfig = await prisma.jiraConfig.findUnique({
+      where: { projectId },
+      select: { id: true },
+    })
+    if (!existingConfig && (!apiToken || apiToken.length === 0)) {
+      throw new Error("API token is required for initial Jira configuration")
+    }
 
     const config = await prisma.jiraConfig.upsert({
       where: { projectId },
@@ -45,15 +61,10 @@ export const saveJiraConfig = actionClient
         projectId,
         instanceUrl,
         email,
-        encryptedToken,
+        encryptedToken: await encrypt(apiToken, projectId),
         jiraProjectKey,
       },
-      update: {
-        instanceUrl,
-        email,
-        encryptedToken,
-        jiraProjectKey,
-      },
+      update: updateData,
     })
 
     // Return config without the encrypted token

@@ -29,7 +29,7 @@ import { saveJiraConfig, toggleJiraSync } from "@/actions/jira-sync"
 // Schema
 // ────────────────────────────────────────────
 
-const jiraConfigSchema = z.object({
+const jiraConfigCreateSchema = z.object({
   instanceUrl: z.string().url("Must be a valid URL"),
   email: z.string().email("Must be a valid email"),
   apiToken: z.string().min(1, "API token is required"),
@@ -39,7 +39,17 @@ const jiraConfigSchema = z.object({
     .max(10, "Project key is too long"),
 })
 
-type JiraConfigFormData = z.infer<typeof jiraConfigSchema>
+const jiraConfigUpdateSchema = z.object({
+  instanceUrl: z.string().url("Must be a valid URL"),
+  email: z.string().email("Must be a valid email"),
+  apiToken: z.string().optional().default(""),
+  jiraProjectKey: z
+    .string()
+    .min(1, "Jira project key is required")
+    .max(10, "Project key is too long"),
+})
+
+type JiraConfigFormData = z.infer<typeof jiraConfigCreateSchema>
 
 // ────────────────────────────────────────────
 // Types
@@ -78,7 +88,7 @@ export function JiraConfigForm({
     handleSubmit,
     formState: { errors },
   } = useForm<JiraConfigFormData>({
-    resolver: zodResolver(jiraConfigSchema),
+    resolver: zodResolver(existingConfig ? jiraConfigUpdateSchema : jiraConfigCreateSchema),
     defaultValues: {
       instanceUrl: existingConfig?.instanceUrl ?? "",
       email: existingConfig?.email ?? "",
