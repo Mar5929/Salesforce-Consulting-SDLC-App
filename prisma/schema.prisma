@@ -828,6 +828,8 @@ model OrgRelationship {
 
   sourceComponent   OrgComponent @relation("OrgRelationshipSource", fields: [sourceComponentId], references: [id], onDelete: Cascade)
   targetComponent   OrgComponent @relation("OrgRelationshipTarget", fields: [targetComponentId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceComponentId, targetComponentId, relationshipType])
 }
 
 model DomainGrouping {
@@ -1306,4 +1308,14 @@ model MilestoneStory {
   story       Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
   @@unique([milestoneId, storyId])
+}
+
+/// Short-lived OAuth state tokens for CSRF protection in Salesforce OAuth flow.
+/// Tokens are single-use and expire after 10 minutes.
+model OauthState {
+  token        String   @id
+  projectId    String
+  clerkUserId  String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
 }

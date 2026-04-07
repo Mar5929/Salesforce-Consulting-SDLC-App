@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  // Build OAuth authorization URL and redirect
-  const authUrl = buildAuthorizationUrl(projectId)
+  // Build OAuth authorization URL (now async, generates CSRF state token)
+  const authUrl = await buildAuthorizationUrl(projectId, userId)
   return NextResponse.redirect(authUrl)
 }

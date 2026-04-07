@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
-import { exchangeCodeForTokens } from "@/lib/salesforce/oauth"
+import {
+  exchangeCodeForTokens,
+  validateOAuthState,
+} from "@/lib/salesforce/oauth"
 import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
 
@@ -14,33 +17,51 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
  * Exchanges the authorization code for encrypted tokens, stores them on the project,
  * and triggers an initial full metadata sync.
  *
- * T-04-05: Validates state parameter contains valid projectId.
+ * T-04-05: Validates state token and resolves to projectId + userId (CSRF protection).
  * T-04-07: Auth code is single-use and short-lived; tokens never exposed in URLs.
  */
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code")
-  const state = request.nextUrl.searchParams.get("state") // projectId
+  const state = request.nextUrl.searchParams.get("state") // CSRF state token
   const error = request.nextUrl.searchParams.get("error")
 
   // Handle Salesforce-side errors (user denied access, etc.)
   if (error || !code || !state) {
-    const redirectUrl = state
-      ? `${APP_URL}/projects/${state}/settings/org?error=oauth_failed`
-      : `${APP_URL}?error=oauth_failed`
-    return NextResponse.redirect(redirectUrl)
+    return NextResponse.redirect(`${APP_URL}?error=oauth_failed`)
   }
 
-  const projectId = state
+  // Validate CSRF state token and resolve to projectId + userId
+  const stateData = await validateOAuthState(state)
+  if (!stateData) {
+    return NextResponse.redirect(`${APP_URL}?error=oauth_failed`)
+  }
 
-  // Verify user session exists (T-04-05)
+  const { projectId, clerkUserId: initiatingUserId } = stateData
+
+  // Verify user session exists and matches the user who initiated the flow (T-04-05)
   const { userId } = await auth()
-  if (!userId) {
+  if (!userId || userId !== initiatingUserId) {
     return NextResponse.redirect(
       `${APP_URL}/projects/${projectId}/settings/org?error=oauth_failed`
     )
   }
 
-  // Verify the project exists and the state param is a valid project
+  // Verify the user has SA or PM role on the project (CR-02: independent role check)
+  const member = await prisma.projectMember.findFirst({
+    where: {
+      projectId,
+      clerkUserId: userId,
+      role: { in: ["SOLUTION_ARCHITECT", "PM"] },
+    },
+  })
+
+  if (!member) {
+    return NextResponse.redirect(
+      `${APP_URL}/projects/${projectId}/settings/org?error=oauth_failed`
+    )
+  }
+
+  // Verify the project exists
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     select: { id: true },
