@@ -138,87 +138,6 @@ export const transcriptProcessingFunction = inngest.createFunction(
 
     // Step 3: Update transcript status and link session log
     await step.run("update-status", async () => {
-      // Count extracted items by type from tool results
-      const itemCounts = {
-        questions: 0,
-        decisions: 0,
-        requirements: 0,
-        risks: 0,
-        duplicates: 0,
-      }
-
-      const extractedItems: Array<{
-        type: string
-        id?: string
-        displayId?: string
-        text: string
-        duplicate?: boolean
-        existingDisplayId?: string
-      }> = []
-
-      for (const toolResult of extractionResult.toolResults) {
-        if (toolResult.isError) continue
-        const result = toolResult.result as Record<string, unknown>
-
-        switch (toolResult.toolName) {
-          case "create_question": {
-            if (result.duplicate) {
-              itemCounts.duplicates++
-              extractedItems.push({
-                type: "question",
-                text: String((result as Record<string, unknown>).existingText ?? ""),
-                duplicate: true,
-                existingDisplayId: String((result as Record<string, unknown>).existingDisplayId ?? ""),
-              })
-            } else {
-              itemCounts.questions++
-              const q = result.question as Record<string, unknown>
-              extractedItems.push({
-                type: "question",
-                id: String(q.id ?? ""),
-                displayId: String(q.displayId ?? ""),
-                text: String(q.questionText ?? ""),
-              })
-            }
-            break
-          }
-          case "create_decision": {
-            itemCounts.decisions++
-            const d = result.decision as Record<string, unknown>
-            extractedItems.push({
-              type: "decision",
-              id: String(d.id ?? ""),
-              displayId: String(d.displayId ?? ""),
-              text: String(d.title ?? ""),
-            })
-            break
-          }
-          case "create_requirement": {
-            itemCounts.requirements++
-            const r = result.requirement as Record<string, unknown>
-            extractedItems.push({
-              type: "requirement",
-              id: String(r.id ?? ""),
-              displayId: String(r.displayId ?? ""),
-              text: String(r.description ?? ""),
-            })
-            break
-          }
-          case "create_risk": {
-            itemCounts.risks++
-            const risk = result.risk as Record<string, unknown>
-            extractedItems.push({
-              type: "risk",
-              id: String(risk.id ?? ""),
-              displayId: String(risk.displayId ?? ""),
-              text: String(risk.description ?? ""),
-            })
-            break
-          }
-        }
-      }
-
-      // Update transcript with completion status and session log link
       await prisma.transcript.update({
         where: { id: transcriptId },
         data: {
@@ -226,8 +145,6 @@ export const transcriptProcessingFunction = inngest.createFunction(
           sessionLogId: extractionResult.sessionLogId,
         },
       })
-
-      return { itemCounts, extractedItems }
     })
 
     // Step 4: Save extraction results to conversation as structured ChatMessage
