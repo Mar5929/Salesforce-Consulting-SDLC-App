@@ -3,9 +3,9 @@
 > **Audit trail only.** Do not use as input to planning, research, or execution agents.
 > Decisions are captured in CONTEXT.md — this log preserves the alternatives considered.
 
-**Date:** 2026-04-07
+**Date:** 2026-04-07 (updated)
 **Phase:** 08-event-wiring-and-integration-fixes
-**Areas discussed:** Dashboard trigger sources, Jira retry consumer design, Field name fix strategy
+**Areas discussed:** Dashboard trigger sources, Jira retry consumer design, Field name fix strategy, Field naming consistency, PROJECT_STATE_CHANGED scope, Error handling for retry
 **Mode:** Claude's recommendations (user deferred all choices)
 
 ---
@@ -48,10 +48,49 @@
 
 ---
 
+## Field Naming Consistency (update session)
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Normalize both senders | Change stories.ts toStatus→newStatus AND route.ts previousStatus→fromStatus | ✓ |
+| Fix only stories.ts | Only fix the bug (toStatus→newStatus), leave route.ts as-is |  |
+| Leave both as-is | Consumer handles both field names |  |
+
+**User's choice:** Claude's recommendation — normalize both senders to identical payload shape
+**Notes:** API route already uses `newStatus` correctly but uses `previousStatus` instead of `fromStatus`. Standardizing prevents future confusion. Added as D-11.
+
+---
+
+## PROJECT_STATE_CHANGED Scope (update session)
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Question + transcript + article actions | Instrument question CRUD, transcript processing completion, article refresh completion | ✓ |
+| All state-changing actions | Also include stories, sprints, defects, etc. |  |
+| Question actions only | Minimal instrumentation |  |
+
+**User's choice:** Claude's recommendation — instrument only actions that feed the discovery dashboard
+**Notes:** Stories/sprints feed the PM dashboard (different consumer). Discovery dashboard shows questions, transcripts, knowledge, decisions. Specific files and line numbers identified in D-01.
+
+---
+
+## Error Handling for Retry (update session)
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| JiraSyncRecord audit trail | Same pattern as existing sync — record success/failure in DB | ✓ |
+| Notification on failure | Fire NOTIFICATION_SEND event when retry fails |  |
+| Silent logging | Console.error only, no persistent record |  |
+
+**User's choice:** Claude's recommendation — follow existing jiraSyncOnStatusChange pattern exactly
+**Notes:** SyncStatusBadge in story table already reflects sync record status. No need for separate notification. Added as D-09.
+
+---
+
 ## Claude's Discretion
 
-- Whether story status changes also send PROJECT_STATE_CHANGED (depends on dashboard blocked items query)
-- Exact list of server actions to instrument with PROJECT_STATE_CHANGED
+- Exact insertion point for PROJECT_STATE_CHANGED in article-refresh.ts
+- Whether additional question lifecycle transitions beyond create/answer/status-change affect dashboard metrics
 
 ## Deferred Ideas
 

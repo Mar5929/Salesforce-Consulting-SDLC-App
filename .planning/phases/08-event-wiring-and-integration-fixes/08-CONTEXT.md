@@ -1,6 +1,6 @@
 # Phase 8: Event Wiring and Integration Fixes - Context
 
-**Gathered:** 2026-04-07
+**Gathered:** 2026-04-07 (updated)
 **Status:** Ready for planning
 
 <domain>
@@ -14,25 +14,30 @@ Fix three broken event chains identified in the v1.0 milestone audit: (1) dashbo
 ## Implementation Decisions
 
 ### Dashboard Trigger Sources
-- **D-01:** Send `PROJECT_STATE_CHANGED` from all actions that affect discovery dashboard metrics: question create/answer/status-change, transcript processed, knowledge article create/update, decision created
+- **D-01:** Send `PROJECT_STATE_CHANGED` from these specific locations:
+  - `src/actions/questions.ts` — after `createQuestion`, `answerQuestion`, and `updateQuestionStatus` mutations
+  - `src/lib/inngest/functions/transcript-processing.ts` — add to `step.sendEvent("trigger-downstream")` array after extraction completes
+  - `src/lib/inngest/functions/article-refresh.ts` — send after article write completes
 - **D-02:** Rely on the existing 30s debounce on `dashboardSynthesisFunction` to coalesce rapid events — no additional throttling needed in senders
-- **D-03:** Story status changes may optionally also trigger `PROJECT_STATE_CHANGED` for the "blocked items" metric, but this is Claude's discretion based on whether the dashboard queries blocked items from story status
+- **D-03:** Story status changes do NOT send `PROJECT_STATE_CHANGED` — they feed the PM dashboard (different consumer), not the discovery dashboard
 
 ### Jira Retry Consumer
 - **D-04:** Create a standalone `jiraSyncRetryFunction` Inngest function triggered by `JIRA_SYNC_REQUESTED`
 - **D-05:** Event payload: `{ projectId, storyId }` — single-story retry, not bulk
 - **D-06:** Reuse existing sync library functions (`pushStoryToJira`, `syncStoryStatus` from `@/lib/jira/sync`), don't call the other Inngest function
-- **D-07:** Record outcome in `JiraSyncRecord` for audit trail, same pattern as `jiraSyncOnStatusChange`
+- **D-07:** Record outcome in `JiraSyncRecord` for audit trail, same pattern as `jiraSyncOnStatusChange` — includes error message on failure
 - **D-08:** Register the new function in `src/app/api/inngest/route.ts`
+- **D-09:** No separate notification on retry failure — the `SyncStatusBadge` in the story table already reflects sync record status. Retry function gets 2 retries (same as `jiraSyncOnStatusChange`)
 
 ### Field Name Fix
-- **D-09:** Rename sender field in `stories.ts` from `toStatus` to `newStatus` in the `STORY_STATUS_CHANGED` event payload — consumer (`jira-sync.ts`) keeps `newStatus` as-is
-- **D-10:** Keep `StatusTransition.toStatus` DB column name unchanged — it's correct for the database model, separate from event payload naming
-- **D-11:** Verify `notification-dispatch.ts` also destructures consistently (check if it reads from this event)
+- **D-10:** Rename sender field in `stories.ts:314` from `toStatus` to `newStatus` in the `STORY_STATUS_CHANGED` event payload — consumer (`jira-sync.ts:25`) keeps `newStatus` as-is
+- **D-11:** Also normalize `route.ts:106` from `previousStatus` to `fromStatus` so both senders emit identical payload shape: `{ projectId, storyId, fromStatus, newStatus, memberId? }`
+- **D-12:** Keep `StatusTransition.toStatus` DB column name unchanged — it's correct for the database model, separate from event payload naming
+- **D-13:** Verify `notification-dispatch.ts` is unaffected — confirmed it doesn't destructure `newStatus`/`fromStatus` from STORY_STATUS_CHANGED events (it uses the separate NOTIFICATION_SEND event with its own type field)
 
 ### Claude's Discretion
-- Whether story status changes should additionally send `PROJECT_STATE_CHANGED` (D-03)
-- Exact list of server actions to instrument — Claude should grep for state-changing mutations and determine which ones affect dashboard metrics
+- Whether `article-refresh.ts` should emit `PROJECT_STATE_CHANGED` directly or at the end of its step chain — Claude should check where the best insertion point is
+- If any additional question lifecycle transitions beyond create/answer/status-change also affect dashboard metrics, Claude should instrument those too
 
 </decisions>
 
@@ -50,11 +55,18 @@ Fix three broken event chains identified in the v1.0 milestone audit: (1) dashbo
 
 ### Broken Code Paths
 - `src/actions/stories.ts` ~L308-317 — Sends `toStatus` instead of `newStatus` in STORY_STATUS_CHANGED event
-- `src/lib/inngest/functions/jira-sync.ts` — Consumer that destructures `newStatus` (line 25)
+- `src/app/api/v1/stories/[storyId]/status/route.ts` ~L101-109 — Sends `previousStatus` instead of `fromStatus` (secondary inconsistency)
+- `src/lib/inngest/functions/jira-sync.ts` L25 — Consumer that destructures `newStatus`
 - `src/lib/inngest/functions/dashboard-synthesis.ts` — Consumer of PROJECT_STATE_CHANGED (works, but never triggered)
+
+### Actions to Instrument with PROJECT_STATE_CHANGED
+- `src/actions/questions.ts` — L121 (createQuestion), L174 (answerQuestion/ENTITY_CONTENT_CHANGED area), L204 (updateQuestionStatus area)
+- `src/lib/inngest/functions/transcript-processing.ts` L363 — `step.sendEvent("trigger-downstream")` array
+- `src/lib/inngest/functions/article-refresh.ts` — end of article write step
 
 ### Sync Library (reuse for retry consumer)
 - `src/lib/jira/sync.ts` — `pushStoryToJira`, `syncStoryStatus` functions used by existing Jira sync
+- `src/lib/inngest/functions/jira-sync.ts` — Pattern template for the retry consumer (same flow: check config > load story > sync > record)
 
 ### PRD and Tech Spec
 - `SF-Consulting-AI-Framework-PRD-v2.1.md` — DASH-05 (dashboard refresh), ADMIN-01 (Jira sync)
@@ -68,24 +80,29 @@ Fix three broken event chains identified in the v1.0 milestone audit: (1) dashbo
 ### Reusable Assets
 - `dashboardSynthesisFunction` (dashboard-synthesis.ts): Fully implemented with 30s debounce, concurrency control, AI synthesis — just needs events sent to it
 - `pushStoryToJira` / `syncStoryStatus` (lib/jira/sync.ts): Reusable for the retry consumer
-- `jiraSyncOnStatusChange` (jira-sync.ts): Pattern template for the retry consumer (same flow: check config → load story → sync → record)
+- `jiraSyncOnStatusChange` (jira-sync.ts): Pattern template for the retry consumer (same flow: check config > load story > sync > record)
 - Inngest route registration pattern in `api/inngest/route.ts`: Add new function to the array
 
 ### Established Patterns
 - All Inngest functions use step functions with named steps (`step.run("step-name", ...)`)
 - Event constants centralized in `events.ts` — no inline event name strings
 - Server actions use `inngest.send()` to fire events after mutations
+- Inngest functions use `step.sendEvent()` to emit downstream events
+- JiraSyncRecord pattern: create record with sync outcome (success/failure + error details)
 
 ### Integration Points
-- Server actions in `src/actions/` that mutate question, transcript, knowledge, decision state — these need `inngest.send({ name: EVENTS.PROJECT_STATE_CHANGED })` calls added
-- `src/app/api/inngest/route.ts` — new retry function must be imported and registered
+- Server actions in `src/actions/questions.ts` — add `inngest.send({ name: EVENTS.PROJECT_STATE_CHANGED })` after state-changing mutations
+- `src/lib/inngest/functions/transcript-processing.ts` L363 — add to existing `step.sendEvent` array
+- `src/lib/inngest/functions/article-refresh.ts` — add `PROJECT_STATE_CHANGED` at end of refresh
+- `src/app/api/inngest/route.ts` — import and register `jiraSyncRetryFunction`
 
 </code_context>
 
 <specifics>
 ## Specific Ideas
 
-No specific requirements — user deferred all choices to Claude's best judgment. All decisions above represent Claude's recommended approaches based on codebase analysis and standard patterns.
+- Normalize both event senders (stories.ts and route.ts) to identical payload shape for STORY_STATUS_CHANGED: `{ projectId, storyId, fromStatus, newStatus, memberId? }`
+- Retry consumer mirrors jiraSyncOnStatusChange exactly — no custom error handling, just JiraSyncRecord audit trail
 
 </specifics>
 
@@ -99,4 +116,4 @@ None — discussion stayed within phase scope
 ---
 
 *Phase: 08-event-wiring-and-integration-fixes*
-*Context gathered: 2026-04-07*
+*Context gathered: 2026-04-07 (updated)*
