@@ -5,6 +5,17 @@ import { format, isToday, isYesterday } from "date-fns"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { MessageBubble } from "./message-bubble"
+import { StoryDraftCards } from "@/components/work/story-draft-cards"
+import type { StoryDraft } from "@/lib/agent-harness/tools/create-story-draft"
+
+interface ToolInvocationPart {
+  type: "tool-invocation"
+  toolInvocationId: string
+  toolName: string
+  args: Record<string, unknown>
+  state: string
+  result?: unknown
+}
 
 interface Message {
   id: string
@@ -14,11 +25,17 @@ interface Message {
   inputTokens?: number | null
   outputTokens?: number | null
   cost?: number | null
+  toolInvocations?: ToolInvocationPart[]
 }
 
 interface MessageListProps {
   messages: Message[]
   isLoading: boolean
+  storySession?: {
+    projectId: string
+    epicId: string
+    featureId?: string
+  }
 }
 
 function formatDateGroup(date: Date): string {
@@ -41,7 +58,7 @@ function groupMessagesByDate(
   return groups
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
+export function MessageList({ messages, isLoading, storySession }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom on new messages
@@ -75,22 +92,61 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
 
               {/* Messages in this date group */}
               <div className="flex flex-col gap-3">
-                {msgs.map((msg) => (
-                  <MessageBubble
-                    key={msg.id}
-                    role={msg.role}
-                    content={msg.content}
-                    tokenUsage={
-                      msg.inputTokens != null && msg.outputTokens != null
-                        ? {
-                            input: msg.inputTokens,
-                            output: msg.outputTokens,
-                          }
-                        : undefined
-                    }
-                    cost={msg.cost ?? undefined}
-                  />
-                ))}
+                {msgs.map((msg) => {
+                  const storyDrafts: StoryDraft[] | null =
+                    storySession && msg.toolInvocations && msg.toolInvocations.length > 0
+                      ? msg.toolInvocations
+                          .filter((t) => t.toolName === "create_story_draft" && t.state === "call")
+                          .map((t) => ({
+                            draftId: t.toolInvocationId,
+                            title: String(t.args.title ?? ""),
+                            persona: t.args.persona ? String(t.args.persona) : undefined,
+                            description: String(t.args.description ?? ""),
+                            acceptanceCriteria: String(t.args.acceptanceCriteria ?? ""),
+                            storyPoints: t.args.storyPoints ? Number(t.args.storyPoints) : undefined,
+                            priority: (["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(String(t.args.priority ?? ""))
+                              ? String(t.args.priority)
+                              : "MEDIUM") as StoryDraft["priority"],
+                            components: Array.isArray(t.args.components)
+                              ? t.args.components.map((c: Record<string, unknown>) => ({
+                                  componentName: String(c.componentName ?? ""),
+                                  impactType: (["CREATE", "MODIFY", "DELETE"].includes(String(c.impactType ?? ""))
+                                    ? String(c.impactType)
+                                    : "MODIFY") as "CREATE" | "MODIFY" | "DELETE",
+                                }))
+                              : undefined,
+                            reasoning: String(t.args.reasoning ?? ""),
+                          }))
+                      : null
+
+                  return (
+                    <div key={msg.id}>
+                      <MessageBubble
+                        role={msg.role}
+                        content={msg.content}
+                        tokenUsage={
+                          msg.inputTokens != null && msg.outputTokens != null
+                            ? {
+                                input: msg.inputTokens,
+                                output: msg.outputTokens,
+                              }
+                            : undefined
+                        }
+                        cost={msg.cost ?? undefined}
+                      />
+                      {storySession && storyDrafts && storyDrafts.length > 0 && (
+                        <div className="mt-3">
+                          <StoryDraftCards
+                            drafts={storyDrafts}
+                            projectId={storySession.projectId}
+                            epicId={storySession.epicId}
+                            featureId={storySession.featureId}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )

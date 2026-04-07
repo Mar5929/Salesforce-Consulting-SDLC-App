@@ -90,6 +90,9 @@ export function ChatInterface({
     role: msg.role as "user" | "assistant" | "system",
     content: extractTextFromParts(msg.parts),
     createdAt: new Date(),
+    toolInvocations: msg.parts.filter(
+      (p): p is Extract<typeof p, { type: "tool-invocation" }> => p.type === "tool-invocation"
+    ),
   }))
 
   const isTaskSession = conversationType === "TASK_SESSION" || conversationType === "STORY_SESSION"
@@ -115,7 +118,11 @@ export function ChatInterface({
           {messages.length === 0 && !isLoading ? (
             <EmptyState />
           ) : (
-            <MessageList messages={flatMessages} isLoading={isLoading} />
+            <MessageList
+              messages={flatMessages}
+              isLoading={isLoading}
+              storySession={conversationType === "STORY_SESSION" ? { projectId, epicId: epicId ?? "", featureId } : undefined}
+            />
           )}
 
           {/* Error state */}
