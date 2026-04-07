@@ -47,6 +47,13 @@ export default async function BacklogPage({ params }: BacklogPageProps) {
     orderBy: { sortOrder: "asc" },
   })
 
+  // Load active/planned sprints for bulk sprint assignment
+  const sprints = await prisma.sprint.findMany({
+    where: { projectId, status: { in: ["PLANNING", "ACTIVE"] } },
+    select: { id: true, name: true },
+    orderBy: { startDate: "asc" },
+  })
+
   // Load project members for bulk assignee change
   const members = await prisma.projectMember.findMany({
     where: { projectId },
@@ -60,6 +67,7 @@ export default async function BacklogPage({ params }: BacklogPageProps) {
         stories={JSON.parse(JSON.stringify(stories))}
         epics={epics}
         features={features}
+        sprints={sprints}
         members={members}
         userRole={member.role}
       />

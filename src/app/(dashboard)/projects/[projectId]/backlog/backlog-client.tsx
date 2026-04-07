@@ -23,6 +23,7 @@ interface BacklogClientProps {
   stories: StoryRow[]
   epics: Array<{ id: string; name: string; prefix: string }>
   features: Array<{ id: string; name: string; prefix: string; epicId: string }>
+  sprints: Array<{ id: string; name: string }>
   members: Array<{ id: string; displayName: string; email: string }>
   userRole: ProjectRole
 }
@@ -36,6 +37,7 @@ export function BacklogClient({
   stories,
   epics,
   features,
+  sprints,
   members,
   userRole,
 }: BacklogClientProps) {
@@ -79,6 +81,7 @@ export function BacklogClient({
         stories={stories}
         projectId={projectId}
         onRowClick={handleStoryClick}
+        sprints={sprints}
         members={members}
       />
 
