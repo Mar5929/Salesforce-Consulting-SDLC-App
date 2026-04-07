@@ -178,6 +178,10 @@ Plans:
   1. PROJECT_STATE_CHANGED event is sent by state-changing actions, triggering dashboard synthesis
   2. stories.ts sends newStatus (not toStatus) in STORY_STATUS_CHANGED event
   3. JIRA_SYNC_REQUESTED event has an Inngest consumer for manual retry
+**Plans**: 1 plan
+
+Plans:
+- [ ] 08-01-PLAN.md -- Wire PROJECT_STATE_CHANGED sends, fix STORY_STATUS_CHANGED field names, create Jira retry consumer
 
 ### Phase 9: Navigation and Badge Fixes
 **Goal**: Fix broken sidebar navigation and wire missing badge counts
@@ -190,7 +194,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [x] 09-01-PLAN.md -- Fix Team link href and wire badge counts through layout > AppShell > Sidebar
+- [ ] 09-01-PLAN.md -- Fix Team link href and wire badge counts through layout > AppShell > Sidebar
 
 ## Progress
 
@@ -206,5 +210,5 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | 5. Document Generation, QA, and Administration | 0/9 | Planned | - |
 | 6. Schema Fixes | 0/1 | Planned | - |
 | 7. Story Generation E2E Wiring | 0/1 | Planned | - |
-| 8. Event Wiring and Integration Fixes | 0/0 | Planned | - |
+| 8. Event Wiring and Integration Fixes | 0/1 | Planned | - |
 | 9. Navigation and Badge Fixes | 0/1 | Planned | - |
