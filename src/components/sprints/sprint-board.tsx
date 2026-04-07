@@ -7,7 +7,7 @@
  * Cards show displayId, title, assignee, points, priority.
  * Native HTML drag-and-drop triggers status transitions validated server-side.
  *
- * Column grouping: SPRINT_PLANNED stories render in the "Draft" column.
+ * Each StoryStatus maps 1:1 to a board column — no grouping.
  */
 
 import { useState, type DragEvent } from "react"
@@ -46,6 +46,7 @@ interface SprintBoardProps {
 const COLUMNS = [
   { key: "DRAFT", label: "Draft" },
   { key: "READY", label: "Ready" },
+  { key: "SPRINT_PLANNED", label: "Sprint Planned" },
   { key: "IN_PROGRESS", label: "In Progress" },
   { key: "IN_REVIEW", label: "In Review" },
   { key: "QA", label: "QA" },
@@ -70,14 +71,13 @@ const PRIORITY_LABELS: Record<string, string> = {
 // Helpers
 // ────────────────────────────────────────────
 
-/** Map story status to board column key. SPRINT_PLANNED -> DRAFT column. */
+/** Map story status to board column key. 1:1 mapping. */
 function statusToColumn(status: string): string {
-  return status === "SPRINT_PLANNED" ? "DRAFT" : status
+  return status
 }
 
 /** Map column key back to the StoryStatus value for transitions. */
 function columnToStatus(columnKey: string): string {
-  // DRAFT column maps to DRAFT status (not SPRINT_PLANNED — server validates)
   return columnKey
 }
 
