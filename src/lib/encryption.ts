@@ -1,10 +1,12 @@
 import { hkdf, createCipheriv, createDecipheriv, randomBytes } from "node:crypto"
 import { promisify } from "node:util"
 
+import { env } from "@/env"
+
 const hkdfAsync = promisify(hkdf)
 
 async function deriveKey(projectId: string): Promise<Buffer> {
-  const masterKey = process.env.SF_TOKEN_ENCRYPTION_KEY!
+  const masterKey = env.SF_TOKEN_ENCRYPTION_KEY
   return Buffer.from(
     await hkdfAsync("sha256", masterKey, projectId, "sf-token-encryption", 32)
   )
