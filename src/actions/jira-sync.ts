@@ -92,6 +92,9 @@ export const getJiraConfig = actionClient
   .action(async ({ parsedInput }) => {
     const { projectId } = parsedInput
 
+    // Verify project membership (WR-02: prevent unauthorized config access)
+    await requireRole(projectId, ["PM", "SOLUTION_ARCHITECT"])
+
     const config = await prisma.jiraConfig.findUnique({
       where: { projectId },
       select: {
@@ -152,6 +155,9 @@ export const getJiraSyncStatus = actionClient
   .schema(getJiraSyncStatusSchema)
   .action(async ({ parsedInput }) => {
     const { projectId, storyIds } = parsedInput
+
+    // Verify project membership (WR-02: prevent unauthorized sync status access)
+    await requireRole(projectId, ["PM", "SOLUTION_ARCHITECT"])
 
     const records = await prisma.jiraSyncRecord.findMany({
       where: {
