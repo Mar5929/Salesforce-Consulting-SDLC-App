@@ -27,9 +27,9 @@ Fix these first — they unblock the most functionality:
 
 | ID | Title | Phase | Status | Detail |
 |----|-------|-------|--------|--------|
-| BUG-001 | proxy.ts never runs as middleware — all auth silently disabled | 1 | Open | [Detail](bugs/BUG-001.md) |
+| BUG-001 | proxy.ts never runs as middleware — all auth silently disabled | 1 | Fixed | [Detail](bugs/BUG-001.md) |
 | BUG-002 | Embedding pipeline silently skips — payload shape mismatch | 2 | Fixed | [Detail](bugs/BUG-002.md) |
-| BUG-003 | S3 env vars missing from Vercel — document generation fails | 5 | Open | [Detail](bugs/BUG-003.md) |
+| BUG-003 | S3 env vars missing from Vercel — document generation fails | 5 | Fixed | [Detail](bugs/BUG-003.md) |
 
 ### HIGH
 
