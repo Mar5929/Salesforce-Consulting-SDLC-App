@@ -159,6 +159,11 @@ Plans:
   2. ChatInterface has a STORY_SESSION variant that forwards epicId to the API
   3. /api/chat receives epicId and calls buildStorySessionPrompt
   4. StoryDraftCards component is imported and rendered in story session chat
+**Plans**: 1 plan
+
+Plans:
+- [ ] 07-01-PLAN.md — Wire epicId through redirect, ChatInterface STORY_SESSION variant, and StoryDraftCards rendering
+
 
 ### Phase 8: Event Wiring and Integration Fixes
 **Goal**: Fix broken event chains so discovery dashboard auto-refreshes, Jira sync works from web UI, and retry mechanism functions
@@ -192,6 +197,6 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | 4. Salesforce Org Connectivity and Developer Integration | 0/7 | Planned | - |
 | 5. Document Generation, QA, and Administration | 0/9 | Planned | - |
 | 6. Schema Fixes | 0/0 | Planned | - |
-| 7. Story Generation E2E Wiring | 0/0 | Planned | - |
+| 7. Story Generation E2E Wiring | 0/1 | Planned | - |
 | 8. Event Wiring and Integration Fixes | 0/0 | Planned | - |
 | 9. Navigation and Badge Fixes | 0/0 | Planned | - |
