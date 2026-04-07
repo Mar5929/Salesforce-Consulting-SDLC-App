@@ -20,6 +20,10 @@ The AI must retain and build understanding across sessions — every discovery c
 - [x] AI-assisted story generation from requirements and discovery context — Validated in Phase 3: Story Management and Sprint Intelligence
 - [x] Sprint creation, management, and intelligence (conflict detection, dependency ordering, capacity) — Validated in Phase 3: Story Management and Sprint Intelligence
 - [x] Sprint dashboard — Validated in Phase 3: Story Management and Sprint Intelligence
+- [x] Salesforce org OAuth connection and metadata sync — Validated in Phase 4: Salesforce Org Connectivity and Developer Integration
+- [x] Org knowledge base (OrgComponent, OrgRelationship, DomainGrouping, BusinessProcess mapping) — Validated in Phase 4: Salesforce Org Connectivity and Developer Integration
+- [x] REST API for Claude Code (context package assembly, org queries, story status updates) — Validated in Phase 4: Salesforce Org Connectivity and Developer Integration
+- [x] Claude Code skill updates to consume web app API — Validated in Phase 4: Salesforce Org Connectivity and Developer Integration
 
 ### Active
 
@@ -34,10 +38,6 @@ The AI must retain and build understanding across sessions — every discovery c
 - [ ] Three-layer search (filtered + full-text via tsvector + semantic via pgvector)
 - [ ] Discovery dashboard (outstanding questions, blocked items, health scores)
 - [ ] Three-layer knowledge architecture (structured relationships + AI-curated articles + semantic retrieval)
-- [ ] Salesforce org OAuth connection and metadata sync
-- [ ] Org knowledge base (OrgComponent, OrgRelationship, DomainGrouping, BusinessProcess mapping)
-- [ ] REST API for Claude Code (context package assembly, org queries, story status updates)
-- [ ] Claude Code skill updates to consume web app API
 - [ ] Branded document generation (Word, PowerPoint, PDF)
 - [ ] QA workflow (test execution tracking, defect management)
 - [ ] Optional client Jira sync (one-directional push)
@@ -112,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-06 after Phase 3 completion*
+*Last updated: 2026-04-06 after Phase 4 completion*
