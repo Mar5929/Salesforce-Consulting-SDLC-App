@@ -95,12 +95,6 @@ export const transcriptProcessingFunction = inngest.createFunction(
         throw new Error(`Transcript ${transcriptId} not found or has no content`)
       }
 
-      // Update status to PROCESSING
-      await prisma.transcript.update({
-        where: { id: transcriptId },
-        data: { processingStatus: "PROCESSING" },
-      })
-
       // Add processing status message to conversation
       await prisma.chatMessage.create({
         data: {
@@ -108,6 +102,13 @@ export const transcriptProcessingFunction = inngest.createFunction(
           role: "ASSISTANT",
           content: "Analyzing transcript and extracting structured items...",
         },
+      })
+
+      // Update status to PROCESSING last — if this fails, Inngest retries
+      // cleanly without leaving a stuck PROCESSING state
+      await prisma.transcript.update({
+        where: { id: transcriptId },
+        data: { processingStatus: "PROCESSING" },
       })
 
       return transcript.rawContent
