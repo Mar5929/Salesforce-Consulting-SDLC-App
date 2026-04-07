@@ -161,8 +161,18 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
   ]
 }
 
-export function Sidebar({ currentMemberRole, activeProjectId, questionReviewCount, openDefectCount }: SidebarProps) {
+function extractProjectIdFromPath(pathname: string): string | undefined {
+  const match = pathname.match(/^\/projects\/([^/]+)/)
+  if (!match || match[1] === "new") return undefined
+  return match[1]
+}
+
+export function Sidebar({ currentMemberRole, activeProjectId: serverProjectId, questionReviewCount, openDefectCount }: SidebarProps) {
   const pathname = usePathname()
+
+  // Prefer client-side pathname extraction over server prop, because
+  // Next.js layouts don't re-render on client-side navigation
+  const activeProjectId = extractProjectIdFromPath(pathname) ?? serverProjectId
 
   const NAV_ITEMS = buildNavItems(activeProjectId, questionReviewCount, openDefectCount)
 
