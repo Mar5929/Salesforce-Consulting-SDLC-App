@@ -104,11 +104,13 @@ export async function syncMetadataType(
       },
     })
 
-    // Track whether this was a create or update
-    // Prisma upsert doesn't tell us directly, but we check updatedAt vs createdAt
-    if (existing) {
-      // Count as added for simplicity since we can't distinguish
+    // Distinguish create vs update by comparing createdAt and updatedAt timestamps.
+    // On a fresh create, both timestamps are set to now() and will be equal.
+    // On an update, updatedAt is refreshed but createdAt remains the original value.
+    if (existing.createdAt.getTime() === existing.updatedAt.getTime()) {
       added++
+    } else {
+      modified++
     }
 
     // If describeFields is true (CustomObject), fetch field descriptions
