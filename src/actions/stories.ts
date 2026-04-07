@@ -311,7 +311,7 @@ export const updateStoryStatus = actionClient
         projectId: parsedInput.projectId,
         storyId: parsedInput.storyId,
         fromStatus: existing.status,
-        toStatus: parsedInput.status,
+        newStatus: parsedInput.status,
         memberId: member.id,
       },
     })

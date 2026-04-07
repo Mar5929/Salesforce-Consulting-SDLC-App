@@ -103,7 +103,7 @@ export async function PATCH(
         data: {
           projectId,
           storyId,
-          previousStatus: story.status,
+          fromStatus: story.status,
           newStatus,
         },
       })

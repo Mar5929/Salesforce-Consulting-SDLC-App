@@ -13,7 +13,7 @@ import { metadataSyncFunction } from "@/lib/inngest/functions/metadata-sync"
 import { orgIngestionFunction } from "@/lib/inngest/functions/org-ingestion"
 import { generateDocumentFunction } from "@/lib/inngest/functions/document-generation"
 import { synthesizePmDashboard } from "@/lib/inngest/functions/pm-dashboard-synthesis"
-import { jiraSyncOnStatusChange } from "@/lib/inngest/functions/jira-sync"
+import { jiraSyncOnStatusChange, jiraSyncRetryFunction } from "@/lib/inngest/functions/jira-sync"
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -33,5 +33,6 @@ export const { GET, POST, PUT } = serve({
     generateDocumentFunction,
     synthesizePmDashboard,
     jiraSyncOnStatusChange,
+    jiraSyncRetryFunction,
   ],
 })
