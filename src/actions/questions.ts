@@ -92,7 +92,7 @@ const getQuestionSchema = z.object({
 export const createQuestion = actionClient
   .schema(createQuestionSchema)
   .action(async ({ parsedInput, ctx }) => {
-    await getCurrentMember(parsedInput.projectId)
+    const member = await getCurrentMember(parsedInput.projectId)
 
     const displayId = await generateDisplayId(
       parsedInput.projectId,
@@ -123,10 +123,11 @@ export const createQuestion = actionClient
         data: {
           projectId: parsedInput.projectId,
           type: "QUESTION_ASSIGNED",
-          recipientId: parsedInput.assigneeId,
+          recipientMemberIds: [parsedInput.assigneeId],
           entityId: question.id,
-          entityType: "Question",
-          message: `You were assigned question ${displayId}`,
+          entityType: "QUESTION",
+          title: `You were assigned question ${displayId}`,
+          actorMemberId: member.id,
         },
       })
     }
@@ -233,10 +234,11 @@ export const answerQuestion = actionClient
         data: {
           projectId: parsedInput.projectId,
           type: "QUESTION_ANSWERED",
-          recipientId: question.ownerId,
+          recipientMemberIds: [question.ownerId],
           entityId: question.id,
-          entityType: "Question",
-          message: `Question ${question.displayId} has been answered`,
+          entityType: "QUESTION",
+          title: `Question ${question.displayId} has been answered`,
+          actorMemberId: member.id,
         },
       })
     }
@@ -257,7 +259,7 @@ export const flagForReview = actionClient
   .schema(flagForReviewSchema)
   .action(async ({ parsedInput, ctx }) => {
     // T-02-14: SA-only role check
-    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT"])
+    const member = await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT"])
 
     const question = await prisma.question.update({
       where: { id: parsedInput.questionId },
@@ -273,11 +275,12 @@ export const flagForReview = actionClient
         name: EVENTS.NOTIFICATION_SEND,
         data: {
           projectId: parsedInput.projectId,
-          type: "REVIEW_REQUESTED",
-          recipientId: question.answeredById,
+          type: "QUESTION_ANSWERED",
+          recipientMemberIds: [question.answeredById],
           entityId: question.id,
-          entityType: "Question",
-          message: `Question ${question.displayId} flagged for review: ${parsedInput.reviewReason}`,
+          entityType: "QUESTION",
+          title: `Question ${question.displayId} flagged for review: ${parsedInput.reviewReason}`,
+          actorMemberId: member.id,
         },
       })
     }

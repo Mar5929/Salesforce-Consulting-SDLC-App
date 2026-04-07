@@ -320,10 +320,11 @@ export const updateStoryStatus = actionClient
         data: {
           projectId: parsedInput.projectId,
           type: "STORY_STATUS_CHANGED",
-          recipientId: existing.assigneeId,
+          recipientMemberIds: [existing.assigneeId],
           entityId: parsedInput.storyId,
-          entityType: "Story",
-          message: `Story ${existing.displayId} moved to ${parsedInput.status}`,
+          entityType: "STORY",
+          title: `Story ${existing.displayId} moved to ${parsedInput.status}`,
+          actorMemberId: member.id,
         },
       })
     }

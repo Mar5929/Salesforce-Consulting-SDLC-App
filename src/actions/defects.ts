@@ -133,11 +133,12 @@ export const createDefect = actionClient
       name: EVENTS.NOTIFICATION_SEND,
       data: {
         projectId: parsedInput.projectId,
-        type: "DEFECT_CREATED",
-        recipientId: parsedInput.assigneeId ?? member.id,
+        type: "WORK_ITEM_UNBLOCKED",
+        recipientMemberIds: [parsedInput.assigneeId ?? member.id],
         entityId: defect.id,
-        entityType: "Defect",
-        message: `Defect ${displayId} created: ${parsedInput.title}`,
+        entityType: "STORY",
+        title: `Defect ${displayId} created: ${parsedInput.title}`,
+        actorMemberId: member.id,
       },
     })
 
@@ -189,11 +190,12 @@ export const updateDefect = actionClient
         name: EVENTS.NOTIFICATION_SEND,
         data: {
           projectId: existing.projectId,
-          type: "DEFECT_ASSIGNED",
-          recipientId: updateFields.assigneeId,
+          type: "STORY_REASSIGNED",
+          recipientMemberIds: [updateFields.assigneeId],
           entityId: id,
-          entityType: "Defect",
-          message: `You were assigned to defect ${existing.displayId}`,
+          entityType: "STORY",
+          title: `You were assigned to defect ${existing.displayId}`,
+          actorMemberId: member.id,
         },
       })
     }
@@ -241,11 +243,11 @@ export const transitionDefectStatus = actionClient
       name: EVENTS.NOTIFICATION_SEND,
       data: {
         projectId: existing.projectId,
-        type: "DEFECT_STATUS_CHANGED",
-        recipientId: member.id,
+        type: "STORY_STATUS_CHANGED",
         entityId: existing.id,
-        entityType: "Defect",
-        message: `Defect ${existing.displayId} moved from ${existing.status} to ${parsedInput.toStatus}`,
+        entityType: "STORY",
+        title: `Defect ${existing.displayId} moved from ${existing.status} to ${parsedInput.toStatus}`,
+        actorMemberId: member.id,
       },
     })
 

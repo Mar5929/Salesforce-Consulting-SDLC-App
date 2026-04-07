@@ -153,11 +153,12 @@ export const recordTestExecution = actionClient
       name: EVENTS.NOTIFICATION_SEND,
       data: {
         projectId,
-        type: "TEST_EXECUTION_RECORDED",
-        recipientId: testCase.story.assigneeId ?? member.id,
+        type: "STORY_STATUS_CHANGED",
+        recipientMemberIds: [testCase.story.assigneeId ?? member.id],
         entityId: parsedInput.testCaseId,
-        entityType: "TestCase",
-        message: `Test execution recorded: ${parsedInput.result} on ${testCase.title}`,
+        entityType: "STORY",
+        title: `Test execution recorded: ${parsedInput.result} on ${testCase.title}`,
+        actorMemberId: member.id,
       },
     })
 

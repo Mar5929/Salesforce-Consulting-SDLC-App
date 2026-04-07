@@ -18,16 +18,16 @@ import { createId } from "@paralleldrive/cuid2"
 
 function getS3Client(): S3Client {
   const config: ConstructorParameters<typeof S3Client>[0] = {
-    region: process.env.S3_REGION || "us-east-1",
+    region: process.env.AWS_S3_REGION || "us-east-1",
     credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
     },
   }
 
   // Support Cloudflare R2 or custom S3-compatible endpoints
-  if (process.env.S3_ENDPOINT) {
-    config.endpoint = process.env.S3_ENDPOINT
+  if (process.env.AWS_S3_ENDPOINT) {
+    config.endpoint = process.env.AWS_S3_ENDPOINT
     config.forcePathStyle = true
   }
 
@@ -44,9 +44,9 @@ function getClient(): S3Client {
 }
 
 function getBucket(): string {
-  const bucket = process.env.S3_BUCKET
+  const bucket = process.env.AWS_S3_BUCKET
   if (!bucket) {
-    throw new Error("S3_BUCKET environment variable is required")
+    throw new Error("AWS_S3_BUCKET environment variable is required")
   }
   return bucket
 }
