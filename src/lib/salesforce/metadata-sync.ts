@@ -181,7 +181,11 @@ async function describeAndUpsertFields(
         if (targetComponent) {
           await prisma.orgRelationship.upsert({
             where: {
-              id: `${fieldComponent.id}-${targetComponent.id}`,
+              sourceComponentId_targetComponentId_relationshipType: {
+                sourceComponentId: fieldComponent.id,
+                targetComponentId: targetComponent.id,
+                relationshipType: relType,
+              },
             },
             create: {
               projectId,
