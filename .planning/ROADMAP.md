@@ -12,15 +12,15 @@ This roadmap delivers an internal AI-powered project management and knowledge pl
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation and Data Layer** - Auth, database schema, project management, background job infrastructure
-- [ ] **Phase 2: Discovery and Knowledge Brain** - Question system, AI agent harness, transcript processing, chat, knowledge architecture, search, dashboard, notifications
-- [ ] **Phase 3: Story Management and Sprint Intelligence** - Epic/feature/story CRUD, AI-assisted story generation, sprint management and intelligence
-- [ ] **Phase 4: Salesforce Org Connectivity and Developer Integration** - Org OAuth, metadata sync, brownfield ingestion, REST API for Claude Code
-- [ ] **Phase 5: Document Generation, QA, and Administration** - Branded documents, QA workflow, Jira sync, PM dashboard, project archival
-- [ ] **Phase 6: Schema Fixes** - sandboxStrategy persistence and question category filter
-- [ ] **Phase 7: Story Generation E2E Wiring** - Cross-component wiring to complete AI story generation flow
-- [ ] **Phase 8: Event Wiring and Integration Fixes** - Dashboard auto-refresh, Jira sync field fix, event consumers
-- [ ] **Phase 9: Navigation and Badge Fixes** - Sidebar team link and badge count wiring
+- [x] **Phase 1: Foundation and Data Layer** - Auth, database schema, project management, background job infrastructure
+- [x] **Phase 2: Discovery and Knowledge Brain** - Question system, AI agent harness, transcript processing, chat, knowledge architecture, search, dashboard, notifications
+- [x] **Phase 3: Story Management and Sprint Intelligence** - Epic/feature/story CRUD, AI-assisted story generation, sprint management and intelligence
+- [x] **Phase 4: Salesforce Org Connectivity and Developer Integration** - Org OAuth, metadata sync, brownfield ingestion, REST API for Claude Code
+- [x] **Phase 5: Document Generation, QA, and Administration** - Branded documents, QA workflow, Jira sync, PM dashboard, project archival
+- [x] **Phase 6: Schema Fixes** - sandboxStrategy persistence and question category filter
+- [x] **Phase 7: Story Generation E2E Wiring** - Cross-component wiring to complete AI story generation flow
+- [x] **Phase 8: Event Wiring and Integration Fixes** - Dashboard auto-refresh, Jira sync field fix, event consumers
+- [x] **Phase 9: Navigation and Badge Fixes** - Sidebar team link and badge count wiring
 
 ## Phase Details
 
@@ -203,12 +203,12 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Data Layer | 3/3 | Complete | - |
-| 2. Discovery and Knowledge Brain | 12/12 | Complete | - |
-| 3. Story Management and Sprint Intelligence | 0/9 | Planned | - |
-| 4. Salesforce Org Connectivity and Developer Integration | 0/7 | Planned | - |
-| 5. Document Generation, QA, and Administration | 0/9 | Planned | - |
-| 6. Schema Fixes | 0/1 | Planned | - |
-| 7. Story Generation E2E Wiring | 0/1 | Planned | - |
-| 8. Event Wiring and Integration Fixes | 0/1 | Planned | - |
-| 9. Navigation and Badge Fixes | 0/1 | Planned | - |
+| 1. Foundation and Data Layer | 3/3 | Complete | 2026-04-05 |
+| 2. Discovery and Knowledge Brain | 12/12 | Complete | 2026-04-06 |
+| 3. Story Management and Sprint Intelligence | 9/9 | Complete | 2026-04-06 |
+| 4. Salesforce Org Connectivity and Developer Integration | 7/7 | Complete | 2026-04-06 |
+| 5. Document Generation, QA, and Administration | 9/9 | Complete | 2026-04-07 |
+| 6. Schema Fixes | 1/1 | Complete | 2026-04-07 |
+| 7. Story Generation E2E Wiring | 1/1 | Complete | 2026-04-07 |
+| 8. Event Wiring and Integration Fixes | 1/1 | Complete | 2026-04-07 |
+| 9. Navigation and Badge Fixes | 1/1 | Complete | 2026-04-07 |
