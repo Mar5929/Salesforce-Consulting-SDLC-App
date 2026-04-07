@@ -190,7 +190,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 09-01-PLAN.md -- Fix Team link href and wire badge counts through layout > AppShell > Sidebar
+- [x] 09-01-PLAN.md -- Fix Team link href and wire badge counts through layout > AppShell > Sidebar
 
 ## Progress
 
