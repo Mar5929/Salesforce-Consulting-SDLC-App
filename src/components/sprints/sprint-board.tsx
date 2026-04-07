@@ -17,6 +17,8 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { updateStoryStatus } from "@/actions/stories"
+import { canTransition, getAvailableTransitions } from "@/lib/story-status-machine"
+import type { ProjectRole, StoryStatus } from "@/generated/prisma"
 
 // ────────────────────────────────────────────
 // Types
@@ -36,6 +38,7 @@ export interface BoardStory {
 interface SprintBoardProps {
   stories: BoardStory[]
   projectId: string
+  userRole: ProjectRole
 }
 
 // ────────────────────────────────────────────
@@ -97,15 +100,22 @@ function getInitials(name: string): string {
 function BoardCard({
   story,
   onDragStart,
+  isDraggable,
 }: {
   story: BoardStory
   onDragStart: (e: DragEvent) => void
+  isDraggable: boolean
 }) {
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      className="cursor-grab rounded-lg border border-[#E5E5E5] bg-white p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
+      draggable={isDraggable}
+      onDragStart={isDraggable ? onDragStart : undefined}
+      className={cn(
+        "rounded-lg border border-[#E5E5E5] bg-white p-3 shadow-sm transition-shadow hover:shadow-md",
+        isDraggable
+          ? "cursor-grab active:cursor-grabbing"
+          : "cursor-default opacity-80"
+      )}
     >
       {/* Display ID */}
       <span className="font-mono text-[12px] text-[#737373]">
@@ -163,11 +173,13 @@ function BoardColumn({
   label,
   stories,
   onDrop,
+  userRole,
 }: {
   columnKey: string
   label: string
   stories: BoardStory[]
   onDrop: (storyId: string, currentStatus: string, targetColumn: string) => void
+  userRole: ProjectRole
 }) {
   const [dragOver, setDragOver] = useState(false)
 
@@ -217,6 +229,7 @@ function BoardColumn({
           <BoardCard
             key={story.id}
             story={story}
+            isDraggable={getAvailableTransitions(story.status as StoryStatus, userRole).length > 0}
             onDragStart={(e) => {
               e.dataTransfer.setData(
                 "application/json",
@@ -244,7 +257,7 @@ function BoardColumn({
 // Sprint Board
 // ────────────────────────────────────────────
 
-export function SprintBoard({ stories, projectId }: SprintBoardProps) {
+export function SprintBoard({ stories, projectId, userRole }: SprintBoardProps) {
   const router = useRouter()
 
   const { execute: executeUpdateStatus } = useAction(updateStoryStatus, {
@@ -280,6 +293,14 @@ export function SprintBoard({ stories, projectId }: SprintBoardProps) {
     // Don't do anything if dropped on same column
     if (statusToColumn(currentStatus) === targetColumn) return
 
+    // Client-side role-based transition check
+    if (!canTransition(currentStatus as StoryStatus, targetStatus as StoryStatus, userRole)) {
+      toast.error(
+        `Your role (${userRole.replace("_", " ")}) cannot move stories from ${currentStatus.replace(/_/g, " ")} to ${targetStatus.replace(/_/g, " ")}.`
+      )
+      return
+    }
+
     executeUpdateStatus({
       projectId,
       storyId,
@@ -296,6 +317,7 @@ export function SprintBoard({ stories, projectId }: SprintBoardProps) {
           label={col.label}
           stories={columnStories.get(col.key) ?? []}
           onDrop={handleDrop}
+          userRole={userRole}
         />
       ))}
     </div>

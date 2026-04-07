@@ -40,7 +40,7 @@ export default async function SprintDetailPage({
 }: SprintDetailPageProps) {
   const { projectId, sprintId } = await params
 
-  await getCurrentMember(projectId)
+  const member = await getCurrentMember(projectId)
 
   const sprint = await prisma.sprint.findUnique({
     where: { id: sprintId },
@@ -184,7 +184,7 @@ export default async function SprintDetailPage({
             dependencies={cachedAnalysis?.dependencies || []}
             variant="board"
           />
-          <SprintBoard stories={boardStories} projectId={projectId} />
+          <SprintBoard stories={boardStories} projectId={projectId} userRole={member.role} />
         </TabsContent>
 
         <TabsContent value="dashboard" className="mt-4">
