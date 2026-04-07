@@ -98,12 +98,12 @@ export function QuestionForm({
       <DialogTrigger
         render={
           (trigger as React.ReactElement) ?? (
-            <Button className="bg-[#2563EB] text-white hover:bg-[#1d4ed8]" />
+            <Button className="bg-[#2563EB] text-white hover:bg-[#1d4ed8]">
+              Ask Question
+            </Button>
           )
         }
-      >
-        {trigger ? undefined : "Ask Question"}
-      </DialogTrigger>
+      />
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="text-[18px] font-semibold">
