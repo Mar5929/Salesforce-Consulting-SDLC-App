@@ -116,10 +116,13 @@ export const removeTeamMember = actionClient
     await inngest.send({
       name: EVENTS.AUDIT_SENSITIVE_OP,
       data: {
-        operation: "member.removed",
-        projectId: parsedInput.projectId,
-        memberId: parsedInput.memberId,
-        performedBy: ctx.userId,
+        entityType: "ProjectMember",
+        entityId: parsedInput.memberId,
+        fromStatus: "ACTIVE",
+        toStatus: "REMOVED",
+        userId: ctx.userId,
+        userRole: callerMember.role,
+        reason: `Member removed from project ${parsedInput.projectId}`,
       },
     })
 
