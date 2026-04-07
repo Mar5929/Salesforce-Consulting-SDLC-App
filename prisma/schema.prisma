@@ -97,6 +97,17 @@ enum QuestionScope {
   FEATURE
 }
 
+enum QuestionCategory {
+  BUSINESS_PROCESS
+  TECHNICAL
+  DATA
+  INTEGRATION
+  SECURITY
+  COMPLIANCE
+  DESIGN
+  GENERAL
+}
+
 enum QuestionStatus {
   OPEN
   SCOPED
@@ -591,6 +602,7 @@ model Question {
   displayId         String
   questionText      String
   scope             QuestionScope
+  category          QuestionCategory @default(GENERAL)
   scopeEpicId       String?
   scopeFeatureId    String?
   ownerId           String?

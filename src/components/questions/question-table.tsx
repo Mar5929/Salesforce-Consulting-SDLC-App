@@ -41,6 +41,7 @@ interface QuestionRow {
   questionText: string
   scope: string
   priority: string
+  category?: string
   status: string
   needsReview: boolean
   createdAt: string | Date
@@ -81,6 +82,17 @@ const SCOPE_LABELS: Record<string, string> = {
   FEATURE: "Feature",
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  BUSINESS_PROCESS: "Business Process",
+  TECHNICAL: "Technical",
+  DATA: "Data",
+  INTEGRATION: "Integration",
+  SECURITY: "Security",
+  COMPLIANCE: "Compliance",
+  DESIGN: "Design",
+  GENERAL: "General",
+}
+
 // ────────────────────────────────────────────
 // Component
 // ────────────────────────────────────────────
@@ -92,6 +104,7 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
   const [statusFilter, setStatusFilter] = useQueryState("status", parseAsString)
   const [scopeFilter, setScopeFilter] = useQueryState("scope", parseAsString)
   const [priorityFilter, setPriorityFilter] = useQueryState("priority", parseAsString)
+  const [categoryFilter, setCategoryFilter] = useQueryState("category", parseAsString)
   const [reviewFilter, setReviewFilter] = useQueryState("review", parseAsString)
 
   function handleRowClick(questionId: string) {
@@ -161,6 +174,26 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
         </Select>
 
         <Select
+          value={categoryFilter ?? "all"}
+          onValueChange={(v) => setCategoryFilter(v === "all" ? null : v)}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="BUSINESS_PROCESS">Business Process</SelectItem>
+            <SelectItem value="TECHNICAL">Technical</SelectItem>
+            <SelectItem value="DATA">Data</SelectItem>
+            <SelectItem value="INTEGRATION">Integration</SelectItem>
+            <SelectItem value="SECURITY">Security</SelectItem>
+            <SelectItem value="COMPLIANCE">Compliance</SelectItem>
+            <SelectItem value="DESIGN">Design</SelectItem>
+            <SelectItem value="GENERAL">General</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
           value={reviewFilter ?? "all"}
           onValueChange={(v) => setReviewFilter(v === "all" ? null : v)}
         >
@@ -183,6 +216,7 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
               <TableHead className="w-[80px]">ID</TableHead>
               <TableHead>Question</TableHead>
               <TableHead className="w-[100px]">Scope</TableHead>
+              <TableHead className="w-[120px]">Category</TableHead>
               <TableHead className="w-[140px]">Owner</TableHead>
               <TableHead className="w-[90px]">Priority</TableHead>
               <TableHead className="w-[100px]">Created</TableHead>
@@ -191,7 +225,7 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
           <TableBody>
             {questions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-[14px] text-[#737373]">
+                <TableCell colSpan={8} className="py-12 text-center text-[14px] text-[#737373]">
                   No questions yet. Ask your first question to start capturing discovery insights.
                 </TableCell>
               </TableRow>
@@ -225,6 +259,9 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
                   </TableCell>
                   <TableCell className="text-[13px] text-[#737373]">
                     {SCOPE_LABELS[q.scope] ?? q.scope}
+                  </TableCell>
+                  <TableCell className="text-[13px] text-[#737373]">
+                    {CATEGORY_LABELS[q.category ?? ""] ?? q.category ?? ""}
                   </TableCell>
                   <TableCell>
                     {q.owner ? (

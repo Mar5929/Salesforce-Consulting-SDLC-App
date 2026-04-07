@@ -23,6 +23,7 @@ interface QuestionRow {
   questionText: string
   scope: string
   priority: string
+  category?: string
   status: string
   needsReview: boolean
   createdAt: string | Date

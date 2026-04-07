@@ -30,6 +30,7 @@ const createQuestionSchema = z.object({
   projectId: z.string().min(1),
   questionText: z.string().min(1, "Question text is required"),
   scope: z.enum(["ENGAGEMENT", "EPIC", "FEATURE"]),
+  category: z.enum(["BUSINESS_PROCESS", "TECHNICAL", "DATA", "INTEGRATION", "SECURITY", "COMPLIANCE", "DESIGN", "GENERAL"]).default("GENERAL"),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("MEDIUM"),
   scopeEpicId: z.string().optional(),
   scopeFeatureId: z.string().optional(),
@@ -41,6 +42,7 @@ const updateQuestionSchema = z.object({
   questionId: z.string().min(1),
   questionText: z.string().min(1).optional(),
   scope: z.enum(["ENGAGEMENT", "EPIC", "FEATURE"]).optional(),
+  category: z.enum(["BUSINESS_PROCESS", "TECHNICAL", "DATA", "INTEGRATION", "SECURITY", "COMPLIANCE", "DESIGN", "GENERAL"]).optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
   status: z.enum(["OPEN", "SCOPED", "OWNED", "ANSWERED", "REVIEWED", "PARKED"]).optional(),
   scopeEpicId: z.string().nullable().optional(),
@@ -71,6 +73,7 @@ const getQuestionsSchema = z.object({
   status: z.enum(["OPEN", "SCOPED", "OWNED", "ANSWERED", "REVIEWED", "PARKED"]).optional(),
   scope: z.enum(["ENGAGEMENT", "EPIC", "FEATURE"]).optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
+  category: z.enum(["BUSINESS_PROCESS", "TECHNICAL", "DATA", "INTEGRATION", "SECURITY", "COMPLIANCE", "DESIGN", "GENERAL"]).optional(),
   ownerId: z.string().optional(),
   needsReview: z.boolean().optional(),
   page: z.number().int().min(1).default(1),
@@ -104,6 +107,7 @@ export const createQuestion = actionClient
         displayId,
         questionText: parsedInput.questionText,
         scope: parsedInput.scope,
+        category: parsedInput.category,
         priority: parsedInput.priority,
         scopeEpicId: parsedInput.scopeEpicId ?? null,
         scopeFeatureId: parsedInput.scopeFeatureId ?? null,
@@ -154,6 +158,7 @@ export const updateQuestion = actionClient
     const updateData: Record<string, unknown> = {}
     if (updateFields.questionText !== undefined) updateData.questionText = updateFields.questionText
     if (updateFields.scope !== undefined) updateData.scope = updateFields.scope
+    if (updateFields.category !== undefined) updateData.category = updateFields.category
     if (updateFields.priority !== undefined) updateData.priority = updateFields.priority
     if (updateFields.status !== undefined) updateData.status = updateFields.status
     if (updateFields.scopeEpicId !== undefined) updateData.scopeEpicId = updateFields.scopeEpicId
@@ -295,6 +300,7 @@ export const getQuestions = actionClient
     if (parsedInput.status) where.status = parsedInput.status
     if (parsedInput.scope) where.scope = parsedInput.scope
     if (parsedInput.priority) where.priority = parsedInput.priority
+    if (parsedInput.category) where.category = parsedInput.category
     if (parsedInput.ownerId) where.ownerId = parsedInput.ownerId
     if (parsedInput.needsReview !== undefined) where.needsReview = parsedInput.needsReview
 

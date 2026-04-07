@@ -29,6 +29,7 @@ export default async function QuestionsPage({ params, searchParams }: QuestionsP
   if (search.status && typeof search.status === "string") where.status = search.status
   if (search.scope && typeof search.scope === "string") where.scope = search.scope
   if (search.priority && typeof search.priority === "string") where.priority = search.priority
+  if (search.category && typeof search.category === "string") where.category = search.category
   if (search.review === "needs_review") where.needsReview = true
 
   const [questions, epics, features, teamMembers, reviewCount] = await Promise.all([

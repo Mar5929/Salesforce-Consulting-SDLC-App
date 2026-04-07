@@ -38,6 +38,7 @@ const questionFormSchema = z.object({
   questionText: z.string().min(1, "Question text is required"),
   scope: z.enum(["ENGAGEMENT", "EPIC", "FEATURE"]),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
+  category: z.enum(["BUSINESS_PROCESS", "TECHNICAL", "DATA", "INTEGRATION", "SECURITY", "COMPLIANCE", "DESIGN", "GENERAL"]).default("GENERAL"),
   scopeEpicId: z.string().optional(),
   scopeFeatureId: z.string().optional(),
   assigneeId: z.string().optional(),
@@ -68,6 +69,7 @@ export function QuestionForm({
       questionText: "",
       scope: "ENGAGEMENT",
       priority: "MEDIUM",
+      category: "GENERAL",
     },
   })
 
@@ -201,6 +203,29 @@ export function QuestionForm({
                 <SelectItem value="MEDIUM">Medium</SelectItem>
                 <SelectItem value="HIGH">High</SelectItem>
                 <SelectItem value="CRITICAL">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Category */}
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-[13px] font-semibold">Category</Label>
+            <Select
+              value={form.watch("category")}
+              onValueChange={(v) => form.setValue("category", v as QuestionFormValues["category"])}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="BUSINESS_PROCESS">Business Process</SelectItem>
+                <SelectItem value="TECHNICAL">Technical</SelectItem>
+                <SelectItem value="DATA">Data</SelectItem>
+                <SelectItem value="INTEGRATION">Integration</SelectItem>
+                <SelectItem value="SECURITY">Security</SelectItem>
+                <SelectItem value="COMPLIANCE">Compliance</SelectItem>
+                <SelectItem value="DESIGN">Design</SelectItem>
+                <SelectItem value="GENERAL">General</SelectItem>
               </SelectContent>
             </Select>
           </div>
