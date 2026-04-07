@@ -124,8 +124,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **ORG-02**: Periodic metadata sync (incremental + full refresh) stores normalized component data
 - [x] **ORG-03**: Org knowledge base tables: OrgComponent, OrgRelationship, DomainGrouping
 - [x] **ORG-04**: Brownfield org ingestion pipeline: Parse > Classify > Synthesize > Articulate (4-phase)
-- [ ] **ORG-05**: AI maps org components to business processes with human confirmation (isConfirmed pattern)
-- [ ] **ORG-06**: Domain groupings with AI suggestion and architect confirmation
+- [x] **ORG-05**: AI maps org components to business processes with human confirmation (isConfirmed pattern)
+- [x] **ORG-06**: Domain groupings with AI suggestion and architect confirmation
 
 ### Developer Integration
 
@@ -296,8 +296,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ORG-02 | Phase 4 | Complete |
 | ORG-03 | Phase 4 | Complete |
 | ORG-04 | Phase 4 | Complete |
-| ORG-05 | Phase 4 | Pending |
-| ORG-06 | Phase 4 | Pending |
+| ORG-05 | Phase 4 | Complete |
+| ORG-06 | Phase 4 | Complete |
 | DEV-01 | Phase 4 | Complete |
 | DEV-02 | Phase 4 | Complete |
 | DEV-03 | Phase 4 | Complete |
