@@ -133,7 +133,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **DEV-02**: Context packages include: story details, business processes, knowledge articles, related decisions, sprint conflicts
 - [x] **DEV-03**: REST API supports org metadata queries for Claude Code skills
 - [x] **DEV-04**: REST API supports story status updates from Claude Code
-- [ ] **DEV-05**: Claude Code skills updated to consume the web app API
+- [x] **DEV-05**: Claude Code skills updated to consume the web app API
 
 ### Document Generation
 
@@ -302,7 +302,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEV-02 | Phase 4 | Complete |
 | DEV-03 | Phase 4 | Complete |
 | DEV-04 | Phase 4 | Complete |
-| DEV-05 | Phase 4 | Pending |
+| DEV-05 | Phase 4 | Complete |
 | DOC-01 | Phase 5 | Pending |
 | DOC-02 | Phase 5 | Pending |
 | DOC-03 | Phase 5 | Pending |
