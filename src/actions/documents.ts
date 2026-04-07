@@ -17,6 +17,7 @@ import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
 import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
+import { assertProjectNotArchived } from "@/lib/archive-guard"
 import { getDownloadUrl } from "@/lib/documents/s3-storage"
 import {
   DOCUMENT_TEMPLATES,
@@ -71,6 +72,8 @@ export const requestDocumentGeneration = actionClient
   .schema(requestDocumentGenerationSchema)
   .action(async ({ parsedInput, ctx }) => {
     const { projectId, templateId, sectionIds, format } = parsedInput
+
+    await assertProjectNotArchived(projectId)
 
     // Verify project membership and PM/SA role (T-05-09)
     const member = await prisma.projectMember.findFirst({

@@ -20,6 +20,7 @@ import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
 import { generateDisplayId } from "@/lib/display-id"
 import { canTransitionDefect } from "@/lib/defect-status-machine"
+import { assertProjectNotArchived } from "@/lib/archive-guard"
 import { createId } from "@paralleldrive/cuid2"
 
 // ────────────────────────────────────────────
@@ -90,6 +91,7 @@ async function verifyMembership(projectId: string, clerkUserId: string) {
 export const createDefect = actionClient
   .schema(createDefectSchema)
   .action(async ({ parsedInput, ctx }) => {
+    await assertProjectNotArchived(parsedInput.projectId)
     const member = await verifyMembership(parsedInput.projectId, ctx.userId)
 
     const displayId = await generateDisplayId(
@@ -152,6 +154,7 @@ export const updateDefect = actionClient
     })
     if (!existing) throw new Error("Defect not found")
 
+    await assertProjectNotArchived(existing.projectId)
     const member = await verifyMembership(existing.projectId, ctx.userId)
 
     // Role check: PM/SA can edit any, others only their own (T-05-06)
@@ -208,6 +211,7 @@ export const transitionDefectStatus = actionClient
     })
     if (!existing) throw new Error("Defect not found")
 
+    await assertProjectNotArchived(existing.projectId)
     const member = await verifyMembership(existing.projectId, ctx.userId)
 
     // Validate transition with role gating (T-05-05)
@@ -303,6 +307,7 @@ export const deleteDefect = actionClient
     })
     if (!existing) throw new Error("Defect not found")
 
+    await assertProjectNotArchived(existing.projectId)
     const member = await verifyMembership(existing.projectId, ctx.userId)
 
     // Role check: PM/SA can delete any, others only their own (T-05-06)

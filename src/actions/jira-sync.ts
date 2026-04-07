@@ -4,6 +4,7 @@ import { z } from "zod"
 import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
 import { requireRole } from "@/lib/auth"
+import { assertProjectNotArchived } from "@/lib/archive-guard"
 import { encrypt } from "@/lib/encryption"
 import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
@@ -29,6 +30,8 @@ export const saveJiraConfig = actionClient
   .action(async ({ parsedInput }) => {
     const { projectId, instanceUrl, email, apiToken, jiraProjectKey } =
       parsedInput
+
+    await assertProjectNotArchived(projectId)
 
     // T-05-18: Restricted to PM or SA role
     await requireRole(projectId, ["PM", "SOLUTION_ARCHITECT"])
@@ -109,6 +112,7 @@ export const toggleJiraSync = actionClient
   .action(async ({ parsedInput }) => {
     const { projectId, enabled } = parsedInput
 
+    await assertProjectNotArchived(projectId)
     await requireRole(projectId, ["PM", "SOLUTION_ARCHITECT"])
 
     const config = await prisma.jiraConfig.update({

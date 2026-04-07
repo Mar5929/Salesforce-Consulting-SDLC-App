@@ -17,6 +17,7 @@ import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
 import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
+import { assertProjectNotArchived } from "@/lib/archive-guard"
 import { createId } from "@paralleldrive/cuid2"
 
 // ────────────────────────────────────────────
@@ -82,6 +83,7 @@ export const createTestCase = actionClient
   .schema(createTestCaseSchema)
   .action(async ({ parsedInput, ctx }) => {
     const story = await getStoryWithProject(parsedInput.storyId)
+    await assertProjectNotArchived(story.projectId)
     await verifyMembership(story.projectId, ctx.userId)
 
     // Calculate next sortOrder
@@ -121,6 +123,7 @@ export const recordTestExecution = actionClient
     if (!testCase || !testCase.story) throw new Error("Test case not found")
 
     const projectId = testCase.story.projectId
+    await assertProjectNotArchived(projectId)
     const member = await verifyMembership(projectId, ctx.userId)
 
     const execution = await prisma.testExecution.create({
@@ -192,6 +195,7 @@ export const updateTestCase = actionClient
       include: { story: { select: { projectId: true } } },
     })
     if (!existing) throw new Error("Test case not found")
+    await assertProjectNotArchived(existing.story.projectId)
     await verifyMembership(existing.story.projectId, ctx.userId)
 
     const { id, ...updateFields } = parsedInput
@@ -217,6 +221,7 @@ export const deleteTestCase = actionClient
       include: { story: { select: { projectId: true } } },
     })
     if (!existing) throw new Error("Test case not found")
+    await assertProjectNotArchived(existing.story.projectId)
     await verifyMembership(existing.story.projectId, ctx.userId)
 
     // Cascade deletes test executions (handled by Prisma onDelete: Cascade)
