@@ -29,7 +29,11 @@ export async function decrypt(
   ciphertext: string,
   projectId: string
 ): Promise<string> {
-  const [ivB64, tagB64, encB64] = ciphertext.split(":")
+  const parts = ciphertext.split(":")
+  if (parts.length !== 3) {
+    throw new Error("Invalid ciphertext format: expected iv:tag:encrypted")
+  }
+  const [ivB64, tagB64, encB64] = parts
   const key = await deriveKey(projectId)
   const decipher = createDecipheriv(
     "aes-256-gcm",
