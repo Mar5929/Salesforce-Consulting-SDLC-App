@@ -167,7 +167,9 @@ export function Sidebar({ currentMemberRole, activeProjectId, questionReviewCoun
     if (href === "/") {
       return pathname === "/" || pathname === ""
     }
-    return pathname.startsWith(href)
+    // Ensure the match ends at a segment boundary to avoid false positives
+    // e.g. /projects/abc/org should NOT activate when on /projects/abc/org/analysis
+    return pathname === href || pathname.startsWith(href + "/")
   }
 
   return (
