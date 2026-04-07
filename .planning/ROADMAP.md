@@ -187,6 +187,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Sidebar Team link navigates to /projects/{id}/settings/team (not /team)
   2. AppShell fetches and passes questionReviewCount and openDefectCount to Sidebar
+**Plans**: 1 plan
+
+Plans:
+- [ ] 09-01-PLAN.md -- Fix Team link href and wire badge counts through layout > AppShell > Sidebar
 
 ## Progress
 
@@ -203,4 +207,4 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | 6. Schema Fixes | 0/1 | Planned | - |
 | 7. Story Generation E2E Wiring | 0/1 | Planned | - |
 | 8. Event Wiring and Integration Fixes | 0/0 | Planned | - |
-| 9. Navigation and Badge Fixes | 0/0 | Planned | - |
+| 9. Navigation and Badge Fixes | 0/1 | Planned | - |
