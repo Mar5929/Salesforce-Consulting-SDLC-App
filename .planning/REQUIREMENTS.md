@@ -18,7 +18,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Project Management
 
-- [ ] **PROJ-01**: User can create a new project with name, client, engagement type, and sandbox strategy
+- [x] **PROJ-01**: User can create a new project with name, client, engagement type, and sandbox strategy
 - [x] **PROJ-02**: User can view and edit project settings and team membership
 - [x] **PROJ-03**: User can invite team members and assign project-level roles
 - [x] **PROJ-04**: PM can archive a completed project (read-only state, data retained)
@@ -33,7 +33,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **QUES-05**: Questions have a full lifecycle: Open > Scoped > Owned > Answered > Reviewed
 - [x] **QUES-06**: Questions are linked to relevant entities (epics, features, stories, decisions)
 - [x] **QUES-07**: SA can flag answered questions for review when confidence is below threshold
-- [ ] **QUES-08**: User can filter and search questions by status, category, scope, owner, and priority
+- [x] **QUES-08**: User can filter and search questions by status, category, scope, owner, and priority
 
 ### AI Agent Harness
 
@@ -226,7 +226,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
 | AUTH-06 | Phase 1 | Complete |
-| PROJ-01 | Phase 6 | Pending |
+| PROJ-01 | Phase 6 | Complete |
 | PROJ-02 | Phase 1 | Complete |
 | PROJ-03 | Phase 1 | Complete |
 | PROJ-04 | Phase 5 | Complete |
@@ -238,7 +238,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUES-05 | Phase 2 | Complete |
 | QUES-06 | Phase 2 | Complete |
 | QUES-07 | Phase 2 | Complete |
-| QUES-08 | Phase 6 | Pending |
+| QUES-08 | Phase 6 | Complete |
 | AGENT-01 | Phase 2 | Complete |
 | AGENT-02 | Phase 2 | Complete |
 | AGENT-03 | Phase 2 | Complete |

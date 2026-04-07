@@ -151,7 +151,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md -- Add sandboxStrategy to Project, QuestionCategory enum + category field/filter to Question
+- [x] 06-01-PLAN.md -- Add sandboxStrategy to Project, QuestionCategory enum + category field/filter to Question
 
 ### Phase 7: Story Generation E2E Wiring
 **Goal**: Wire the complete AI story generation flow end-to-end so epicId reaches the API, StoryDraftCards render, and buildStorySessionPrompt activates
