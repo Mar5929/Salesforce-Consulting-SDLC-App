@@ -58,13 +58,23 @@ export const createProject = actionClient
       },
     })
 
+    // Import Clerk backend to look up user profiles
+    const { clerkClient } = await import("@clerk/nextjs/server")
+    const clerk = await clerkClient()
+
+    // Fetch creator's Clerk profile for display name and email
+    const creatorUser = await clerk.users.getUser(ctx.userId)
+
     // Create ProjectMember record for the creating user
     await prisma.projectMember.create({
       data: {
         projectId: project.id,
         clerkUserId: ctx.userId,
-        displayName: "",
-        email: "",
+        displayName:
+          `${creatorUser.firstName ?? ""} ${creatorUser.lastName ?? ""}`.trim() ||
+          creatorUser.emailAddresses[0]?.emailAddress ||
+          "",
+        email: creatorUser.emailAddresses[0]?.emailAddress || "",
         role: "SOLUTION_ARCHITECT",
         status: "ACTIVE",
       },
@@ -72,9 +82,6 @@ export const createProject = actionClient
 
     // Create ProjectMember records for invited team members
     if (parsedInput.teamMembers && parsedInput.teamMembers.length > 0) {
-      // Import Clerk backend to look up users by email
-      const { clerkClient } = await import("@clerk/nextjs/server")
-      const clerk = await clerkClient()
 
       for (const member of parsedInput.teamMembers) {
         const users = await clerk.users.getUserList({
