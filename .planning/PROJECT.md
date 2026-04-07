@@ -38,11 +38,11 @@ The AI must retain and build understanding across sessions — every discovery c
 - [ ] Three-layer search (filtered + full-text via tsvector + semantic via pgvector)
 - [ ] Discovery dashboard (outstanding questions, blocked items, health scores)
 - [ ] Three-layer knowledge architecture (structured relationships + AI-curated articles + semantic retrieval)
-- [ ] Branded document generation (Word, PowerPoint, PDF)
-- [ ] QA workflow (test execution tracking, defect management)
-- [ ] Optional client Jira sync (one-directional push)
-- [ ] Project archival workflow
-- [ ] PM dashboard
+- [x] Branded document generation (Word, PowerPoint, PDF) — Validated in Phase 5: Document Generation, QA, and Administration
+- [x] QA workflow (test execution tracking, defect management) — Validated in Phase 5: Document Generation, QA, and Administration
+- [x] Optional client Jira sync (one-directional push) — Validated in Phase 5: Document Generation, QA, and Administration
+- [x] Project archival workflow — Validated in Phase 5: Document Generation, QA, and Administration
+- [x] PM dashboard — Validated in Phase 5: Document Generation, QA, and Administration
 
 ### Out of Scope
 
@@ -112,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-06 after Phase 4 completion*
+*Last updated: 2026-04-07 after Phase 5 completion — all V1 phases complete*
