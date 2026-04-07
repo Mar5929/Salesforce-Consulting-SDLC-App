@@ -437,6 +437,8 @@ model Project {
   storyComponents      StoryComponent[]
   orgSyncRuns          OrgSyncRun[]
   apiKeys              ApiKey[]
+  jiraConfig           JiraConfig?
+  jiraSyncRecords      JiraSyncRecord[]
 }
 
 model ProjectMember {
@@ -577,6 +579,7 @@ model Story {
   questionBlocksStories QuestionBlocksStory[]
   requirementStories   RequirementStory[]
   milestoneStories     MilestoneStory[]
+  jiraSyncRecords      JiraSyncRecord[]
 
   @@unique([projectId, displayId])
 }
@@ -1175,6 +1178,43 @@ model StatusTransition {
   transitionedBy     ProjectMember @relation(fields: [transitionedById], references: [id])
 
   @@index([entityType, entityId, createdAt])
+}
+
+// ============================================================================
+// Phase 5: Jira Integration
+// ============================================================================
+
+model JiraConfig {
+  id              String   @id @default(cuid())
+  projectId       String   @unique
+  instanceUrl     String
+  email           String
+  encryptedToken  String
+  jiraProjectKey  String
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model JiraSyncRecord {
+  id           String    @id @default(cuid())
+  projectId    String
+  storyId      String
+  jiraIssueId  String?
+  jiraIssueKey String?
+  status       String    @default("PENDING") // PENDING, SYNCED, FAILED
+  lastSyncAt   DateTime?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  story        Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, storyId])
+  @@index([projectId, status])
 }
 
 // ============================================================================
