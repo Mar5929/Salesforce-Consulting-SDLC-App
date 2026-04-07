@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { ClerkProvider } from "@clerk/nextjs"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { Toaster } from "@/components/ui/sonner"
 import "@/app/globals.css"
 
@@ -23,7 +24,7 @@ export default function RootLayout({
           />
         </head>
         <body className="min-h-screen bg-background font-sans antialiased">
-          {children}
+          <NuqsAdapter>{children}</NuqsAdapter>
           <Toaster />
         </body>
       </html>

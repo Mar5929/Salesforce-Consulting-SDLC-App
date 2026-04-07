@@ -6,7 +6,8 @@ import { prisma } from "@/lib/db"
 
 function extractProjectId(pathname: string): string | null {
   const match = pathname.match(/^\/projects\/([^/]+)/)
-  return match ? match[1] : null
+  if (!match || match[1] === "new") return null
+  return match[1]
 }
 
 export default async function DashboardLayout({

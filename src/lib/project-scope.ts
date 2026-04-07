@@ -1,7 +1,6 @@
 import { prisma } from "./db"
 
 export const MODELS_WITH_PROJECT_ID = [
-  "Project",
   "ProjectMember",
   "Epic",
   "Feature",

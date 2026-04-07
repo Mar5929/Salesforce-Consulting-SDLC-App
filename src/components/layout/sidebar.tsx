@@ -14,6 +14,7 @@ interface NavItem {
   href: string
   roles?: string[]
   badge?: number
+  disabled?: boolean
 }
 
 interface SidebarProps {
@@ -36,8 +37,8 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       icon: CircleHelp,
       href: activeProjectId
         ? `/projects/${activeProjectId}/questions`
-        : "/questions",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
       badge: questionReviewCount,
     },
     {
@@ -45,79 +46,80 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       icon: FileText,
       href: activeProjectId
         ? `/projects/${activeProjectId}/transcripts`
-        : "/transcripts",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
     },
     {
       label: "Chat",
       icon: MessageSquare,
       href: activeProjectId
         ? `/projects/${activeProjectId}/chat`
-        : "/chat",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
     },
     {
       label: "Knowledge",
       icon: BookOpen,
       href: activeProjectId
         ? `/projects/${activeProjectId}/knowledge`
-        : "/knowledge",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
     },
     {
       label: "Dashboard",
       icon: LayoutDashboard,
       href: activeProjectId
         ? `/projects/${activeProjectId}/dashboard`
-        : "/dashboard",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
     },
     {
       label: "Work",
       icon: Layers,
       href: activeProjectId
         ? `/projects/${activeProjectId}/work`
-        : "/work",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
     },
     {
       label: "Backlog",
       icon: Inbox,
       href: activeProjectId
         ? `/projects/${activeProjectId}/backlog`
-        : "/backlog",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
     },
     {
       label: "Sprints",
       icon: Timer,
       href: activeProjectId
         ? `/projects/${activeProjectId}/sprints`
-        : "/sprints",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
     },
     {
       label: "Org",
       icon: Cloud,
       href: activeProjectId
         ? `/projects/${activeProjectId}/org`
-        : "/org",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
     },
     {
       label: "Analysis",
       icon: Microscope,
       href: activeProjectId
         ? `/projects/${activeProjectId}/org/analysis`
-        : "/org/analysis",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
     },
     {
       label: "Documents",
       icon: FileOutput,
       href: activeProjectId
         ? `/projects/${activeProjectId}/documents`
-        : "/documents",
+        : "#",
+      disabled: !activeProjectId,
       roles: ["PM", "SOLUTION_ARCHITECT"],
     },
     {
@@ -125,8 +127,8 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       icon: Bug,
       href: activeProjectId
         ? `/projects/${activeProjectId}/defects`
-        : "/defects",
-      roles: undefined, // all roles
+        : "#",
+      disabled: !activeProjectId,
       badge: openDefectCount,
     },
     {
@@ -134,7 +136,8 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       icon: BarChart3,
       href: activeProjectId
         ? `/projects/${activeProjectId}/pm-dashboard`
-        : "/pm-dashboard",
+        : "#",
+      disabled: !activeProjectId,
       roles: ["PM", "SOLUTION_ARCHITECT"],
     },
     {
@@ -142,13 +145,17 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       icon: Settings,
       href: activeProjectId
         ? `/projects/${activeProjectId}/settings`
-        : "/settings",
+        : "#",
+      disabled: !activeProjectId,
       roles: ["SOLUTION_ARCHITECT", "PM"],
     },
     {
       label: "Team",
       icon: Users,
-      href: activeProjectId ? `/projects/${activeProjectId}/settings/team` : "/settings/team",
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/settings/team`
+        : "#",
+      disabled: !activeProjectId,
       roles: ["SOLUTION_ARCHITECT", "PM"],
     },
   ]
@@ -188,6 +195,19 @@ export function Sidebar({ currentMemberRole, activeProjectId, questionReviewCoun
           {visibleItems.map((item) => {
             const active = isActive(item.href)
             const Icon = item.icon
+            if (item.disabled) {
+              return (
+                <li key={item.label}>
+                  <span
+                    className="flex h-[36px] items-center gap-2 rounded-md pl-4 text-[13px] font-semibold text-muted-foreground/50 cursor-not-allowed"
+                    title="Select a project first"
+                  >
+                    <Icon className="size-4" />
+                    <span>{item.label}</span>
+                  </span>
+                </li>
+              )
+            }
             return (
               <li key={item.label}>
                 <Link
