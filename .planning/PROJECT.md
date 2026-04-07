@@ -112,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-07 after Phase 6 completion — sandboxStrategy persistence and question category filter gaps closed*
+*Last updated: 2026-04-07 after Phase 9 completion — sidebar Team link fix and badge count wiring (last phase in v1.0 milestone)*
