@@ -132,7 +132,7 @@ Plans:
 - [x] 05-05-PLAN.md -- Document generation UI: template gallery, generation dialog, progress, preview page
 - [x] 05-06-PLAN.md -- PM Dashboard: stat cards, charts (AI usage, work progress, QA summary), stories by assignee/questions by status/knowledge coverage (D-14), Inngest synthesis
 - [x] 05-07-PLAN.md -- Jira sync + project archival backend: schema models, Jira client, sync Inngest function, server actions
-- [ ] 05-08-PLAN.md -- Jira sync + archival UI: schema push, settings page, SyncStatusBadge wired into story table (D-17)
+- [x] 05-08-PLAN.md -- Jira sync + archival UI: schema push, settings page, SyncStatusBadge wired into story table (D-17)
 
 **UI hint**: yes
 
