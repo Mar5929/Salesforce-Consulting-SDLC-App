@@ -63,11 +63,20 @@ export const triggerIngestion = actionClient
 /**
  * Get the current ingestion status for a project.
  * Returns counts of domain groupings and business processes.
+ * Requires active project membership.
  */
 export const getIngestionStatus = actionClient
   .schema(z.object({ projectId: z.string() }))
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     const { projectId } = parsedInput
+
+    // Verify caller is an active member of this project
+    const member = await prisma.projectMember.findFirst({
+      where: { projectId, clerkUserId: ctx.userId, status: "ACTIVE" },
+    })
+    if (!member) {
+      throw new Error("Not a member of this project")
+    }
 
     const [dgTotal, dgConfirmed, bpTotal, bpConfirmed] = await Promise.all([
       prisma.domainGrouping.count({ where: { projectId } }),
