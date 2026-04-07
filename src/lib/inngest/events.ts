@@ -30,4 +30,25 @@ export const EVENTS = {
   ORG_KNOWLEDGE_REFRESH: "org/knowledge-refresh-requested",
   ORG_INGESTION_REQUESTED: "org/ingestion-requested",
   ORG_SYNC_COMPLETED: "org/sync-completed",
+
+  // Document events (Phase 5)
+  DOCUMENT_GENERATION_REQUESTED: "document/generation-requested",
+  DOCUMENT_GENERATION_COMPLETED: "document/generation-completed",
+
+  // QA events (Phase 5)
+  TEST_EXECUTION_RECORDED: "test-execution/recorded",
+  DEFECT_CREATED: "defect/created",
+  DEFECT_STATUS_CHANGED: "defect/status-changed",
+
+  // Jira events (Phase 5)
+  JIRA_SYNC_REQUESTED: "jira/sync-requested",
+  JIRA_SYNC_COMPLETED: "jira/sync-completed",
+  JIRA_SYNC_FAILED: "jira/sync-failed",
+
+  // Project lifecycle events (Phase 5)
+  PROJECT_ARCHIVED: "project/archived",
+  PROJECT_REACTIVATED: "project/reactivated",
+
+  // PM Dashboard events (Phase 5)
+  PM_DASHBOARD_SYNTHESIS_REQUESTED: "pm-dashboard/synthesis-requested",
 } as const
