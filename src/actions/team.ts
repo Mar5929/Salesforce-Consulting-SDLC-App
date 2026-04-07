@@ -91,6 +91,14 @@ export const removeTeamMember = actionClient
       "SOLUTION_ARCHITECT",
     ])
 
+    // Verify the target member belongs to the specified project
+    const targetMember = await prisma.projectMember.findUnique({
+      where: { id: parsedInput.memberId },
+    })
+    if (!targetMember || targetMember.projectId !== parsedInput.projectId) {
+      throw new Error("Member not found in this project")
+    }
+
     // Cannot remove yourself
     if (callerMember.id === parsedInput.memberId) {
       throw new Error("You cannot remove yourself from the project.")
@@ -140,6 +148,11 @@ export const updateMemberRole = actionClient
     const currentMember = await prisma.projectMember.findUniqueOrThrow({
       where: { id: parsedInput.memberId },
     })
+
+    // Verify the target member belongs to the specified project
+    if (currentMember.projectId !== parsedInput.projectId) {
+      throw new Error("Member not found in this project")
+    }
 
     const oldRole = currentMember.role
 
