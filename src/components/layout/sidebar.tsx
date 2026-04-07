@@ -12,10 +12,14 @@ interface NavItem {
   label: string
   icon: LucideIcon
   href: string
+  phase?: number
   roles?: string[]
   badge?: number
   disabled?: boolean
 }
+
+/** Update this constant as build phases are completed. */
+const CURRENT_PHASE = 1
 
 interface SidebarProps {
   currentMemberRole?: string
@@ -30,6 +34,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       label: "Projects",
       icon: FolderKanban,
       href: "/",
+      phase: 1,
       roles: undefined, // all roles
     },
     {
@@ -38,6 +43,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/questions`
         : "#",
+      phase: 2,
       disabled: !activeProjectId,
       badge: questionReviewCount,
     },
@@ -47,6 +53,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/transcripts`
         : "#",
+      phase: 2,
       disabled: !activeProjectId,
     },
     {
@@ -55,6 +62,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/chat`
         : "#",
+      phase: 2,
       disabled: !activeProjectId,
     },
     {
@@ -63,6 +71,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/knowledge`
         : "#",
+      phase: 2,
       disabled: !activeProjectId,
     },
     {
@@ -71,6 +80,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/dashboard`
         : "#",
+      phase: 2,
       disabled: !activeProjectId,
     },
     {
@@ -79,6 +89,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/work`
         : "#",
+      phase: 3,
       disabled: !activeProjectId,
     },
     {
@@ -87,6 +98,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/backlog`
         : "#",
+      phase: 3,
       disabled: !activeProjectId,
     },
     {
@@ -95,7 +107,9 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/sprints`
         : "#",
+      phase: 3,
       disabled: !activeProjectId,
+      roles: ["PM", "SOLUTION_ARCHITECT"],
     },
     {
       label: "Org",
@@ -103,7 +117,9 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/org`
         : "#",
+      phase: 4,
       disabled: !activeProjectId,
+      roles: ["SOLUTION_ARCHITECT", "DEVELOPER"],
     },
     {
       label: "Analysis",
@@ -111,7 +127,9 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/org/analysis`
         : "#",
+      phase: 4,
       disabled: !activeProjectId,
+      roles: ["SOLUTION_ARCHITECT", "DEVELOPER"],
     },
     {
       label: "Documents",
@@ -119,6 +137,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/documents`
         : "#",
+      phase: 5,
       disabled: !activeProjectId,
       roles: ["PM", "SOLUTION_ARCHITECT"],
     },
@@ -128,6 +147,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/defects`
         : "#",
+      phase: 5,
       disabled: !activeProjectId,
       badge: openDefectCount,
     },
@@ -137,6 +157,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/pm-dashboard`
         : "#",
+      phase: 5,
       disabled: !activeProjectId,
       roles: ["PM", "SOLUTION_ARCHITECT"],
     },
@@ -146,6 +167,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/settings`
         : "#",
+      phase: 1,
       disabled: !activeProjectId,
       roles: ["SOLUTION_ARCHITECT", "PM"],
     },
@@ -155,6 +177,7 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       href: activeProjectId
         ? `/projects/${activeProjectId}/settings/team`
         : "#",
+      phase: 1,
       disabled: !activeProjectId,
       roles: ["SOLUTION_ARCHITECT", "PM"],
     },
@@ -177,7 +200,9 @@ export function Sidebar({ currentMemberRole, activeProjectId: serverProjectId, q
   const NAV_ITEMS = buildNavItems(activeProjectId, questionReviewCount, openDefectCount)
 
   const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.roles || (currentMemberRole && item.roles.includes(currentMemberRole))
+    (item) =>
+      (!item.phase || item.phase <= CURRENT_PHASE) &&
+      (!item.roles || (currentMemberRole && item.roles.includes(currentMemberRole)))
   )
 
   function isActive(href: string): boolean {
