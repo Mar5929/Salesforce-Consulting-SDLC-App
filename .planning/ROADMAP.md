@@ -102,7 +102,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can connect a Salesforce org via OAuth and the system performs incremental metadata sync on a schedule
   2. Brownfield ingestion pipeline processes org metadata through Parse > Classify > Synthesize > Articulate, with AI-suggested domain groupings confirmed by the architect
-  3. Claude Code can call the REST API to retrieve context packages (story details, business processes, knowledge articles, related decisions, sprint conflicts) and update story status
+  3. Claude Code can call the REST API to retrieve context packages (story details, business processes, knowledge articles, decisions, sprint conflicts) and update story status
   4. Org components are mapped to business processes with the isConfirmed pattern for human oversight
 **Plans**: 7 plans
 
@@ -215,62 +215,20 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 
 ### Phase 10: Chat Session Management and Conversation Intelligence
 
-**Goal:** The chat system provides a ChatGPT-style conversation browsing/management UI, implements all six session types with lifecycle management, and acts as a knowledgeable project assistant drawing from all project data sources via smart retrieval
-**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14
+**Goal:** [To be planned]
+**Requirements**: TBD
 **Depends on:** Phase 9
-**Success Criteria** (what must be TRUE):
-  1. Chat page has a left sidebar (320px) with filterable, searchable conversation list and pinned general chat
-  2. All six session types (GENERAL_CHAT, TRANSCRIPT_SESSION, STORY_SESSION, BRIEFING_SESSION, QUESTION_SESSION, ENRICHMENT_SESSION) are functional
-  3. Task sessions auto-complete when purpose fulfilled; failed sessions show retry; completed sessions are read-only
-  4. General chat draws from all project data sources via smart two-pass retrieval within token budget
-  5. Users can archive conversations (no delete) and access archived via filter toggle
-**Plans**: 5 plans
+**Plans:** 0 plans
 
 Plans:
-- [ ] 10-01-PLAN.md -- Conversation sidebar UI, chat layout, schema migration (isArchived), lifecycle server actions
-- [ ] 10-02-PLAN.md -- BRIEFING_SESSION and ENRICHMENT_SESSION: task definitions, prompt builders, UI components, entry points
-- [ ] 10-03-PLAN.md -- QUESTION_SESSION hybrid (Inngest background + interactive), session lifecycle management
-- [ ] 10-04-PLAN.md -- Smart context retrieval: two-pass semantic + keyword search, full project data assembly
-- [ ] 10-05-PLAN.md -- Schema push and end-to-end verification
+- [ ] TBD (run /gsd-plan-phase 10 to break down)
 
 ### Phase 11: Agentic Chat with Database Awareness and Project Tool Use
 
-**Goal:** The AI chat assistant can actively query, create, update, and delete project entities through role-gated tools with hard-coded deletion confirmation, making it a true project collaborator
-**Depends on:** Phase 9
-**Requirements**: ACHAT-01, ACHAT-02, ACHAT-03, ACHAT-04, ACHAT-05, ACHAT-06, ACHAT-07, ACHAT-08, ACHAT-09, ACHAT-10, ACHAT-12, ACHAT-13, ACHAT-14, ACHAT-15, ACHAT-16, ACHAT-17, ACHAT-18, ACHAT-19
-**Success Criteria** (what must be TRUE):
-  1. AI can query all 15 project entities via chat tools returning summary-first results
-  2. AI can create, update, and delete mutable entities through chat, with role-based gating matching web app permissions
-  3. Delete operations require explicit user approval via a hard-coded structural gate (needsApproval) -- not just prompt instructions
-  4. Tool results render as structured cards in the chat UI (query cards, mutation confirmations, delete approval dialogs)
-  5. Multi-step tool chains are bounded to 15 calls per AI turn
-  6. All tool calls are logged for audit via ChatMessage.toolCalls
-**Plans**: 6 plans
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 10
+**Plans:** 0 plans
 
 Plans:
-- [ ] 11-01-PLAN.md -- Tool infrastructure: types, registry, audit, system prompt, schema migration
-- [ ] 11-02-PLAN.md -- Query tools for all 15 entities (query list + get detail)
-- [ ] 11-03-PLAN.md -- Write tools for 10 mutable entities + batch variants
-- [ ] 11-04-PLAN.md -- Delete tools with needsApproval safety gate
-- [ ] 11-05-PLAN.md -- Chat route upgrade: wiring tools, multi-step, approval flow
-- [ ] 11-06-PLAN.md -- Tool result card components and message list rendering
-
-### Phase 12: Roadmap and Execution View — Milestones, Epic Phase Grid, and Project Execution Order
-
-**Goal:** The team can track project milestones with computed progress, visualize epic phase status in an interactive matrix grid, view per-epic story execution ordering with dependency indicators, and receive AI-synthesized summaries for upcoming milestones
-**Depends on:** Phase 11
-**Requirements**: PRD-17.2-MILESTONES, PRD-17.2-EPIC-PHASE-GRID, PRD-17.2-UPCOMING-MILESTONES, PRD-17.4-EXECUTION-PLAN
-**Success Criteria** (what must be TRUE):
-  1. User can navigate to /projects/[id]/roadmap from the sidebar and see three tabs: Milestones, Epic Phases, Execution Plan
-  2. User can create, edit, delete milestones and link stories via multi-select dialog, with computed progress bars
-  3. Epic Phase Grid shows an interactive epic x phase matrix where clicking a cell cycles the status
-  4. Execution Plan shows collapsible per-epic sections with stories grouped by phase, dependency indicators, and blocked story highlighting
-  5. AI-synthesized "what must happen" and "what's blocking" summaries appear for upcoming milestones
-**Plans**: 3 plans
-
-Plans:
-- [ ] 12-01-PLAN.md -- Routing, sidebar nav, milestone CRUD server actions, progress computation, Milestones tab UI
-- [ ] 12-02-PLAN.md -- Epic Phase Grid: interactive matrix with click-to-cycle status cells and aggregate counts
-- [ ] 12-03-PLAN.md -- Execution Plan tab with per-epic story ordering, AI milestone synthesis task and summary component
-
-**UI hint**: yes
+- [ ] TBD (run /gsd-plan-phase 11 to break down)

@@ -527,13 +527,22 @@ The tool descriptions themselves teach the AI the data model (per D-01). The AI 
 | A4 | `needsApproval` works correctly with `stopWhen` in multi-step flows | Architecture Patterns | If approval interrupts the step chain prematurely, the "create epic then generate stories then delete draft" flow would break mid-chain. Need to test. |
 | A5 | Existing `ChatMessage.toolCalls` JSON field can store the expanded tool call data from agentic sessions | Audit | If the JSON field size is insufficient for 15 tool calls per turn, may need a separate audit table. |
 
-## Open Questions (RESOLVED)
+## Open Questions
 
-1. **SessionLog vs ChatMessage for audit (D-19)** — RESOLVED: Use ChatMessage.toolCalls for per-call recording (already works via AI SDK). Create one SessionLog per conversation turn via `onFinish` for aggregate tracking. Plan 01 implements this.
+1. **SessionLog vs ChatMessage for audit (D-19)**
+   - What we know: `SessionLog` has `entitiesCreated`/`entitiesModified` JSON fields. `ChatMessage` has `toolCalls` JSON field. Both exist.
+   - What's unclear: Should every tool call create a SessionLog record (heavyweight), or should tool calls be logged in ChatMessage.toolCalls (already happening) with SessionLog reserved for session-level summaries?
+   - Recommendation: Use ChatMessage.toolCalls for per-call recording (already works), create one SessionLog per conversation turn for aggregate tracking.
 
-2. **SessionLogTaskType enum for agentic chat** — RESOLVED: Add `AGENTIC_CHAT` to the SessionLogTaskType enum in prisma/schema.prisma. Plan 01 Task 1 handles this.
+2. **SessionLogTaskType enum for agentic chat**
+   - What we know: Current enum has specific task types (TRANSCRIPT_PROCESSING, STORY_GENERATION, etc.) but no generic "AGENTIC_CHAT" type.
+   - What's unclear: Need a new enum value or repurpose existing ones?
+   - Recommendation: Add `AGENTIC_CHAT` to the SessionLogTaskType enum via Prisma migration.
 
-3. **Tool token budget** — RESOLVED: Build tools first, measure token count during execution. Optimize descriptions if over 4,000 tokens. Not a planning blocker — handled at implementation time.
+3. **Tool token budget**
+   - What we know: ~60 tools with Zod schemas could consume 3,000-5,000 tokens of context.
+   - What's unclear: Exact token count until tools are built. Claude Sonnet's 200K context leaves plenty of room, but cost scales with input tokens.
+   - Recommendation: Build tools, measure token count, optimize descriptions if over 4,000 tokens.
 
 ## Validation Architecture
 

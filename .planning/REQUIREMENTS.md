@@ -154,27 +154,6 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **ADMIN-02**: PM dashboard with aggregated views across project dimensions
 - [x] **ADMIN-03**: Usage and cost tracking for AI token consumption per project
 
-### Agentic Chat (Phase 11)
-
-- [ ] **ACHAT-01**: Tool-per-entity pattern with granular Vercel AI SDK tool() definitions for each entity
-- [ ] **ACHAT-02**: Full CRUD tools for all mutable entities (epics, features, stories, questions, decisions, requirements, risks, sprints, defects, test cases)
-- [ ] **ACHAT-03**: Batch tool variants for stories and questions (create multiple in one call)
-- [ ] **ACHAT-04**: Tools call into existing server actions and data access layer
-- [ ] **ACHAT-05**: Hard-coded deletion confirmation gate via needsApproval (structural, not prompt-based)
-- [ ] **ACHAT-06**: Deletion confirmation UI with Confirm Delete / Keep It buttons
-- [ ] **ACHAT-07**: Summary-first query results with separate detail tools for token efficiency
-- [ ] **ACHAT-08**: Tool availability gated by user role (same permissions as web app)
-- [ ] **ACHAT-09**: Role permissions map respecting AUTH-03 role definitions
-- [ ] **ACHAT-10**: All interactive chat sessions get full tool repertoire (except TRANSCRIPT_SESSION)
-- [ ] **ACHAT-12**: Structured entity cards for query results in chat
-- [ ] **ACHAT-13**: Write/update confirmation rendering in chat
-- [ ] **ACHAT-14**: Graceful error handling with AI recovery suggestions
-- [ ] **ACHAT-15**: Lean system prompt with tool descriptions teaching data model
-- [ ] **ACHAT-16**: Bounded tool call chains (max 15 per AI turn)
-- [ ] **ACHAT-17**: Live context panel updates via SWR revalidation after mutations
-- [ ] **ACHAT-18**: Natural message history preserving prior tool calls for context
-- [ ] **ACHAT-19**: Audit trail via SessionLog/ChatMessage for all tool calls
-
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.

@@ -95,7 +95,7 @@ Phases: 7
 **Verification:** Non-authorized roles see disabled drag handles; transcript sessions render extraction results (not chat UI); nav hides unauthorized features; transcript API rejects cross-conversation requests.
 **Estimated scope:** ~8-10 files.
 
-## Phase 5: Org Analysis and Pipeline Fixes [COMPLETED - 2026-04-08]
+## Phase 5: Org Analysis and Pipeline Fixes
 **Goal:** Fix Salesforce org analysis workflow — connection status, pipeline UI, and role gating.
 **Complexity:** Medium
 **Depends on:** Phase 3 (BUG-027 schema migration for BUG-021)
@@ -112,7 +112,7 @@ Phases: 7
 **Verification:** Org connection shows syncing spinner; pipeline stepper shows running/completed states; Analyze Org only visible to SA; doc generation progress completes cleanly.
 **Estimated scope:** ~6-8 files.
 
-## Phase 6: Error Handling and Auth Edge Cases [COMPLETED - 2026-04-08]
+## Phase 6: Error Handling and Auth Edge Cases
 **Goal:** Clean up error paths, auth edge cases, and remaining access control issues.
 **Complexity:** Low
 **Depends on:** Phase 4 (BUG-015 for nav gating context)
@@ -128,7 +128,7 @@ Phases: 7
 **Verification:** OAuth CSRF error shows meaningful message on correct page; PM Dashboard returns 403 for non-PM roles; Jira disconnect clears the integration.
 **Estimated scope:** ~4-5 files.
 
-## Phase 7: UX Polish [COMPLETED - 2026-04-08]
+## Phase 7: UX Polish
 **Goal:** Cosmetic and UX polish items that don't affect functionality.
 **Complexity:** Low
 **Depends on:** Phase 4 (BUG-015 for sidebar context)

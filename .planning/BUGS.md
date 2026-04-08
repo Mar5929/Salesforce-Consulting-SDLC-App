@@ -8,10 +8,10 @@ Identified during post-deployment wiring audit (2026-04-07). Each bug has a deta
 |----------|-------|
 | CRITICAL | 3 |
 | HIGH | 0 |
-| MEDIUM | 0 |
-| LOW | 0 |
-| **Total (Open)** | **0** |
-| Fixed | 33 |
+| MEDIUM | 5 |
+| LOW | 3 |
+| **Total (Open)** | **9** |
+| Fixed | 24 |
 
 ## Recommended Fix Order
 
@@ -42,7 +42,7 @@ Fix these first — they unblock the most functionality:
 | BUG-007 | QuestionForm DialogTrigger renders empty button | 2 | Fixed | [Detail](bugs/BUG-007.md) |
 | BUG-008 | TRANSCRIPT_SESSION conversations render wrong UI at /chat/ | 2 | Fixed | [Detail](bugs/BUG-008.md) |
 | BUG-033 | Chat "Response interrupted" — UIMessage content extraction fails | 2 | Fixed | [Detail](bugs/BUG-033.md) |
-| BUG-009 | Checkbox indeterminate prop silently ignored on Base UI | 3 | Fixed | [Detail](bugs/BUG-009.md) |
+| BUG-009 | Checkbox indeterminate prop silently ignored on Base UI | 3 | Open | [Detail](bugs/BUG-009.md) |
 | BUG-010 | Sprint board drag-and-drop has no role awareness | 3 | Fixed | [Detail](bugs/BUG-010.md) |
 | BUG-011 | Archive redirect goes to /projects which doesn't exist | 5 | Fixed | [Detail](bugs/BUG-011.md) |
 | BUG-012 | Jira field customfield_story_points is invalid | 5 | Fixed | [Detail](bugs/BUG-012.md) |
@@ -58,21 +58,21 @@ Fix these first — they unblock the most functionality:
 | BUG-017 | Knowledge article summary never updated during refresh | 2 | Fixed | [Detail](bugs/BUG-017.md) |
 | BUG-018 | Backlog page never passes sprints to StoryTable | 3 | Fixed | [Detail](bugs/BUG-018.md) |
 | BUG-019 | Sprint board SPRINT_PLANNED creates impossible transitions | 3 | Fixed | [Detail](bugs/BUG-019.md) |
-| BUG-020 | Org connection isSyncing always false | 4 | Fixed | [Detail](bugs/BUG-020.md) |
-| BUG-021 | Brownfield pipeline stepper never shows running state | 4 | Fixed | [Detail](bugs/BUG-021.md) |
-| BUG-022 | Analyze Org button visible to all roles, errors for non-SA | 4 | Fixed | [Detail](bugs/BUG-022.md) |
-| BUG-023 | Document generation progress has polling race condition | 5 | Fixed | [Detail](bugs/BUG-023.md) |
+| BUG-020 | Org connection isSyncing always false | 4 | Open | [Detail](bugs/BUG-020.md) |
+| BUG-021 | Brownfield pipeline stepper never shows running state | 4 | Open | [Detail](bugs/BUG-021.md) |
+| BUG-022 | Analyze Org button visible to all roles, errors for non-SA | 4 | Open | [Detail](bugs/BUG-022.md) |
+| BUG-023 | Document generation progress has polling race condition | 5 | Open | [Detail](bugs/BUG-023.md) |
 | BUG-024 | No UI to create test cases — QA tab dead end | 5 | Fixed | [Detail](bugs/BUG-024.md) |
 | BUG-025 | Revisited STORY_SESSION conversations broken — epicId URL-only | 7 | Fixed | [Detail](bugs/BUG-025.md) |
-| BUG-032 | Project switcher dropdown doesn't match single-project workflow | 1 | Fixed | [Detail](bugs/BUG-032.md) |
+| BUG-032 | Project switcher dropdown doesn't match single-project workflow | 1 | Open | [Detail](bugs/BUG-032.md) |
 
 ### LOW
 
 | ID | Title | Phase | Status | Detail |
 |----|-------|-------|--------|--------|
-| BUG-026 | OAuth CSRF error redirects to root with unhandled param | 4 | Fixed | [Detail](bugs/BUG-026.md) |
+| BUG-026 | OAuth CSRF error redirects to root with unhandled param | 4 | Open | [Detail](bugs/BUG-026.md) |
 | BUG-027 | bulkConfirmHighConfidence confirms ALL records | 4 | Fixed | [Detail](bugs/BUG-027.md) |
-| BUG-028 | PM Dashboard accessible by URL, shows infinite loading | 5 | Fixed | [Detail](bugs/BUG-028.md) |
-| BUG-029 | Jira disconnect is a no-op placeholder | 5 | Fixed | [Detail](bugs/BUG-029.md) |
+| BUG-028 | PM Dashboard accessible by URL, shows infinite loading | 5 | Open | [Detail](bugs/BUG-028.md) |
+| BUG-029 | Jira disconnect is a no-op placeholder | 5 | Open | [Detail](bugs/BUG-029.md) |
 | BUG-030 | Document detail nests anchor inside button | 5 | Fixed | [Detail](bugs/BUG-030.md) |
 | BUG-031 | Sidebar fallback paths 404 when no project active | CC | Fixed | [Detail](bugs/BUG-031.md) |

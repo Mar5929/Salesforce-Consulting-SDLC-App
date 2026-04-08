@@ -36,6 +36,7 @@ const getConversationSchema = z.object({
 
 const getConversationsSchema = z.object({
   projectId: z.string().min(1),
+  includeArchived: z.boolean().optional(),
 })
 
 const saveMessageSchema = z.object({
@@ -153,11 +154,14 @@ export const getConversation = actionClient
  */
 export const getConversations = actionClient
   .schema(getConversationsSchema)
-  .action(async ({ parsedInput: { projectId } }) => {
+  .action(async ({ parsedInput: { projectId, includeArchived } }) => {
     await getCurrentMember(projectId)
     const scoped = scopedPrisma(projectId)
 
     const conversations = await scoped.conversation.findMany({
+      where: {
+        ...(includeArchived ? {} : { isArchived: false }),
+      },
       orderBy: { updatedAt: "desc" },
       include: {
         _count: { select: { messages: true } },
@@ -194,6 +198,93 @@ export const getSessionTokenTotals = actionClient
       totalTokens: (result._sum.inputTokens ?? 0) + (result._sum.outputTokens ?? 0),
       totalCost: result._sum.cost ?? 0,
     }
+  })
+
+// ============================================================================
+// Conversation Lifecycle (Archive, Rename)
+// ============================================================================
+
+const archiveConversationSchema = z.object({
+  projectId: z.string().min(1),
+  conversationId: z.string().min(1),
+})
+
+/**
+ * Archive a conversation — hides it from the default conversation list.
+ * Archived conversations can be restored via unarchiveConversation.
+ */
+export const archiveConversation = actionClient
+  .schema(archiveConversationSchema)
+  .action(async ({ parsedInput: { projectId, conversationId } }) => {
+    await getCurrentMember(projectId)
+    const scoped = scopedPrisma(projectId)
+
+    const conversation = await scoped.conversation.findFirst({
+      where: { id: conversationId },
+    })
+    if (!conversation) throw new Error("Conversation not found")
+
+    const updated = await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { isArchived: true },
+    })
+
+    return updated
+  })
+
+const unarchiveConversationSchema = z.object({
+  projectId: z.string().min(1),
+  conversationId: z.string().min(1),
+})
+
+/**
+ * Unarchive a conversation — restores it to the default conversation list.
+ */
+export const unarchiveConversation = actionClient
+  .schema(unarchiveConversationSchema)
+  .action(async ({ parsedInput: { projectId, conversationId } }) => {
+    await getCurrentMember(projectId)
+    const scoped = scopedPrisma(projectId)
+
+    const conversation = await scoped.conversation.findFirst({
+      where: { id: conversationId },
+    })
+    if (!conversation) throw new Error("Conversation not found")
+
+    const updated = await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { isArchived: false },
+    })
+
+    return updated
+  })
+
+const renameConversationSchema = z.object({
+  projectId: z.string().min(1),
+  conversationId: z.string().min(1),
+  title: z.string().min(1).max(100),
+})
+
+/**
+ * Rename a conversation title.
+ */
+export const renameConversation = actionClient
+  .schema(renameConversationSchema)
+  .action(async ({ parsedInput: { projectId, conversationId, title } }) => {
+    await getCurrentMember(projectId)
+    const scoped = scopedPrisma(projectId)
+
+    const conversation = await scoped.conversation.findFirst({
+      where: { id: conversationId },
+    })
+    if (!conversation) throw new Error("Conversation not found")
+
+    const updated = await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { title },
+    })
+
+    return updated
   })
 
 // ============================================================================
