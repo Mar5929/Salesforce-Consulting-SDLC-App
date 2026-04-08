@@ -8,16 +8,25 @@
  * Threat mitigation: T-05-14 (PM/SA role verified in server action)
  */
 
+import { notFound } from "next/navigation"
+import { getCurrentMember } from "@/lib/auth"
 import { PmDashboardClient } from "./pm-dashboard-client"
 
 interface PmDashboardPageProps {
   params: Promise<{ projectId: string }>
 }
 
+const ALLOWED_ROLES = ["PM", "SOLUTION_ARCHITECT"]
+
 export default async function PmDashboardPage({
   params,
 }: PmDashboardPageProps) {
   const { projectId } = await params
+
+  const member = await getCurrentMember(projectId)
+  if (!ALLOWED_ROLES.includes(member.role)) {
+    notFound()
+  }
 
   return (
     <div>
