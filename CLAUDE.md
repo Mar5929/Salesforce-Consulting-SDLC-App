@@ -261,7 +261,7 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 - **Login URL:** http://localhost:3000/sign-in
 - **Bug output:** `.planning/bugs/` (local files)
 - **Bug index:** `.planning/BUGS.md`
-- **Next bug ID:** BUG-034
+- **Next bug ID:** BUG-048
 - **Context files:** `.planning/` folder (PRD, tech spec, requirements, roadmap)
 
 ## Bug Triage Output

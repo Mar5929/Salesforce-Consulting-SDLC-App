@@ -156,7 +156,7 @@ export function EnrichmentSuggestionCards({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 w-7 p-0 text-red-500 hover:bg-red-50 hover:text-red-600"
+                  className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive/80"
                   onClick={() => handleReject(suggestion.suggestionId)}
                   disabled={state === "accepting"}
                   aria-label="Reject suggestion"

@@ -214,7 +214,7 @@ export function ChatInterface({
                   </>
                 ) : (
                   <>
-                    <XCircle className="h-4 w-4 text-red-500" />
+                    <XCircle className="h-4 w-4 text-destructive" />
                     <p className="text-muted-foreground text-[13px]">
                       This session failed. You can retry by creating a new session.
                     </p>
