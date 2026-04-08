@@ -44,6 +44,13 @@ export function ProjectSwitcher() {
     fetchProjects()
   }, [])
 
+  // Auto-navigate to sole project when no project is active
+  useEffect(() => {
+    if (projects.length === 1 && !activeProjectId) {
+      router.replace(`/projects/${projects[0].id}`)
+    }
+  }, [projects, activeProjectId, router])
+
   function handleSelect(projectId: string) {
     startTransition(() => {
       router.push(`/projects/${projectId}`)
@@ -54,6 +61,18 @@ export function ProjectSwitcher() {
     return (
       <div className="px-4 py-3">
         <div className="h-5 w-28 animate-pulse rounded bg-muted" />
+      </div>
+    )
+  }
+
+  // Single project: static display, no dropdown needed
+  if (projects.length === 1) {
+    return (
+      <div className="px-4 py-3">
+        <div className="px-2 py-1.5">
+          <div className="text-sm font-semibold truncate">{projects[0].name}</div>
+          <div className="text-xs text-muted-foreground">{projects[0].clientName}</div>
+        </div>
       </div>
     )
   }
