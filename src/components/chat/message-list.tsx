@@ -43,6 +43,7 @@ interface MessageListProps {
     storyId: string
   }
   onAllEnrichmentsResolved?: () => void
+  addToolApprovalResponse?: (params: { id: string; approved: boolean }) => void
 }
 
 function formatDateGroup(date: Date): string {

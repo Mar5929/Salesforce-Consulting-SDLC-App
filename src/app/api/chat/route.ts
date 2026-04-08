@@ -1,5 +1,5 @@
 import { anthropic } from "@ai-sdk/anthropic"
-import { streamText, tool, convertToModelMessages } from "ai"
+import { streamText, tool, convertToModelMessages, stepCountIs } from "ai"
 import { z } from "zod"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
@@ -11,6 +11,7 @@ import {
   buildChatSystemPrompt,
 } from "@/lib/agent-harness/context/chat-context"
 import { calculateCost, DEFAULT_MODEL } from "@/lib/config/ai-pricing"
+import { buildToolsForRole, buildAgenticSystemPrompt } from "@/lib/chat-tools"
 import { getStoriesContext } from "@/lib/agent-harness/context/stories-context"
 import { getProjectSummary } from "@/lib/agent-harness/context/project-summary"
 import { buildBriefingSessionPrompt } from "@/lib/chat-sessions/briefing"
@@ -83,6 +84,9 @@ export async function POST(request: Request) {
 
     // Verify project membership (T-02-09, T-02-10)
     const member = await getCurrentMember(projectId)
+
+    // Build role-scoped tools for this user (D-08, D-10)
+    const agenticTools = buildToolsForRole(member.role, projectId, member.id)
 
     // Verify conversation belongs to this project (T-02-10)
     const conversation = await prisma.conversation.findFirst({
@@ -157,19 +161,8 @@ export async function POST(request: Request) {
         systemPrompt = buildChatSystemPrompt(context)
       }
     } else {
-      // General chat: use smart context assembly with all 7 data sources + search
-      const lastUserMsg = messages[messages.length - 1]
-      const userText =
-        typeof lastUserMsg?.content === "string"
-          ? lastUserMsg.content
-          : Array.isArray(lastUserMsg?.parts)
-            ? lastUserMsg.parts
-                .filter((p: { type: string }) => p.type === "text")
-                .map((p: { text: string }) => p.text)
-                .join("")
-            : ""
-      const smartContext = await assembleEnhancedChatContext(projectId, userText)
-      systemPrompt = buildSmartChatSystemPrompt(smartContext)
+      // General chat: lean agentic prompt — tools provide data on demand (D-15)
+      systemPrompt = await buildAgenticSystemPrompt(projectId)
     }
 
     // Configure tools based on conversation type
@@ -220,11 +213,12 @@ export async function POST(request: Request) {
       model: anthropic("claude-sonnet-4-20250514"),
       system: systemPrompt,
       messages: modelMessages,
-      ...(isStorySession
-        ? { tools: { create_story_draft: storyDraftTool } }
-        : isEnrichmentSession
-          ? { tools: { create_enrichment_suggestion: enrichmentSuggestionTool } }
-          : {}),
+      tools: {
+        ...agenticTools,
+        ...(isStorySession ? { create_story_draft: storyDraftTool } : {}),
+        ...(isEnrichmentSession ? { create_enrichment_suggestion: enrichmentSuggestionTool } : {}),
+      },
+      stopWhen: stepCountIs(15),
       onFinish: async ({ text, totalUsage, toolCalls }) => {
         // Save AI response to DB with token usage
         const inputTokens = totalUsage.inputTokens ?? 0

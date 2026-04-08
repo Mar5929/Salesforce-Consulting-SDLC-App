@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, type KeyboardEvent } from "react"
 import { useChat, type UIMessage } from "@ai-sdk/react"
-import { DefaultChatTransport } from "ai"
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses } from "ai"
 import { ArrowUp, AlertCircle, RefreshCw, CheckCircle2, XCircle } from "lucide-react"
 import { getSessionTokenTotals, completeSession } from "@/actions/conversations"
 import { Button } from "@/components/ui/button"
@@ -42,13 +42,14 @@ export function ChatInterface({
   const [inputValue, setInputValue] = useState("")
   const [currentStatus, setCurrentStatus] = useState(sessionStatus)
 
-  const { messages, sendMessage, status, error, clearError } = useChat({
+  const { messages, sendMessage, status, error, clearError, addToolApprovalResponse } = useChat({
     id: conversationId,
     transport: new DefaultChatTransport({
       api: "/api/chat",
       body: { projectId, conversationId, ...(epicId && { epicId }), ...(featureId && { featureId }), ...(storyId && { storyId }) },
     }),
     messages: initialMessages,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onError: (err) => {
       console.error("[Chat Error]", err)
     },
@@ -173,6 +174,7 @@ export function ChatInterface({
               storySession={conversationType === "STORY_SESSION" ? { projectId, epicId: epicId ?? "", featureId } : undefined}
               enrichmentSession={conversationType === "ENRICHMENT_SESSION" && storyId ? { projectId, storyId } : undefined}
               onAllEnrichmentsResolved={conversationType === "ENRICHMENT_SESSION" ? handleAutoComplete : undefined}
+              addToolApprovalResponse={addToolApprovalResponse}
             />
           )}
 
