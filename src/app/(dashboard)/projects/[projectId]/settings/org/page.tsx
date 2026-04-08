@@ -37,12 +37,15 @@ export default async function OrgSettingsPage({
   const currentMember = await getCurrentMember(projectId)
   const canManage = ["SOLUTION_ARCHITECT", "PM"].includes(currentMember.role)
 
-  const [componentCount, syncRuns] = await Promise.all([
+  const [componentCount, syncRuns, activeSyncRun] = await Promise.all([
     prisma.orgComponent.count({ where: { projectId } }),
     prisma.orgSyncRun.findMany({
       where: { projectId },
       orderBy: { startedAt: "desc" },
       take: 5,
+    }),
+    prisma.orgSyncRun.findFirst({
+      where: { projectId, status: { in: ["PENDING", "RUNNING"] } },
     }),
   ])
 
@@ -75,7 +78,7 @@ export default async function OrgSettingsPage({
           componentCount={componentCount}
           isConnected={isConnected}
           needsReauth={needsReauth}
-          isSyncing={false}
+          isSyncing={!!activeSyncRun}
           projectId={projectId}
           canManage={canManage}
         />
