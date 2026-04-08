@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback, type KeyboardEvent } from "react"
+import { useState, useEffect, useCallback, useRef, type KeyboardEvent } from "react"
+import { useRouter } from "next/navigation"
 import { useChat, type UIMessage } from "@ai-sdk/react"
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses } from "ai"
 import { ArrowUp, AlertCircle, RefreshCw, CheckCircle2, XCircle } from "lucide-react"
@@ -41,6 +42,8 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState("")
   const [currentStatus, setCurrentStatus] = useState(sessionStatus)
+  const router = useRouter()
+  const prevMessageCountRef = useRef(0)
 
   const { messages, sendMessage, status, error, clearError, addToolApprovalResponse } = useChat({
     id: conversationId,
@@ -56,6 +59,26 @@ export function ChatInterface({
   })
 
   const isLoading = status === "submitted" || status === "streaming"
+
+  // ACHAT-17: Revalidate page data after mutation tool calls complete
+  // Detects when streaming stops and new messages with mutation tool calls appeared
+  const MUTATION_PREFIXES = ["create_", "update_", "delete_", "batch_"]
+  useEffect(() => {
+    if (isLoading || messages.length <= prevMessageCountRef.current) {
+      prevMessageCountRef.current = messages.length
+      return
+    }
+    const newMessages = messages.slice(prevMessageCountRef.current)
+    prevMessageCountRef.current = messages.length
+    const hasMutation = newMessages.some((m) =>
+      m.parts?.some((p: { type: string }) =>
+        MUTATION_PREFIXES.some((prefix) => p.type.startsWith(`tool-${prefix}`))
+      )
+    )
+    if (hasMutation) {
+      router.refresh()
+    }
+  }, [isLoading, messages, router])
 
   // Auto-complete briefing sessions after first AI response finishes
   const [briefingAutoCompleted, setBriefingAutoCompleted] = useState(false)
