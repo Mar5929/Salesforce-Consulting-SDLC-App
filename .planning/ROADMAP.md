@@ -227,7 +227,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 **Plans**: 5 plans
 
 Plans:
-- [ ] 10-01-PLAN.md -- Conversation sidebar UI, chat layout, schema migration (isArchived), lifecycle server actions
+- [x] 10-01-PLAN.md -- Conversation sidebar UI, chat layout, schema migration (isArchived), lifecycle server actions
 - [ ] 10-02-PLAN.md -- BRIEFING_SESSION and ENRICHMENT_SESSION: task definitions, prompt builders, UI components, entry points
 - [ ] 10-03-PLAN.md -- QUESTION_SESSION hybrid (Inngest background + interactive), session lifecycle management
 - [ ] 10-04-PLAN.md -- Smart context retrieval: two-pass semantic + keyword search, full project data assembly

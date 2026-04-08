@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { FolderKanban, MessageSquare, Settings, Users, CircleHelp, FileText, BookOpen, LayoutDashboard, Layers, Inbox, Timer, Cloud, Microscope, FileOutput, Bug, BarChart3, type LucideIcon } from "lucide-react"
+import { FolderKanban, MessageSquare, Settings, Users, CircleHelp, FileText, BookOpen, LayoutDashboard, Layers, Inbox, Timer, Map, Cloud, Microscope, FileOutput, Bug, BarChart3, type LucideIcon } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ProjectSwitcher } from "@/components/layout/project-switcher"
 import { UserMenu } from "@/components/layout/user-menu"
@@ -110,6 +110,15 @@ function buildNavItems(activeProjectId?: string, questionReviewCount?: number, o
       phase: 3,
       disabled: !activeProjectId,
       roles: ["PM", "SOLUTION_ARCHITECT"],
+    },
+    {
+      label: "Roadmap",
+      icon: Map,
+      href: activeProjectId
+        ? `/projects/${activeProjectId}/roadmap`
+        : "#",
+      phase: 12,
+      disabled: !activeProjectId,
     },
     {
       label: "Org",
