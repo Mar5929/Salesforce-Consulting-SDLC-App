@@ -166,7 +166,7 @@ export function ChatInterface({
     (isReadOnly ? "Transcript Session" : isTaskSession ? "Task Session" : "Project Chat")
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Header */}
       <div className="border-border flex items-center justify-between border-b px-4 py-3">
         <h1 className="text-[18px] font-semibold">{title}</h1>
@@ -187,7 +187,7 @@ export function ChatInterface({
       {/* Content area */}
       <div className="flex min-h-0 flex-1">
         {/* Messages */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {messages.length === 0 && !isLoading ? (
             <EmptyState />
           ) : (

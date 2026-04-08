@@ -34,7 +34,7 @@ export function AppShell({
             <NotificationBell projectId={activeProjectId} />
           </header>
         )}
-        <main className="flex-1 overflow-y-auto bg-white px-8 pt-6">
+        <main className="min-h-0 flex-1 overflow-y-auto bg-white px-8 pt-6">
           {children}
         </main>
       </div>

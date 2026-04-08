@@ -17,12 +17,12 @@ export function ChatLayout({
   children,
 }: ChatLayoutProps) {
   return (
-    <div className="flex h-full">
+    <div className="flex h-full overflow-hidden">
       <ConversationSidebar
         projectId={projectId}
         conversations={conversations}
       />
-      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
     </div>
   )
 }

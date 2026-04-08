@@ -84,7 +84,7 @@ export function MessageList({ messages, isLoading, storySession, enrichmentSessi
   const grouped = groupMessagesByDate(messages)
 
   return (
-    <ScrollArea className="flex-1" ref={scrollRef}>
+    <ScrollArea className="min-h-0 flex-1" ref={scrollRef}>
       <div className="flex flex-col gap-4 p-4">
         {Array.from(grouped.entries()).map(([dateKey, msgs]) => {
           const date = new Date(dateKey)
