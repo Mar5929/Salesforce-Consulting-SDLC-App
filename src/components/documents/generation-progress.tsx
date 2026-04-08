@@ -38,27 +38,21 @@ export function GenerationProgress({
   const [completed, setCompleted] = useState(false)
   const pollCountRef = useRef(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const initialDocCountRef = useRef<number | null>(null)
+  // Capture generation start time on mount to detect documents created after this point
+  const generationStartTimeRef = useRef<number>(Date.now())
 
   const { execute: fetchDocuments } = useAction(getDocuments, {
     onSuccess: ({ data }) => {
       if (!data) return
 
-      // On first poll, record the initial document count
-      if (initialDocCountRef.current === null) {
-        initialDocCountRef.current = data.length
-        return
-      }
-
-      // Check if a new document appeared with matching template
+      // Check if a document matching the template was created after generation started
       const newDoc = data.find(
         (doc) =>
           doc.templateUsed === templateId &&
-          new Date(doc.createdAt).getTime() >
-            Date.now() - 5 * 60 * 1000 // within last 5 minutes
+          new Date(doc.createdAt).getTime() > generationStartTimeRef.current
       )
 
-      if (newDoc && data.length > initialDocCountRef.current) {
+      if (newDoc) {
         setCompleted(true)
         setProgress(100)
         setCurrentStep(sections.length)
@@ -76,6 +70,10 @@ export function GenerationProgress({
       // Silently continue polling on error
     },
   })
+
+  // Stable ref for fetchDocuments to avoid interval restarts on re-renders
+  const fetchDocumentsRef = useRef(fetchDocuments)
+  fetchDocumentsRef.current = fetchDocuments
 
   // Simulate progress and poll for completion
   useEffect(() => {
@@ -99,7 +97,7 @@ export function GenerationProgress({
       setProgress(simulatedProgress)
 
       // Poll for actual completion
-      fetchDocuments({ projectId })
+      fetchDocumentsRef.current({ projectId })
 
       // Timeout after 2 minutes (40 polls at 3s)
       if (pollCountRef.current > 40) {
@@ -116,14 +114,14 @@ export function GenerationProgress({
         clearInterval(intervalRef.current)
       }
     }
-  }, [sections.length, projectId, fetchDocuments])
+  }, [sections.length, projectId])
 
   const handleRetry = useCallback(() => {
     setError(null)
     setProgress(10)
     setCurrentStep(0)
     pollCountRef.current = 0
-    initialDocCountRef.current = null
+    generationStartTimeRef.current = Date.now()
   }, [])
 
   if (error) {
