@@ -22,6 +22,7 @@ import { OutstandingQuestions } from "@/components/dashboard/outstanding-questio
 import { BlockedItems } from "@/components/dashboard/blocked-items"
 import { AiSummaryCard } from "@/components/dashboard/ai-summary-card"
 import { EmptyState } from "@/components/shared/empty-state"
+import { GenerateBriefingButton } from "@/components/dashboard/generate-briefing-button"
 
 interface DashboardPageProps {
   params: Promise<{ projectId: string }>
@@ -67,9 +68,12 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   return (
     <div>
-      <h1 className="text-[24px] font-semibold text-foreground">
-        Discovery Dashboard
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-[24px] font-semibold text-foreground">
+          Discovery Dashboard
+        </h1>
+        <GenerateBriefingButton projectId={projectId} />
+      </div>
 
       {/* Top row: Health Score (left) + Current Focus (right) */}
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">

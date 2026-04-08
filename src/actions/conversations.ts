@@ -332,6 +332,81 @@ export const initiateStorySession = actionClient
   })
 
 // ============================================================================
+// Briefing Session
+// ============================================================================
+
+const initiateBriefingSessionSchema = z.object({
+  projectId: z.string().min(1),
+})
+
+/**
+ * Create a BRIEFING_SESSION conversation for AI project briefing generation.
+ * Called from the "Generate Briefing" button on the dashboard.
+ * Returns the conversationId for redirect to chat page.
+ */
+export const initiateBriefingSession = actionClient
+  .schema(initiateBriefingSessionSchema)
+  .action(async ({ parsedInput: { projectId } }) => {
+    const member = await getCurrentMember(projectId)
+
+    const dateStr = new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+
+    const conversation = await prisma.conversation.create({
+      data: {
+        projectId,
+        conversationType: "BRIEFING_SESSION",
+        title: `Project Briefing — ${dateStr}`,
+        createdById: member.id,
+      },
+    })
+
+    return { conversationId: conversation.id }
+  })
+
+// ============================================================================
+// Enrichment Session
+// ============================================================================
+
+const initiateEnrichmentSessionSchema = z.object({
+  projectId: z.string().min(1),
+  storyId: z.string().min(1),
+})
+
+/**
+ * Create an ENRICHMENT_SESSION conversation for AI story enrichment.
+ * Called from the "Enrich with AI" button on story detail pages.
+ * Returns the conversationId for redirect to chat page.
+ */
+export const initiateEnrichmentSession = actionClient
+  .schema(initiateEnrichmentSessionSchema)
+  .action(async ({ parsedInput: { projectId, storyId } }) => {
+    const member = await getCurrentMember(projectId)
+
+    // Look up story title for a descriptive conversation title
+    const story = await prisma.story.findUnique({
+      where: { id: storyId },
+      select: { title: true, displayId: true },
+    })
+    const storyLabel = story ? `${story.displayId}: ${story.title}` : "Story"
+
+    const conversation = await prisma.conversation.create({
+      data: {
+        projectId,
+        conversationType: "ENRICHMENT_SESSION",
+        title: `Enrich — ${storyLabel}`,
+        createdById: member.id,
+        metadata: { storyId },
+      },
+    })
+
+    return { conversationId: conversation.id, storyId }
+  })
+
+// ============================================================================
 // Messages
 // ============================================================================
 

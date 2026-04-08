@@ -14,11 +14,12 @@ import { ContextPanel } from "./context-panel"
 interface ChatInterfaceProps {
   conversationId: string
   projectId: string
-  conversationType: "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION" | "TRANSCRIPT_SESSION"
+  conversationType: "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION" | "TRANSCRIPT_SESSION" | "BRIEFING_SESSION" | "ENRICHMENT_SESSION"
   initialMessages?: UIMessage[]
   sessionTitle?: string
   epicId?: string
   featureId?: string
+  storyId?: string
 }
 
 /**
@@ -34,6 +35,7 @@ export function ChatInterface({
   sessionTitle,
   epicId,
   featureId,
+  storyId,
 }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState("")
 
@@ -41,7 +43,7 @@ export function ChatInterface({
     id: conversationId,
     transport: new DefaultChatTransport({
       api: "/api/chat",
-      body: { projectId, conversationId, ...(epicId && { epicId }), ...(featureId && { featureId }) },
+      body: { projectId, conversationId, ...(epicId && { epicId }), ...(featureId && { featureId }), ...(storyId && { storyId }) },
     }),
     messages: initialMessages,
     onError: (err) => {
@@ -95,7 +97,7 @@ export function ChatInterface({
     ),
   }))
 
-  const isTaskSession = conversationType === "TASK_SESSION" || conversationType === "STORY_SESSION"
+  const isTaskSession = conversationType === "TASK_SESSION" || conversationType === "STORY_SESSION" || conversationType === "BRIEFING_SESSION" || conversationType === "ENRICHMENT_SESSION"
   const isReadOnly = conversationType === "TRANSCRIPT_SESSION"
   const title =
     sessionTitle ??
@@ -123,6 +125,7 @@ export function ChatInterface({
               messages={flatMessages}
               isLoading={isLoading}
               storySession={conversationType === "STORY_SESSION" ? { projectId, epicId: epicId ?? "", featureId } : undefined}
+              enrichmentSession={conversationType === "ENRICHMENT_SESSION" && storyId ? { projectId, storyId } : undefined}
             />
           )}
 

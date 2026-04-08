@@ -10,11 +10,15 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, Sparkles, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TestExecutionTable } from "@/components/qa/test-execution-table"
 import { DefectCreateSheet } from "@/components/defects/defect-create-sheet"
+import { initiateEnrichmentSession } from "@/actions/conversations"
+import { toast } from "sonner"
 
 // ────────────────────────────────────────────
 // Types
@@ -87,7 +91,9 @@ export function StoryDetailClient({
   defaultTab,
   openDefectCount,
 }: StoryDetailClientProps) {
+  const router = useRouter()
   const [defectSheetOpen, setDefectSheetOpen] = useState(false)
+  const [enrichLoading, setEnrichLoading] = useState(false)
   const [defectPrefill, setDefectPrefill] = useState<{
     storyId?: string
     testCaseId?: string
@@ -95,6 +101,22 @@ export function StoryDetailClient({
   }>({})
 
   const backHref = `/projects/${projectId}/work/${epicId}/${featureId}`
+
+  async function handleEnrichWithAI() {
+    setEnrichLoading(true)
+    try {
+      const result = await initiateEnrichmentSession({ projectId, storyId: story.id })
+      if (result?.data?.conversationId) {
+        router.push(`/projects/${projectId}/chat/${result.data.conversationId}`)
+      } else {
+        toast.error("Failed to create enrichment session")
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create enrichment session")
+    } finally {
+      setEnrichLoading(false)
+    }
+  }
 
   function handleCreateDefectFromTest(testCase: {
     id: string
@@ -121,12 +143,28 @@ export function StoryDetailClient({
 
       {/* Title and metadata */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-[24px] font-semibold text-foreground">
-          <span className="mr-2 font-mono text-[18px] text-muted-foreground">
-            {story.displayId}
-          </span>
-          {story.title}
-        </h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-[24px] font-semibold text-foreground">
+            <span className="mr-2 font-mono text-[18px] text-muted-foreground">
+              {story.displayId}
+            </span>
+            {story.title}
+          </h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEnrichWithAI}
+            disabled={enrichLoading}
+            className="shrink-0 gap-1.5"
+          >
+            {enrichLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            Enrich with AI
+          </Button>
+        </div>
         <div className="flex items-center gap-3">
           <Badge
             variant="outline"

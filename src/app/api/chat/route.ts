@@ -11,6 +11,8 @@ import {
 import { calculateCost, DEFAULT_MODEL } from "@/lib/config/ai-pricing"
 import { getStoriesContext } from "@/lib/agent-harness/context/stories-context"
 import { getProjectSummary } from "@/lib/agent-harness/context/project-summary"
+import { buildBriefingSessionPrompt } from "@/lib/chat-sessions/briefing"
+import { buildEnrichmentSessionPrompt } from "@/lib/chat-sessions/enrichment"
 
 export const maxDuration = 60
 
@@ -68,7 +70,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { messages, projectId, conversationId, epicId, featureId } = body
+    const { messages, projectId, conversationId, epicId, featureId, storyId } = body
 
     if (!projectId || !conversationId) {
       return new Response("Missing projectId or conversationId", {
@@ -122,10 +124,11 @@ export async function POST(request: Request) {
     // Determine system prompt based on conversation type
     let systemPrompt: string
 
-    // Resolve epicId/featureId: prefer request body, fall back to persisted metadata
+    // Resolve epicId/featureId/storyId: prefer request body, fall back to persisted metadata
     const meta = (conversation.metadata ?? {}) as Record<string, string | undefined>
     const resolvedEpicId = epicId ?? meta.epicId
     const resolvedFeatureId = featureId ?? meta.featureId
+    const resolvedStoryId = storyId ?? meta.storyId
 
     if (conversation.conversationType === "STORY_SESSION" && resolvedEpicId) {
       // Story generation session: use story generation task's prompt with context
@@ -134,6 +137,12 @@ export async function POST(request: Request) {
         resolvedEpicId,
         resolvedFeatureId || undefined
       )
+    } else if (conversation.conversationType === "BRIEFING_SESSION") {
+      // Briefing session: generate project briefing as markdown
+      systemPrompt = await buildBriefingSessionPrompt(projectId)
+    } else if (conversation.conversationType === "ENRICHMENT_SESSION" && resolvedStoryId) {
+      // Enrichment session: suggest story improvements via tool calls
+      systemPrompt = await buildEnrichmentSessionPrompt(projectId, resolvedStoryId)
     } else {
       // General chat: use standard context assembly (T-02-11)
       const context = await assembleGeneralChatContext(projectId)
@@ -142,6 +151,25 @@ export async function POST(request: Request) {
 
     // Configure tools based on conversation type
     const isStorySession = conversation.conversationType === "STORY_SESSION"
+    const isEnrichmentSession = conversation.conversationType === "ENRICHMENT_SESSION"
+
+    const enrichmentSuggestionTool = tool({
+      description:
+        "Propose an improvement to a specific aspect of the story. The user will see this as a reviewable card they can accept or reject.",
+      inputSchema: z.object({
+        category: z.enum([
+          "ACCEPTANCE_CRITERIA",
+          "DESCRIPTION",
+          "COMPONENTS",
+          "TECHNICAL_NOTES",
+          "STORY_POINTS",
+          "PRIORITY",
+        ]).describe("Which aspect of the story to improve"),
+        currentValue: z.string().optional().describe("The current value (or 'empty' if not set)"),
+        suggestedValue: z.string().describe("The proposed new value"),
+        reasoning: z.string().describe("Why this improvement is recommended"),
+      }),
+    })
 
     const storyDraftTool = tool({
       description:
@@ -171,7 +199,9 @@ export async function POST(request: Request) {
       messages: modelMessages,
       ...(isStorySession
         ? { tools: { create_story_draft: storyDraftTool } }
-        : {}),
+        : isEnrichmentSession
+          ? { tools: { create_enrichment_suggestion: enrichmentSuggestionTool } }
+          : {}),
       onFinish: async ({ text, totalUsage, toolCalls }) => {
         // Save AI response to DB with token usage
         const inputTokens = totalUsage.inputTokens ?? 0

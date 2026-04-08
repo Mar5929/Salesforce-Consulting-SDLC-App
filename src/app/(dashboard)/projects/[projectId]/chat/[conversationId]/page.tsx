@@ -7,7 +7,7 @@ import type { UIMessage } from "ai"
 
 interface ConversationPageProps {
   params: Promise<{ projectId: string; conversationId: string }>
-  searchParams: Promise<{ epicId?: string; featureId?: string }>
+  searchParams: Promise<{ epicId?: string; featureId?: string; storyId?: string }>
 }
 
 /**
@@ -24,7 +24,7 @@ export default async function ConversationPage({
   searchParams,
 }: ConversationPageProps) {
   const { projectId, conversationId } = await params
-  const { epicId, featureId } = await searchParams
+  const { epicId, featureId, storyId } = await searchParams
 
   const result = await getConversation({ conversationId, projectId })
 
@@ -54,15 +54,18 @@ export default async function ConversationPage({
   const meta = (conversation.metadata ?? {}) as Record<string, string | undefined>
   const resolvedEpicId = epicId ?? meta.epicId
   const resolvedFeatureId = featureId ?? meta.featureId
+  const resolvedStoryId = storyId ?? meta.storyId
 
   // Map DB conversation type to ChatInterface variant
-  const chatType = conversation.conversationType === "GENERAL_CHAT"
-    ? "GENERAL_CHAT"
-    : conversation.conversationType === "STORY_SESSION"
-      ? "STORY_SESSION"
-      : conversation.conversationType === "TRANSCRIPT_SESSION"
-        ? "TRANSCRIPT_SESSION"
-        : "TASK_SESSION"
+  type ChatType = "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION" | "TRANSCRIPT_SESSION" | "BRIEFING_SESSION" | "ENRICHMENT_SESSION"
+  const chatTypeMap: Record<string, ChatType> = {
+    GENERAL_CHAT: "GENERAL_CHAT",
+    STORY_SESSION: "STORY_SESSION",
+    TRANSCRIPT_SESSION: "TRANSCRIPT_SESSION",
+    BRIEFING_SESSION: "BRIEFING_SESSION",
+    ENRICHMENT_SESSION: "ENRICHMENT_SESSION",
+  }
+  const chatType = chatTypeMap[conversation.conversationType] ?? "TASK_SESSION"
 
   // Convert DB messages to UIMessage format
   const initialMessages: UIMessage[] = conversation.messages.map((msg) => ({
@@ -90,6 +93,7 @@ export default async function ConversationPage({
       sessionTitle={conversation.title ?? undefined}
       epicId={resolvedEpicId}
       featureId={resolvedFeatureId}
+      storyId={resolvedStoryId}
     />
   )
 }

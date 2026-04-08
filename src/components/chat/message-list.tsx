@@ -6,7 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { MessageBubble } from "./message-bubble"
 import { StoryDraftCards } from "@/components/work/story-draft-cards"
+import { EnrichmentSuggestionCards, type EnrichmentSuggestionData } from "./enrichment-suggestion-cards"
 import type { StoryDraft } from "@/lib/agent-harness/tools/create-story-draft"
+import type { EnrichmentCategory } from "@/lib/agent-harness/tools/create-enrichment-suggestion"
 
 interface ToolInvocationPart {
   type: "tool-invocation"
@@ -36,6 +38,11 @@ interface MessageListProps {
     epicId: string
     featureId?: string
   }
+  enrichmentSession?: {
+    projectId: string
+    storyId: string
+  }
+  onAllEnrichmentsResolved?: () => void
 }
 
 function formatDateGroup(date: Date): string {
@@ -58,7 +65,7 @@ function groupMessagesByDate(
   return groups
 }
 
-export function MessageList({ messages, isLoading, storySession }: MessageListProps) {
+export function MessageList({ messages, isLoading, storySession, enrichmentSession, onAllEnrichmentsResolved }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom on new messages
@@ -119,6 +126,22 @@ export function MessageList({ messages, isLoading, storySession }: MessageListPr
                           }))
                       : null
 
+                  const VALID_CATEGORIES = ["ACCEPTANCE_CRITERIA", "DESCRIPTION", "COMPONENTS", "TECHNICAL_NOTES", "STORY_POINTS", "PRIORITY"]
+                  const enrichmentSuggestions: EnrichmentSuggestionData[] | null =
+                    enrichmentSession && msg.toolInvocations && msg.toolInvocations.length > 0
+                      ? msg.toolInvocations
+                          .filter((t) => t.toolName === "create_enrichment_suggestion" && t.state === "call")
+                          .map((t) => ({
+                            suggestionId: t.toolInvocationId,
+                            category: (VALID_CATEGORIES.includes(String(t.args.category ?? ""))
+                              ? String(t.args.category)
+                              : "DESCRIPTION") as EnrichmentCategory,
+                            currentValue: t.args.currentValue ? String(t.args.currentValue) : null,
+                            suggestedValue: String(t.args.suggestedValue ?? ""),
+                            reasoning: String(t.args.reasoning ?? ""),
+                          }))
+                      : null
+
                   return (
                     <div key={msg.id}>
                       <MessageBubble
@@ -141,6 +164,16 @@ export function MessageList({ messages, isLoading, storySession }: MessageListPr
                             projectId={storySession.projectId}
                             epicId={storySession.epicId}
                             featureId={storySession.featureId}
+                          />
+                        </div>
+                      )}
+                      {enrichmentSession && enrichmentSuggestions && enrichmentSuggestions.length > 0 && (
+                        <div className="mt-3">
+                          <EnrichmentSuggestionCards
+                            suggestions={enrichmentSuggestions}
+                            projectId={enrichmentSession.projectId}
+                            storyId={enrichmentSession.storyId}
+                            onAllResolved={onAllEnrichmentsResolved}
                           />
                         </div>
                       )}
