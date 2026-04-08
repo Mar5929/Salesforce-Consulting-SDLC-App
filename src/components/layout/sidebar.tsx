@@ -19,7 +19,7 @@ interface NavItem {
 }
 
 /** Update this constant as build phases are completed. */
-const CURRENT_PHASE = 1
+const CURRENT_PHASE = 12
 
 interface SidebarProps {
   currentMemberRole?: string
