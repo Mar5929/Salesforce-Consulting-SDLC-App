@@ -102,7 +102,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can connect a Salesforce org via OAuth and the system performs incremental metadata sync on a schedule
   2. Brownfield ingestion pipeline processes org metadata through Parse > Classify > Synthesize > Articulate, with AI-suggested domain groupings confirmed by the architect
-  3. Claude Code can call the REST API to retrieve context packages (story details, business processes, knowledge articles, decisions, sprint conflicts) and update story status
+  3. Claude Code can call the REST API to retrieve context packages (story details, business processes, knowledge articles, related decisions, sprint conflicts) and update story status
   4. Org components are mapped to business processes with the isConfirmed pattern for human oversight
 **Plans**: 7 plans
 
@@ -215,13 +215,23 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 
 ### Phase 10: Chat Session Management and Conversation Intelligence
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** The chat system provides a ChatGPT-style conversation browsing/management UI, implements all six session types with lifecycle management, and acts as a knowledgeable project assistant drawing from all project data sources via smart retrieval
+**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14
 **Depends on:** Phase 9
-**Plans:** 0 plans
+**Success Criteria** (what must be TRUE):
+  1. Chat page has a left sidebar (320px) with filterable, searchable conversation list and pinned general chat
+  2. All six session types (GENERAL_CHAT, TRANSCRIPT_SESSION, STORY_SESSION, BRIEFING_SESSION, QUESTION_SESSION, ENRICHMENT_SESSION) are functional
+  3. Task sessions auto-complete when purpose fulfilled; failed sessions show retry; completed sessions are read-only
+  4. General chat draws from all project data sources via smart two-pass retrieval within token budget
+  5. Users can archive conversations (no delete) and access archived via filter toggle
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 10 to break down)
+- [ ] 10-01-PLAN.md -- Conversation sidebar UI, chat layout, schema migration (isArchived), lifecycle server actions
+- [ ] 10-02-PLAN.md -- BRIEFING_SESSION and ENRICHMENT_SESSION: task definitions, prompt builders, UI components, entry points
+- [ ] 10-03-PLAN.md -- QUESTION_SESSION hybrid (Inngest background + interactive), session lifecycle management
+- [ ] 10-04-PLAN.md -- Smart context retrieval: two-pass semantic + keyword search, full project data assembly
+- [ ] 10-05-PLAN.md -- Schema push and end-to-end verification
 
 ### Phase 11: Agentic Chat with Database Awareness and Project Tool Use
 
