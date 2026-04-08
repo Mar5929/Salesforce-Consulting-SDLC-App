@@ -82,16 +82,14 @@ export default async function ConversationPage({
   )
 
   return (
-    <div className="h-full">
-      <ChatInterface
-        conversationId={conversation.id}
-        projectId={projectId}
-        conversationType={chatType}
-        initialMessages={initialMessages}
-        sessionTitle={conversation.title ?? undefined}
-        epicId={resolvedEpicId}
-        featureId={resolvedFeatureId}
-      />
-    </div>
+    <ChatInterface
+      conversationId={conversation.id}
+      projectId={projectId}
+      conversationType={chatType}
+      initialMessages={initialMessages}
+      sessionTitle={conversation.title ?? undefined}
+      epicId={resolvedEpicId}
+      featureId={resolvedFeatureId}
+    />
   )
 }

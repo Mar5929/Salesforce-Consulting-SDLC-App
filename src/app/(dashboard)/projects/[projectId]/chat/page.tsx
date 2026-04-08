@@ -36,13 +36,11 @@ export default async function ChatPage({ params }: ChatPageProps) {
   }))
 
   return (
-    <div className="h-full">
-      <ChatInterface
-        conversationId={conversation.id}
-        projectId={projectId}
-        conversationType="GENERAL_CHAT"
-        initialMessages={initialMessages}
-      />
-    </div>
+    <ChatInterface
+      conversationId={conversation.id}
+      projectId={projectId}
+      conversationType="GENERAL_CHAT"
+      initialMessages={initialMessages}
+    />
   )
 }
