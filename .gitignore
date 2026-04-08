@@ -32,5 +32,9 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 
+# Playwright
+.playwright/
+.playwright-mcp/
+
 # Vercel
 .vercel

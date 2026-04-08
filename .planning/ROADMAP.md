@@ -212,3 +212,23 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | 7. Story Generation E2E Wiring | 1/1 | Complete | 2026-04-07 |
 | 8. Event Wiring and Integration Fixes | 1/1 | Complete | 2026-04-07 |
 | 9. Navigation and Badge Fixes | 1/1 | Complete | 2026-04-07 |
+
+### Phase 10: Chat Session Management and Conversation Intelligence
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 9
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 10 to break down)
+
+### Phase 11: Agentic Chat with Database Awareness and Project Tool Use
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 10
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 11 to break down)

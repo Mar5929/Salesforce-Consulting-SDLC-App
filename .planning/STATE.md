@@ -170,6 +170,11 @@ Recent decisions affecting current work:
 - [Phase 08]: No PROJECT_STATE_CHANGED in stories.ts -- story changes feed PM dashboard, not discovery dashboard (D-03)
 - [Phase 08]: No NOTIFICATION_SEND in jiraSyncRetryFunction -- SyncStatusBadge reflects JiraSyncRecord directly (D-09)
 
+### Roadmap Evolution
+
+- Phase 10 added: Chat Session Management and Conversation Intelligence
+- Phase 11 added: Agentic Chat with Database Awareness and Project Tool Use
+
 ### Pending Todos
 
 None yet.

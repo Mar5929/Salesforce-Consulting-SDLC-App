@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ENTERPRISE-READINESS-CHECKLIST.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="enterprise-readiness-checklist">Enterprise Readiness Checklist</h1>
+<h2 id="what-this-is">What This Is</h2>
+<p>This app is an internal AI-powered web application for our Salesforce consulting firm. It's our project management system, AI knowledge base, and delivery accelerator — used by PMs, BAs, QA, architects, and developers from kickoff through project completion. The AI builds a persistent &quot;project brain&quot; that gets smarter about each client engagement over time.</p>
+<p><strong>The app currently runs on my personal accounts.</strong> Before the firm can use this for real client work, we need to decide which services should move under company control. This document lays out every external dependency, the risk of leaving it as-is, and what it would take to bring it in-house.</p>
+<hr>
+<h2 id="quick-decision-matrix">Quick Decision Matrix</h2>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>What It Does</th>
+<th>Risk If Left on Personal Account</th>
+<th>Effort to Migrate</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Anthropic (Claude API)</strong></td>
+<td>Powers all AI features — transcript analysis, question answering, knowledge synthesis, chat</td>
+<td><strong>HIGH</strong> — all client data flows through this API; personal key has low rate limits and no spend controls</td>
+<td>Low (swap API key)</td>
+<td><strong>Do first</strong></td>
+</tr>
+<tr>
+<td><strong>Vercel</strong></td>
+<td>Hosts the web app and serverless functions</td>
+<td><strong>MEDIUM</strong> — production app on a hobby account has no SLA, limited bandwidth, no team access controls</td>
+<td>Low (transfer project or redeploy)</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>Neon (PostgreSQL)</strong></td>
+<td>Stores all project data, client info, knowledge articles, embeddings</td>
+<td><strong>HIGH</strong> — all client/project data lives here; personal free tier has storage limits and no backups SLA</td>
+<td>Medium (export/import DB)</td>
+<td><strong>Do first</strong></td>
+</tr>
+<tr>
+<td><strong>Clerk</strong></td>
+<td>User login, roles, permissions</td>
+<td><strong>HIGH</strong> — controls who can access the app and what they can do; no SSO integration on personal plan</td>
+<td>Medium (new Clerk org + reconfigure)</td>
+<td><strong>Do first</strong></td>
+</tr>
+<tr>
+<td><strong>AWS S3</strong></td>
+<td>Stores uploaded files and generated documents</td>
+<td><strong>MEDIUM</strong> — client documents stored in a personal AWS account</td>
+<td>Low (new bucket + copy files)</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>Inngest</strong></td>
+<td>Runs background jobs (transcript processing, embedding generation, scheduled tasks)</td>
+<td><strong>LOW</strong> — no client data stored here; just orchestrates work</td>
+<td>Low (swap keys)</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Voyage AI</strong></td>
+<td>Generates text embeddings for semantic search</td>
+<td><strong>LOW</strong> — stateless API, no data stored</td>
+<td>Low (swap API key)</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Salesforce</strong></td>
+<td>Connects to client Salesforce orgs (Phase 4, not yet built)</td>
+<td><strong>N/A for now</strong> — will need a Connected App in the company's Salesforce org when Phase 4 starts</td>
+<td>Medium</td>
+<td>Later</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="detailed-breakdown">Detailed Breakdown</h2>
+<h3 id="1-anthropic-claude-api-ai-engine">1. Anthropic Claude API (AI Engine)</h3>
+<p><strong>What it does:</strong> Every AI feature in the app — analyzing discovery transcripts, answering questions, synthesizing knowledge articles, powering the chat interface, running the AI agent harness — calls the Claude API. All client project context passes through this.</p>
+<p><strong>What we need from the company:</strong></p>
+<ul>
+<li><input type="checkbox" id="checkbox0"><label for="checkbox0">Sign up for an Anthropic enterprise/team account (or add the app to an existing one)</label></li>
+<li><input type="checkbox" id="checkbox1"><label for="checkbox1">Create an API key for this application</label></li>
+<li><input type="checkbox" id="checkbox2"><label for="checkbox2">Set a monthly spend limit so costs don't surprise anyone</label></li>
+<li><input type="checkbox" id="checkbox3"><label for="checkbox3">Decide on a usage tier (rate limits depend on plan — higher tiers = more concurrent requests)</label></li>
+</ul>
+<p><strong>What changes in the app:</strong> One environment variable: <code>ANTHROPIC_API_KEY</code></p>
+<p><strong>Cost estimate:</strong> ~$50-200/month depending on usage volume. Claude API charges per token (input and output).</p>
+<p><strong>Data consideration:</strong> Client project data (transcripts, questions, business processes) is sent to Anthropic's API for processing. Anthropic's enterprise terms include zero data retention — they don't train on API inputs. Confirm this meets company/client data handling requirements.</p>
+<hr>
+<h3 id="2-vercel-web-hosting--serverless-functions">2. Vercel (Web Hosting &amp; Serverless Functions)</h3>
+<p><strong>What it does:</strong> Hosts the entire web application. Handles deployments, SSL certificates, serverless function execution, and CDN for static assets.</p>
+<p><strong>Options:</strong></p>
+<ul>
+<li><strong>Option A: Company Vercel account (recommended)</strong> — Easiest path. Create a Vercel team, transfer the project, add team members. Cost: ~$20/user/month on Pro plan.</li>
+<li><strong>Option B: Company AWS account</strong> — Migrate to AWS Amplify, ECS, or similar. Significant engineering effort. Only worth it if the company has a strict &quot;everything on our AWS&quot; policy.</li>
+</ul>
+<p><strong>What we need from the company:</strong></p>
+<ul>
+<li><input type="checkbox" id="checkbox4"><label for="checkbox4">Decision: Vercel (recommended) or AWS hosting?</label></li>
+<li><input type="checkbox" id="checkbox5"><label for="checkbox5">If Vercel: Create a Vercel team account and invite team members</label></li>
+<li><input type="checkbox" id="checkbox6"><label for="checkbox6">If Vercel: Set up a custom domain (e.g., </label><code>projects.ourconsultingfirm.com</code>)</li>
+<li><input type="checkbox" id="checkbox7"><label for="checkbox7">If AWS: Allocate significant engineering time for migration (weeks, not days)</label></li>
+</ul>
+<p><strong>What changes in the app:</strong> <code>NEXT_PUBLIC_APP_URL</code> changes to the production domain. Vercel handles the rest automatically.</p>
+<hr>
+<h3 id="3-neon-postgresql-database">3. Neon (PostgreSQL Database)</h3>
+<p><strong>What it does:</strong> Stores everything — projects, clients, team members, discovery questions, knowledge articles, AI-generated embeddings, transcripts, sprint data. This is the most critical piece of infrastructure.</p>
+<p><strong>Options:</strong></p>
+<ul>
+<li><strong>Option A: Neon team/pro plan (recommended)</strong> — Easiest path. Upgrade to a paid Neon plan with proper backups, higher storage limits, and team access.</li>
+<li><strong>Option B: AWS RDS for PostgreSQL</strong> — If the company wants the database on their AWS. Requires enabling the <code>pgvector</code> extension manually. Prisma ORM makes the switch straightforward — only the connection string changes.</li>
+<li><strong>Option C: Supabase</strong> — Another managed PostgreSQL option with built-in pgvector support.</li>
+</ul>
+<p><strong>What we need from the company:</strong></p>
+<ul>
+<li><input type="checkbox" id="checkbox8"><label for="checkbox8">Decision: Neon (recommended), AWS RDS, or Supabase?</label></li>
+<li><input type="checkbox" id="checkbox9"><label for="checkbox9">Provision the database instance (PostgreSQL 16+, with </label><code>pgvector</code> extension enabled)</li>
+<li><input type="checkbox" id="checkbox10"><label for="checkbox10">Set up automated backups and a backup retention policy</label></li>
+<li><input type="checkbox" id="checkbox11"><label for="checkbox11">Decide on a data residency region (where client data physically lives)</label></li>
+</ul>
+<p><strong>What changes in the app:</strong> One environment variable: <code>DATABASE_URL</code></p>
+<p><strong>Data consideration:</strong> This database will contain client names, project details, discovery notes, business process documentation, and more. Ensure the hosting region and provider meet any client data handling agreements.</p>
+<hr>
+<h3 id="4-clerk-authentication--user-management">4. Clerk (Authentication &amp; User Management)</h3>
+<p><strong>What it does:</strong> Handles user sign-up, sign-in, session management, role-based access control (PM, BA, Developer, QA roles), and organization features.</p>
+<p><strong>What we need from the company:</strong></p>
+<ul>
+<li><input type="checkbox" id="checkbox12"><label for="checkbox12">Create a Clerk organization on a paid plan</label></li>
+<li><input type="checkbox" id="checkbox13"><label for="checkbox13">If the company uses SSO (Okta, Azure AD, Google Workspace): configure SAML/OIDC so employees log in with their company credentials</label></li>
+<li><input type="checkbox" id="checkbox14"><label for="checkbox14">Set up user provisioning — who creates accounts and assigns roles?</label></li>
+<li><input type="checkbox" id="checkbox15"><label for="checkbox15">Define password/MFA policies</label></li>
+</ul>
+<p><strong>What changes in the app:</strong> Three environment variables:</p>
+<ul>
+<li><code>CLERK_SECRET_KEY</code></li>
+<li><code>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code></li>
+<li>(Clerk sign-in/sign-up URLs stay the same)</li>
+</ul>
+<p><strong>Cost estimate:</strong> Clerk Pro is ~$25/month + $0.02/monthly active user.</p>
+<hr>
+<h3 id="5-aws-s3-file-storage">5. AWS S3 (File Storage)</h3>
+<p><strong>What it does:</strong> Stores uploaded files (discovery transcripts, meeting recordings) and generated documents (requirements docs, branded exports).</p>
+<p><strong>What we need from the company:</strong></p>
+<ul>
+<li><input type="checkbox" id="checkbox16"><label for="checkbox16">Provide an AWS account (or decide to use Cloudflare R2 instead — the app supports both)</label></li>
+<li><input type="checkbox" id="checkbox17"><label for="checkbox17">Create an S3 bucket with appropriate access policies</label></li>
+<li><input type="checkbox" id="checkbox18"><label for="checkbox18">Create an IAM user or role with scoped permissions (read/write to that bucket only)</label></li>
+<li><input type="checkbox" id="checkbox19"><label for="checkbox19">Decide on a storage region and lifecycle policies (e.g., auto-delete files after X months?)</label></li>
+</ul>
+<p><strong>What changes in the app:</strong> Five environment variables:</p>
+<ul>
+<li><code>AWS_ACCESS_KEY_ID</code></li>
+<li><code>AWS_SECRET_ACCESS_KEY</code></li>
+<li><code>AWS_S3_BUCKET</code></li>
+<li><code>AWS_S3_REGION</code></li>
+<li><code>AWS_S3_ENDPOINT</code> (only if using R2 or a custom endpoint)</li>
+</ul>
+<hr>
+<h3 id="6-inngest-background-job-processing">6. Inngest (Background Job Processing)</h3>
+<p><strong>What it does:</strong> Runs long-running and scheduled tasks in the background — processing transcripts, generating embeddings, refreshing knowledge articles, synthesizing dashboards. Think of it as the app's task queue.</p>
+<p><strong>What we need from the company:</strong></p>
+<ul>
+<li><input type="checkbox" id="checkbox20"><label for="checkbox20">Create an Inngest team account (or self-host if preferred)</label></li>
+<li><input type="checkbox" id="checkbox21"><label for="checkbox21">Decide on a plan tier based on expected job volume</label></li>
+</ul>
+<p><strong>What changes in the app:</strong> Two environment variables:</p>
+<ul>
+<li><code>INNGEST_SIGNING_KEY</code></li>
+<li><code>INNGEST_EVENT_KEY</code></li>
+</ul>
+<p><strong>Cost estimate:</strong> Free tier handles up to 50,000 function runs/month. Likely sufficient for V1.</p>
+<hr>
+<h3 id="7-voyage-ai-embedding-generation">7. Voyage AI (Embedding Generation)</h3>
+<p><strong>What it does:</strong> Converts text into numerical vectors for semantic search. When someone searches the knowledge base, the app compares embedding vectors to find relevant content.</p>
+<p><strong>What we need from the company:</strong></p>
+<ul>
+<li><input type="checkbox" id="checkbox22"><label for="checkbox22">Create a Voyage AI account and API key</label></li>
+<li><input type="checkbox" id="checkbox23"><label for="checkbox23">(Alternative: could switch to Anthropic's own embedding API to consolidate vendors)</label></li>
+</ul>
+<p><strong>What changes in the app:</strong> One environment variable: <code>VOYAGE_API_KEY</code></p>
+<p><strong>Cost estimate:</strong> Very low — ~$5-20/month for typical usage.</p>
+<hr>
+<h3 id="8-salesforce-connected-app-phase-4--future">8. Salesforce Connected App (Phase 4 — Future)</h3>
+<p><strong>What it does:</strong> Will allow the app to connect to client Salesforce orgs to sync metadata (objects, fields, profiles, etc.) for brownfield project analysis.</p>
+<p><strong>Not needed now</strong>, but when we build Phase 4:</p>
+<ul>
+<li><input type="checkbox" id="checkbox24"><label for="checkbox24">Create a Salesforce Connected App in the company's Salesforce org (or a dedicated dev org)</label></li>
+<li><input type="checkbox" id="checkbox25"><label for="checkbox25">Configure OAuth scopes and callback URLs</label></li>
+<li><input type="checkbox" id="checkbox26"><label for="checkbox26">Decide: one Connected App shared across all client orgs, or per-client?</label></li>
+</ul>
+<p><strong>What changes in the app:</strong></p>
+<ul>
+<li><code>SF_CONNECTED_APP_CLIENT_ID</code></li>
+<li><code>SF_CONNECTED_APP_CLIENT_SECRET</code></li>
+</ul>
+<hr>
+<h2 id="other-items-to-discuss">Other Items to Discuss</h2>
+<h3 id="application-encryption-key">Application Encryption Key</h3>
+<p>The app encrypts sensitive stored data (like Salesforce OAuth tokens) using a master encryption key.</p>
+<ul>
+<li><input type="checkbox" id="checkbox27"><label for="checkbox27">Generate a production-grade encryption key (minimum 32 characters)</label></li>
+<li><input type="checkbox" id="checkbox28"><label for="checkbox28">Store it securely — this key, if lost, means encrypted data is unrecoverable</label></li>
+<li><input type="checkbox" id="checkbox29"><label for="checkbox29">Environment variable: </label><code>SF_TOKEN_ENCRYPTION_KEY</code></li>
+</ul>
+<h3 id="custom-domain">Custom Domain</h3>
+<ul>
+<li><input type="checkbox" id="checkbox30"><label for="checkbox30">Choose a domain for the app (e.g., </label><code>app.ourconsultingfirm.com</code>)</li>
+<li><input type="checkbox" id="checkbox31"><label for="checkbox31">Configure DNS to point to Vercel (or wherever we host)</label></li>
+<li><input type="checkbox" id="checkbox32"><label for="checkbox32">Environment variable: </label><code>NEXT_PUBLIC_APP_URL</code></li>
+</ul>
+<h3 id="who-has-access">Who Has Access?</h3>
+<ul>
+<li><input type="checkbox" id="checkbox33"><label for="checkbox33">Define which roles exist (PM, BA, Developer, QA, Admin)</label></li>
+<li><input type="checkbox" id="checkbox34"><label for="checkbox34">Decide who can create projects, invite team members, access client data</label></li>
+<li><input type="checkbox" id="checkbox35"><label for="checkbox35">Decide if there should be project-level isolation (team members only see their projects)</label></li>
+</ul>
+<h3 id="data--compliance">Data &amp; Compliance</h3>
+<ul>
+<li><input type="checkbox" id="checkbox36"><label for="checkbox36">Does the company have data handling requirements for client information?</label></li>
+<li><input type="checkbox" id="checkbox37"><label for="checkbox37">Are there restrictions on which cloud regions data can be stored in?</label></li>
+<li><input type="checkbox" id="checkbox38"><label for="checkbox38">Do client contracts have provisions about AI processing of their data?</label></li>
+<li><input type="checkbox" id="checkbox39"><label for="checkbox39">Should we keep an audit log of who accessed what?</label></li>
+</ul>
+<hr>
+<h2 id="complete-environment-variable-reference">Complete Environment Variable Reference</h2>
+<p>These are all the values that would change when moving to company infrastructure:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Service</th>
+<th>Secret?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DATABASE_URL</code></td>
+<td>Neon / RDS</td>
+<td>Yes</td>
+<td>PostgreSQL connection string</td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>Anthropic</td>
+<td>Yes</td>
+<td>Claude API key</td>
+</tr>
+<tr>
+<td><code>CLERK_SECRET_KEY</code></td>
+<td>Clerk</td>
+<td>Yes</td>
+<td>Backend auth key</td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code></td>
+<td>Clerk</td>
+<td>No</td>
+<td>Frontend auth key (safe to expose)</td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_CLERK_SIGN_IN_URL</code></td>
+<td>Clerk</td>
+<td>No</td>
+<td>URL path — usually stays <code>/sign-in</code></td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_CLERK_SIGN_UP_URL</code></td>
+<td>Clerk</td>
+<td>No</td>
+<td>URL path — usually stays <code>/sign-up</code></td>
+</tr>
+<tr>
+<td><code>SF_TOKEN_ENCRYPTION_KEY</code></td>
+<td>App internal</td>
+<td>Yes</td>
+<td>Master encryption key</td>
+</tr>
+<tr>
+<td><code>INNGEST_SIGNING_KEY</code></td>
+<td>Inngest</td>
+<td>Yes</td>
+<td>Webhook signature verification</td>
+</tr>
+<tr>
+<td><code>INNGEST_EVENT_KEY</code></td>
+<td>Inngest</td>
+<td>Yes</td>
+<td>Event ingestion key</td>
+</tr>
+<tr>
+<td><code>VOYAGE_API_KEY</code></td>
+<td>Voyage AI</td>
+<td>Yes</td>
+<td>Embedding API key</td>
+</tr>
+<tr>
+<td><code>AWS_ACCESS_KEY_ID</code></td>
+<td>AWS</td>
+<td>Yes</td>
+<td>S3 access</td>
+</tr>
+<tr>
+<td><code>AWS_SECRET_ACCESS_KEY</code></td>
+<td>AWS</td>
+<td>Yes</td>
+<td>S3 access</td>
+</tr>
+<tr>
+<td><code>AWS_S3_BUCKET</code></td>
+<td>AWS</td>
+<td>No</td>
+<td>Bucket name</td>
+</tr>
+<tr>
+<td><code>AWS_S3_REGION</code></td>
+<td>AWS</td>
+<td>No</td>
+<td>AWS region</td>
+</tr>
+<tr>
+<td><code>AWS_S3_ENDPOINT</code></td>
+<td>AWS / R2</td>
+<td>No</td>
+<td>Custom endpoint (R2 only)</td>
+</tr>
+<tr>
+<td><code>SF_CONNECTED_APP_CLIENT_ID</code></td>
+<td>Salesforce</td>
+<td>Yes</td>
+<td>OAuth client ID (Phase 4)</td>
+</tr>
+<tr>
+<td><code>SF_CONNECTED_APP_CLIENT_SECRET</code></td>
+<td>Salesforce</td>
+<td>Yes</td>
+<td>OAuth client secret (Phase 4)</td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_APP_URL</code></td>
+<td>App</td>
+<td>No</td>
+<td>Production URL</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="recommended-next-steps">Recommended Next Steps</h2>
+<ol>
+<li><strong>Start the conversation</strong> — Share this document with your manager / IT lead</li>
+<li><strong>Get the big three decided first</strong> — Database, Claude API, and Auth are the highest-risk items</li>
+<li><strong>Set up a company Vercel account</strong> — Fastest win; takes 15 minutes</li>
+<li><strong>Create a company AWS bucket</strong> — For file storage under company control</li>
+<li><strong>Plan the database migration</strong> — Export current data, provision company DB, import</li>
+<li><strong>Swap environment variables</strong> — Once accounts are created, updating the app is just changing env vars in Vercel's dashboard</li>
+</ol>
+<p>Most of these migrations are &quot;swap an API key&quot; level of effort. The database is the only one that requires actual data migration.</p>
+
+</body>
+</html>

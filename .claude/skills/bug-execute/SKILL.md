@@ -143,39 +143,74 @@ Once all agents in the phase are done, present a phase completion report:
 | BUG-AAA | TypeScript compilation failed after changes |
 ```
 
-Then ask the user:
+Then ask the user what they'd like to do. Offer three options:
 
 1. **"Review the worktrees?"** — They can inspect changes in each worktree before merging.
-2. **"Merge all successful fixes?"** — If they approve, merge each worktree's changes into the main branch sequentially, resolving any conflicts that arise.
-3. **"Update bug statuses?"** — Offer to update BUGS.md and individual bug files to mark fixed bugs as "Fixed" and update severity counts.
+2. **"Merge all successful fixes?"** — If they approve, run the full merge-verify-update-cleanup workflow (see below).
+3. **"Same as last phase"** — Shorthand for: merge all, update statuses, clean worktrees. If the user says this, run the full workflow without further prompts.
 
-### Merging Worktrees
+### Full Post-Completion Workflow
 
-When the user approves merging:
+When the user approves merging (or says "same as last phase"), execute this entire sequence without pausing for confirmation between steps:
 
-1. For each successful fix, in order:
-   - Check out the main branch
-   - Merge or cherry-pick the fix commit from the worktree
-   - If there's a merge conflict, pause and ask the user how to resolve it
-2. After all merges, run a verification step (typecheck, tests) to confirm nothing broke
-3. Clean up worktrees for merged fixes
+#### 1. Cherry-pick all commits onto main
 
-### Updating Bug Status
+Get commit hashes from each worktree branch (`git log --oneline -1 <branch>`), then cherry-pick sequentially. Order schema migrations first if any bugs include Prisma migrations.
 
-If the user approves status updates:
+```bash
+git cherry-pick <commit-hash>  # repeat for each bug
+```
 
-1. Update each fixed bug's detail file: change `**Status:** Open` to `**Status:** Fixed`
-2. Update `BUGS.md`: change the Status column from `Open` to `Fixed` for each fixed bug
-3. Update the severity summary counts (decrement open counts)
-4. Add a completion marker to the execution plan:
+If there's a merge conflict, pause and ask the user how to resolve it. Otherwise continue.
+
+#### 2. Run typecheck verification
+
+```bash
+npx tsc --noEmit
+```
+
+If typecheck fails, diagnose and fix the issue before continuing. Common causes:
+- Agent used an API that doesn't exist in the project's component library (e.g., `asChild` on Base UI Button)
+- Type mismatches from schema changes that affect multiple files
+
+Fix any issues, commit the fix, then re-run typecheck until clean.
+
+#### 3. Update bug detail files
+
+For each fixed bug, change `**Status:** Open` to `**Status:** Fixed` in its detail file (e.g., `.planning/bugs/BUG-XXX.md`).
+
+#### 4. Update BUGS.md
+
+- Change each fixed bug's Status from `Open` to `Fixed` in the table
+- Recalculate the severity summary counts (decrement open counts per severity, increment Fixed count)
+
+#### 5. Update execution plan
+
+Add completion marker to the phase header in the execution plan:
 
 ```markdown
-## Phase 1: Foundation Fixes [COMPLETED - 2026-04-07]
+## Phase N: Phase Title [COMPLETED - YYYY-MM-DD]
+```
+
+#### 6. Clean up worktrees and branches
+
+```bash
+git worktree remove .claude/worktrees/agent-XXXX   # for each worktree
+git branch -D worktree-agent-XXXX                    # for each branch
+```
+
+Note: Use `git branch -D` (force delete) because cherry-picked branches won't show as "fully merged" — the commits are on main but via cherry-pick, not merge.
+
+#### 7. Verify clean state
+
+```bash
+git worktree list   # should show only main worktree
+git log --oneline -N  # show the new commits (N = number of bugs fixed)
 ```
 
 ## Step 6: Next Phase Prompt
 
-After the phase is complete, tell the user:
+After the full workflow is complete, tell the user:
 
 **"Phase [N] complete. [X] bugs fixed, [Y] need review. Phase [N+1] is now unblocked: [phase title] ([Z] bugs). Run `/bug-execute next` to continue."**
 
