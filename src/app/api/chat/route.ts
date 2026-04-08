@@ -110,6 +110,15 @@ export async function POST(request: Request) {
       })
     }
 
+    // TRANSCRIPT_SESSION conversations are background AI processing jobs,
+    // not interactive chat sessions. Reject chat requests for them.
+    if (conversation.conversationType === "TRANSCRIPT_SESSION") {
+      return new Response(
+        JSON.stringify({ error: "Transcript sessions do not support interactive chat" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      )
+    }
+
     // Determine system prompt based on conversation type
     let systemPrompt: string
 

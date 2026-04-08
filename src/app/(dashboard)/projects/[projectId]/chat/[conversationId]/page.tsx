@@ -2,6 +2,7 @@ import { getConversation } from "@/actions/conversations"
 import { ChatInterface } from "@/components/chat/chat-interface"
 import { TokenDisplay } from "@/components/chat/token-display"
 import { redirect } from "next/navigation"
+import { prisma } from "@/lib/db"
 import type { UIMessage } from "ai"
 
 interface ConversationPageProps {
@@ -13,6 +14,10 @@ interface ConversationPageProps {
  * Task-specific chat session page.
  * Server component that loads conversation data and renders
  * ChatInterface with split layout + context panel.
+ *
+ * TRANSCRIPT_SESSION conversations are redirected to the transcript
+ * detail page since they represent background AI processing jobs,
+ * not interactive chat sessions.
  */
 export default async function ConversationPage({
   params,
@@ -29,6 +34,22 @@ export default async function ConversationPage({
 
   const conversation = result.data
 
+  // Redirect TRANSCRIPT_SESSION conversations to the transcript detail page.
+  // These are background AI processing jobs, not interactive chat sessions.
+  if (conversation.conversationType === "TRANSCRIPT_SESSION") {
+    const transcript = await prisma.transcript.findUnique({
+      where: { conversationId: conversation.id },
+      select: { id: true },
+    })
+
+    if (transcript) {
+      redirect(`/projects/${projectId}/transcripts/${transcript.id}`)
+    }
+
+    // No linked transcript found — fall back to read-only message view below
+    // by using TRANSCRIPT_SESSION type which disables the chat input
+  }
+
   // Fall back to persisted metadata when URL search params are missing (revisit)
   const meta = (conversation.metadata ?? {}) as Record<string, string | undefined>
   const resolvedEpicId = epicId ?? meta.epicId
@@ -39,7 +60,9 @@ export default async function ConversationPage({
     ? "GENERAL_CHAT"
     : conversation.conversationType === "STORY_SESSION"
       ? "STORY_SESSION"
-      : "TASK_SESSION"
+      : conversation.conversationType === "TRANSCRIPT_SESSION"
+        ? "TRANSCRIPT_SESSION"
+        : "TASK_SESSION"
 
   // Convert DB messages to UIMessage format
   const initialMessages: UIMessage[] = conversation.messages.map((msg) => ({

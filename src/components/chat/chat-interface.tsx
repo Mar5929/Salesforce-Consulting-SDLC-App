@@ -14,7 +14,7 @@ import { ContextPanel } from "./context-panel"
 interface ChatInterfaceProps {
   conversationId: string
   projectId: string
-  conversationType: "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION"
+  conversationType: "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION" | "TRANSCRIPT_SESSION"
   initialMessages?: UIMessage[]
   sessionTitle?: string
   epicId?: string
@@ -96,9 +96,10 @@ export function ChatInterface({
   }))
 
   const isTaskSession = conversationType === "TASK_SESSION" || conversationType === "STORY_SESSION"
+  const isReadOnly = conversationType === "TRANSCRIPT_SESSION"
   const title =
     sessionTitle ??
-    (isTaskSession ? "Task Session" : "Project Chat")
+    (isReadOnly ? "Transcript Session" : isTaskSession ? "Task Session" : "Project Chat")
 
   return (
     <div className="flex h-full flex-col">
@@ -144,29 +145,37 @@ export function ChatInterface({
             </div>
           )}
 
-          {/* Input area */}
-          <div className="bg-muted border-border border-t px-4 py-3">
-            <div className="flex items-end gap-2">
-              <Textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask anything about this project..."
-                className="bg-background min-h-[44px] flex-1 resize-none"
-                rows={1}
-                disabled={isLoading}
-              />
-              <Button
-                size="icon"
-                onClick={handleSend}
-                disabled={!inputValue.trim() || isLoading}
-                className="h-[44px] w-[44px] shrink-0"
-                aria-label="Send message"
-              >
-                <ArrowUp className="h-4 w-4" />
-              </Button>
+          {/* Input area — hidden for read-only transcript sessions */}
+          {isReadOnly ? (
+            <div className="bg-muted border-border border-t px-4 py-3">
+              <p className="text-muted-foreground text-center text-[13px]">
+                This is a read-only transcript processing session. View the full transcript for extraction results and accept/reject controls.
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="bg-muted border-border border-t px-4 py-3">
+              <div className="flex items-end gap-2">
+                <Textarea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask anything about this project..."
+                  className="bg-background min-h-[44px] flex-1 resize-none"
+                  rows={1}
+                  disabled={isLoading}
+                />
+                <Button
+                  size="icon"
+                  onClick={handleSend}
+                  disabled={!inputValue.trim() || isLoading}
+                  className="h-[44px] w-[44px] shrink-0"
+                  aria-label="Send message"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Context panel for task sessions (D-14) */}
