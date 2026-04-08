@@ -65,7 +65,7 @@ Source: Consistent with existing chat components (`chat-interface.tsx` header at
 | Dominant (60%) | `hsl(0 0% 100%)` / `--background` | Chat message area, page surface, conversation detail pane |
 | Secondary (30%) | `hsl(0 0% 98%)` / `--muted` | Conversation sidebar background, input area, enrichment suggestion card backgrounds, tab bar background strip |
 | Accent (10%) | `hsl(220 70% 50%)` / `--primary` | Send button, "+ New" button, active tab indicator, "Generate Briefing" button, "Enrich with AI" button, retry link |
-| Destructive | `hsl(0 84% 60%)` / `--destructive` | Failed session badge, archive confirmation destructive button |
+| Destructive | `hsl(0 84% 60%)` / `--destructive` | Failed session badge only |
 
 Accent reserved for: Send button, "+ New" conversation button, active tab underline indicator, "Generate Briefing" CTA, "Enrich with AI" CTA, retry link text. Never for sidebar row highlights or card borders.
 
@@ -157,7 +157,7 @@ Source: `globals.css` CSS custom properties.
 - Right: `SessionStatusBadge` for non-ACTIVE sessions only. ACTIVE sessions show no badge.
 - Selected row: `bg-background` (white) with left 2px accent border (`border-l-2 border-primary`)
 - Hover: `bg-background/80`, reveals action icons (Pencil for rename, Archive for archive) at 14px `text-muted-foreground`
-- Right-click: DropdownMenu with Rename, Archive, Delete options
+- Right-click: DropdownMenu with Rename, Archive options (no delete per D-12 — archive only)
 
 ### Tab Bar (D-02)
 
@@ -176,7 +176,7 @@ Source: `globals.css` CSS custom properties.
 
 ### "+ New" Button (D-05)
 
-- `Button` variant="default" size="sm" with `Plus` icon (16px) + "New" text
+- `Button` variant="default" size="sm" with `Plus` icon (16px) + "New Session" text
 - Positioned top-right of sidebar header
 - Opens `DropdownMenu` with session type options:
   - "Story Generation" — then prompts for epic selection
@@ -263,7 +263,7 @@ Source: `globals.css` CSS custom properties.
   - Title: "Archive conversation?"
   - Body: "This conversation will be hidden from your list. You can restore it anytime from the archived filter."
   - Cancel: `Button` variant="outline"
-  - Confirm: `Button` variant="default" text "Archive"
+  - Confirm: `Button` variant="default" text "Archive Conversation"
 - Archived conversations hidden from default list view
 - "Show Archived" toggle at bottom of conversation sidebar: 13px `text-muted-foreground` link
 - When toggled on: archived rows show with 50% opacity and "Unarchive" action replacing "Archive"
@@ -314,7 +314,7 @@ Source: `globals.css` CSS custom properties.
 
 | Element | Copy |
 |---------|------|
-| Primary CTA (sidebar) | "New" (button label with Plus icon) |
+| Primary CTA (sidebar) | "New Session" (button label with Plus icon) |
 | Primary CTA (dashboard) | "Generate Briefing" |
 | Primary CTA (story detail) | "Enrich with AI" |
 | Empty state heading (no conversations) | "No conversations yet" |
@@ -332,7 +332,7 @@ Source: `globals.css` CSS custom properties.
 | Failed session notice | "This session failed. A retry session has been created." |
 | Archive confirmation title | "Archive conversation?" |
 | Archive confirmation body | "This conversation will be hidden from your list. You can restore it anytime from the archived filter." |
-| Archive confirm button | "Archive" |
+| Archive confirm button | "Archive Conversation" |
 | Archived toggle | "Show Archived" |
 | Retry link | "Retry" |
 | Read-only session notice | "This session is read-only." |
