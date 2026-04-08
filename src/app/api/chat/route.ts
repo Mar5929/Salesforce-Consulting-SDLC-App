@@ -5,6 +5,8 @@ import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/db"
 import { getCurrentMember } from "@/lib/auth"
 import {
+  assembleEnhancedChatContext,
+  buildSmartChatSystemPrompt,
   assembleGeneralChatContext,
   buildChatSystemPrompt,
 } from "@/lib/agent-harness/context/chat-context"
@@ -155,9 +157,19 @@ export async function POST(request: Request) {
         systemPrompt = buildChatSystemPrompt(context)
       }
     } else {
-      // General chat: use standard context assembly (T-02-11)
-      const context = await assembleGeneralChatContext(projectId)
-      systemPrompt = buildChatSystemPrompt(context)
+      // General chat: use smart context assembly with all 7 data sources + search
+      const lastUserMsg = messages[messages.length - 1]
+      const userText =
+        typeof lastUserMsg?.content === "string"
+          ? lastUserMsg.content
+          : Array.isArray(lastUserMsg?.parts)
+            ? lastUserMsg.parts
+                .filter((p: { type: string }) => p.type === "text")
+                .map((p: { text: string }) => p.text)
+                .join("")
+            : ""
+      const smartContext = await assembleEnhancedChatContext(projectId, userText)
+      systemPrompt = buildSmartChatSystemPrompt(smartContext)
     }
 
     // Configure tools based on conversation type
