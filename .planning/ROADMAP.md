@@ -225,10 +225,32 @@ Plans:
 
 ### Phase 11: Agentic Chat with Database Awareness and Project Tool Use
 
+**Goal:** The AI chat assistant can actively query, create, update, and delete project entities through role-gated tools with hard-coded deletion confirmation, making it a true project collaborator
+**Depends on:** Phase 9
+**Requirements**: ACHAT-01, ACHAT-02, ACHAT-03, ACHAT-04, ACHAT-05, ACHAT-06, ACHAT-07, ACHAT-08, ACHAT-09, ACHAT-10, ACHAT-12, ACHAT-13, ACHAT-14, ACHAT-15, ACHAT-16, ACHAT-17, ACHAT-18, ACHAT-19
+**Success Criteria** (what must be TRUE):
+  1. AI can query all 15 project entities via chat tools returning summary-first results
+  2. AI can create, update, and delete mutable entities through chat, with role-based gating matching web app permissions
+  3. Delete operations require explicit user approval via a hard-coded structural gate (needsApproval) -- not just prompt instructions
+  4. Tool results render as structured cards in the chat UI (query cards, mutation confirmations, delete approval dialogs)
+  5. Multi-step tool chains are bounded to 15 calls per AI turn
+  6. All tool calls are logged for audit via ChatMessage.toolCalls
+**Plans**: 6 plans
+
+Plans:
+- [ ] 11-01-PLAN.md -- Tool infrastructure: types, registry, audit, system prompt, schema migration
+- [ ] 11-02-PLAN.md -- Query tools for all 15 entities (query list + get detail)
+- [ ] 11-03-PLAN.md -- Write tools for 10 mutable entities + batch variants
+- [ ] 11-04-PLAN.md -- Delete tools with needsApproval safety gate
+- [ ] 11-05-PLAN.md -- Chat route upgrade: wiring tools, multi-step, approval flow
+- [ ] 11-06-PLAN.md -- Tool result card components and message list rendering
+
+### Phase 12: Roadmap and Execution View — Milestones, Epic Phase Grid, and Project Execution Order
+
 **Goal:** [To be planned]
 **Requirements**: TBD
-**Depends on:** Phase 10
+**Depends on:** Phase 11
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 11 to break down)
+- [ ] TBD (run /gsd-plan-phase 12 to break down)
