@@ -372,6 +372,7 @@ enum SessionLogTaskType {
   ORG_QUERY
   DASHBOARD_SYNTHESIS
   ARTICLE_SYNTHESIS
+  AGENTIC_CHAT
 }
 
 enum SessionLogStatus {
