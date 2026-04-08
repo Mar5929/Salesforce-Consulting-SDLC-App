@@ -1,12 +1,26 @@
 import type { ProjectRole } from "@/generated/prisma"
 import { ROLE_PERMISSIONS } from "./types"
 
+// Query (read) tools
+import { queryStoriesTools } from "./read/query-stories"
+import { queryEpicsTools } from "./read/query-epics"
+import { queryFeaturesTools } from "./read/query-features"
+import { queryQuestionsTools } from "./read/query-questions"
+import { queryDecisionsTools } from "./read/query-decisions"
+import { queryRequirementsTools } from "./read/query-requirements"
+import { queryRisksTools } from "./read/query-risks"
+import { querySprintsTools } from "./read/query-sprints"
+import { queryDefectsTools } from "./read/query-defects"
+import { queryKnowledgeTools } from "./read/query-knowledge"
+import { queryOrgComponentsTools } from "./read/query-org-components"
+import { queryBusinessProcessesTools } from "./read/query-business-processes"
+import { queryDocumentsTools } from "./read/query-documents"
+import { queryConversationsTools } from "./read/query-conversations"
+import { queryTestCasesTools } from "./read/query-test-cases"
+
 /**
  * Tool registry. Returns the set of Vercel AI SDK tool() definitions
  * appropriate for the given role. (D-08, D-10)
- *
- * Plans 02-04 add tool modules here as they are implemented.
- * The function signature is the stable contract for the chat route (Plan 05).
  */
 export function buildToolsForRole(
   role: ProjectRole,
@@ -16,9 +30,25 @@ export function buildToolsForRole(
   const perms = ROLE_PERMISSIONS[role]
   const tools: Record<string, unknown> = {}
 
-  // Read tools — available to all roles (Plan 02 adds these)
   if (perms.read) {
-    // Query tools imported from src/lib/chat-tools/read/ — added in Plan 02
+    Object.assign(
+      tools,
+      queryStoriesTools(projectId),
+      queryEpicsTools(projectId),
+      queryFeaturesTools(projectId),
+      queryQuestionsTools(projectId),
+      queryDecisionsTools(projectId),
+      queryRequirementsTools(projectId),
+      queryRisksTools(projectId),
+      querySprintsTools(projectId),
+      queryDefectsTools(projectId),
+      queryKnowledgeTools(projectId),
+      queryOrgComponentsTools(projectId),
+      queryBusinessProcessesTools(projectId),
+      queryDocumentsTools(projectId),
+      queryConversationsTools(projectId),
+      queryTestCasesTools(projectId),
+    )
   }
 
   // Write tools — gated by role (Plan 03 adds these)
@@ -35,6 +65,8 @@ export function buildToolsForRole(
   if (perms.batch) {
     // Batch tools imported from src/lib/chat-tools/batch/ — added in Plan 03
   }
+
+  void memberId // will be used by write/delete tools in Plans 03-04
 
   return tools
 }
