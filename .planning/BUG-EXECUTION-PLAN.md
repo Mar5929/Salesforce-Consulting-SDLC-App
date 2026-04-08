@@ -26,7 +26,7 @@ Unchanged: BUG-038 (HIGH), BUG-042 (LOW), BUG-046 (MEDIUM), BUG-047 (HIGH)
 
 ---
 
-## Phase 1: Eliminate the Root Cause
+## Phase 1: Eliminate the Root Cause [COMPLETED - 2026-04-08]
 
 **Goal:** Fix BUG-045 (Prisma client sync) — a single trivial fix that unblocks BUG-035, BUG-036, BUG-040, and BUG-038. Fix BUG-037 in parallel since it has zero dependencies and is a pure CSS change.
 
@@ -49,7 +49,7 @@ Unchanged: BUG-038 (HIGH), BUG-042 (LOW), BUG-046 (MEDIUM), BUG-047 (HIGH)
 
 ---
 
-## Phase 2: Restore Core Chat and AI Session Functionality
+## Phase 2: Restore Core Chat and AI Session Functionality [COMPLETED - 2026-04-08]
 
 **Goal:** With BUG-045 resolved, fix the chat sidebar staleness (BUG-035) and the broken Generate Stories feature (BUG-040). Fix BUG-047 in parallel — task assignment is a HIGH severity gap with no conflicts.
 
