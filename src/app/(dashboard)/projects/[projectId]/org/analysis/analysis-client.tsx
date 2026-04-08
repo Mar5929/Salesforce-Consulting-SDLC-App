@@ -45,6 +45,7 @@ interface AnalysisClientProps {
   isOrgConnected: boolean
   hasSyncedComponents: boolean
   hasRun: boolean
+  canTriggerAnalysis: boolean
   pipelinePhase: 0 | 1 | 2 | 3 | 4
   pipelineStatus: "idle" | "running" | "completed" | "failed"
   domainGroupings: DomainGroupingData[]
@@ -60,6 +61,7 @@ export function AnalysisClient({
   isOrgConnected,
   hasSyncedComponents,
   hasRun,
+  canTriggerAnalysis,
   pipelinePhase,
   pipelineStatus,
   domainGroupings,
@@ -153,17 +155,19 @@ export function AnalysisClient({
                 one completed metadata sync.
               </p>
             </div>
-            <Button
-              disabled={
-                !isOrgConnected || !hasSyncedComponents || isTriggering
-              }
-              onClick={() => executeTrigger({ projectId })}
-            >
-              {isTriggering && (
-                <Loader2 className="size-4 animate-spin" />
-              )}
-              Analyze Org
-            </Button>
+            {canTriggerAnalysis && (
+              <Button
+                disabled={
+                  !isOrgConnected || !hasSyncedComponents || isTriggering
+                }
+                onClick={() => executeTrigger({ projectId })}
+              >
+                {isTriggering && (
+                  <Loader2 className="size-4 animate-spin" />
+                )}
+                Analyze Org
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -179,19 +183,21 @@ export function AnalysisClient({
       />
 
       {/* Re-analyze button */}
-      <div className="flex items-center justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isTriggering}
-          onClick={() => executeTrigger({ projectId })}
-        >
-          {isTriggering && (
-            <Loader2 className="size-4 animate-spin" />
-          )}
-          Re-analyze
-        </Button>
-      </div>
+      {canTriggerAnalysis && (
+        <div className="flex items-center justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isTriggering}
+            onClick={() => executeTrigger({ projectId })}
+          >
+            {isTriggering && (
+              <Loader2 className="size-4 animate-spin" />
+            )}
+            Re-analyze
+          </Button>
+        </div>
+      )}
 
       <Tabs defaultValue="domains">
         <TabsList variant="line">

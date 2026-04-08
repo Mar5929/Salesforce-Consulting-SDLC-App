@@ -18,7 +18,8 @@ interface AnalysisPageProps {
 
 export default async function OrgAnalysisPage({ params }: AnalysisPageProps) {
   const { projectId } = await params
-  await getCurrentMember(projectId)
+  const currentMember = await getCurrentMember(projectId)
+  const canTriggerAnalysis = currentMember.role === "SOLUTION_ARCHITECT"
 
   return (
     <div>
@@ -27,13 +28,13 @@ export default async function OrgAnalysisPage({ params }: AnalysisPageProps) {
       </h1>
 
       <Suspense fallback={<AnalysisSkeleton />}>
-        <AnalysisData projectId={projectId} />
+        <AnalysisData projectId={projectId} canTriggerAnalysis={canTriggerAnalysis} />
       </Suspense>
     </div>
   )
 }
 
-async function AnalysisData({ projectId }: { projectId: string }) {
+async function AnalysisData({ projectId, canTriggerAnalysis }: { projectId: string; canTriggerAnalysis: boolean }) {
   // Check org is connected and has synced components
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -149,6 +150,7 @@ async function AnalysisData({ projectId }: { projectId: string }) {
       isOrgConnected={isOrgConnected}
       hasSyncedComponents={hasSyncedComponents}
       hasRun={hasRun}
+      canTriggerAnalysis={canTriggerAnalysis}
       pipelinePhase={pipelinePhase as 0 | 1 | 2 | 3 | 4}
       pipelineStatus={pipelineStatus as "idle" | "running" | "completed" | "failed"}
       domainGroupings={domainData}
