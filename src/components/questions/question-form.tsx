@@ -245,7 +245,7 @@ export function QuestionForm({
                 <SelectContent>
                   {teamMembers.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
-                      {member.displayName || member.email}
+                      {member.displayName || member.email || "Unknown Member"}
                     </SelectItem>
                   ))}
                 </SelectContent>

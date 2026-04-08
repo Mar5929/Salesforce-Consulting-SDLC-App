@@ -173,7 +173,7 @@ export function TeamManagement({
           {members.map((member) => (
             <TableRow key={member.id}>
               <TableCell className="text-[14px] text-foreground">
-                {member.displayName || member.email}
+                {member.displayName || member.email || "Unknown Member"}
               </TableCell>
               <TableCell className="text-[14px] text-[#737373]">
                 {member.email}
