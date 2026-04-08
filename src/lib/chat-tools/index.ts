@@ -34,6 +34,9 @@ import { mutateTestCasesTools } from "./write/mutate-test-cases"
 import { batchStoriesTools } from "./batch/batch-stories"
 import { batchQuestionsTools } from "./batch/batch-questions"
 
+// Delete tools
+import { deleteTools } from "./delete/delete-tools"
+
 /**
  * Tool registry. Returns the set of Vercel AI SDK tool() definitions
  * appropriate for the given role. (D-08, D-10)
@@ -93,9 +96,9 @@ export function buildToolsForRole(
     }
   }
 
-  // Delete tools — only SA and PM (Plan 04 adds these)
+  // Delete tools — only SA and PM (D-08)
   if (perms.delete) {
-    // Delete tools imported from src/lib/chat-tools/delete/ — added in Plan 04
+    Object.assign(tools, deleteTools(projectId, memberId, role))
   }
 
   if (perms.batch) {
