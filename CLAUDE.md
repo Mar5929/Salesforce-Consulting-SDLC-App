@@ -259,8 +259,7 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 - **App URL:** http://localhost:3000
 - **Auth required:** Yes (Clerk, Google OAuth — click michael@rihm.com)
 - **Login URL:** http://localhost:3000/sign-in
-- **Bug output:** `.planning/bugs/` (local files)
-- **Bug index:** `.planning/BUGS.md`
+- **Bug output:** `.planning/bugs/` (individual detail files are source of truth for status)
 - **Next bug ID:** BUG-048
 - **Context files:** `.planning/` folder (PRD, tech spec, requirements, roadmap)
 

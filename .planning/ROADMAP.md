@@ -253,9 +253,9 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 11-01-PLAN.md -- Tool infrastructure: types, registry, audit, system prompt, schema migration
-- [ ] 11-02-PLAN.md -- Query tools for all 15 entities (query list + get detail)
-- [ ] 11-03-PLAN.md -- Write tools for 10 mutable entities + batch variants
+- [x] 11-01-PLAN.md -- Tool infrastructure: types, registry, audit, system prompt, schema migration
+- [x] 11-02-PLAN.md -- Query tools for all 15 entities (query list + get detail)
+- [x] 11-03-PLAN.md -- Write tools for 10 mutable entities + batch variants
 - [ ] 11-04-PLAN.md -- Delete tools with needsApproval safety gate
 - [ ] 11-05-PLAN.md -- Chat route upgrade: wiring tools, multi-step, approval flow
 - [ ] 11-06-PLAN.md -- Tool result card components and message list rendering
