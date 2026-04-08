@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Plus, BookOpen, LayoutDashboard, HelpCircle, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { createConversation } from "@/actions/conversations"
+import { SessionEntityPicker } from "./session-entity-picker"
 
 interface NewSessionDropdownProps {
   projectId: string
@@ -45,10 +47,13 @@ const SESSION_TYPES = [
 /**
  * "+ New" button with dropdown showing available session types.
  * For Briefing: creates immediately and navigates.
- * For others needing entity selection: navigates with search params.
+ * For others needing entity selection: opens entity picker dialog.
  */
 export function NewSessionDropdown({ projectId }: NewSessionDropdownProps) {
   const router = useRouter()
+  const [pickerType, setPickerType] = React.useState<
+    "STORY_SESSION" | "ENRICHMENT_SESSION" | "QUESTION_SESSION" | null
+  >(null)
 
   async function handleSelect(sessionType: string) {
     if (sessionType === "BRIEFING_SESSION") {
@@ -63,41 +68,49 @@ export function NewSessionDropdown({ projectId }: NewSessionDropdownProps) {
         router.refresh()
       }
     } else {
-      // Navigate with search params for entity selection in the chat page
-      router.push(
-        `/projects/${projectId}/chat?newSession=${sessionType}`
+      // Open entity picker dialog for session types that need entity selection
+      setPickerType(
+        sessionType as "STORY_SESSION" | "ENRICHMENT_SESSION" | "QUESTION_SESSION"
       )
     }
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button variant="default" size="sm" aria-label="Create new session" />}
-      >
-        <Plus className="mr-1 h-4 w-4" />
-        New Session
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        {SESSION_TYPES.map((session) => {
-          const Icon = session.icon
-          return (
-            <DropdownMenuItem
-              key={session.type}
-              onClick={() => handleSelect(session.type)}
-              className="flex flex-col items-start gap-0.5 py-2"
-            >
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                <span className="text-[14px]">{session.label}</span>
-              </div>
-              <span className="text-muted-foreground ml-6 text-[13px]">
-                {session.description}
-              </span>
-            </DropdownMenuItem>
-          )
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={<Button variant="default" size="sm" aria-label="Create new session" />}
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          New Session
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64">
+          {SESSION_TYPES.map((session) => {
+            const Icon = session.icon
+            return (
+              <DropdownMenuItem
+                key={session.type}
+                onClick={() => handleSelect(session.type)}
+                className="flex flex-col items-start gap-0.5 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4" />
+                  <span className="text-[14px]">{session.label}</span>
+                </div>
+                <span className="text-muted-foreground ml-6 text-[13px]">
+                  {session.description}
+                </span>
+              </DropdownMenuItem>
+            )
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <SessionEntityPicker
+        projectId={projectId}
+        sessionType={pickerType}
+        onClose={() => setPickerType(null)}
+      />
+    </>
   )
 }
