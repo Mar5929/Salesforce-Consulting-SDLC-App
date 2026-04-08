@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { DEFECT_STATUS_LABELS } from "@/lib/defect-status-machine"
+import { formatEnumLabel } from "@/lib/format-enum"
 import type { DefectStatus } from "@/generated/prisma"
 
 // ────────────────────────────────────────────
@@ -96,7 +97,9 @@ export function DefectFilters({
         onValueChange={(v: string | null) => setStatus(v === "all" ? "" : v ?? "")}
       >
         <SelectTrigger className="h-8 w-[150px] text-[13px]">
-          <SelectValue placeholder="Status" />
+          <SelectValue placeholder="Status">
+            {(value: string) => value === "all" ? "All Statuses" : (DEFECT_STATUS_LABELS[value as DefectStatus] ?? formatEnumLabel(value))}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Statuses</SelectItem>
@@ -114,7 +117,13 @@ export function DefectFilters({
         onValueChange={(v: string | null) => setSeverity(v === "all" ? "" : v ?? "")}
       >
         <SelectTrigger className="h-8 w-[140px] text-[13px]">
-          <SelectValue placeholder="Severity" />
+          <SelectValue placeholder="Severity">
+            {(value: string) => {
+              if (value === "all") return "All Severities"
+              const match = SEVERITY_OPTIONS.find((s) => s.value === value)
+              return match?.label ?? formatEnumLabel(value)
+            }}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Severities</SelectItem>

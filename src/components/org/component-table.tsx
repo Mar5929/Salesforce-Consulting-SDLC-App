@@ -115,7 +115,12 @@ export function ComponentTable({
           onValueChange={handleTypeChange}
         >
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filter by type" />
+            <SelectValue placeholder="Filter by type">
+              {(value: string) => {
+                const match = COMPONENT_TYPE_OPTIONS.find((opt) => opt.value === value)
+                return match?.label ?? value
+              }}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {COMPONENT_TYPE_OPTIONS.map((opt) => (

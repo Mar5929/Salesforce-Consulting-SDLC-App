@@ -237,7 +237,12 @@ export function MilestoneForm({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select status" />
+                <SelectValue placeholder="Select status">
+                  {(value: string) => {
+                    const match = STATUS_OPTIONS.find((opt) => opt.value === value)
+                    return match?.label ?? value
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((opt) => (

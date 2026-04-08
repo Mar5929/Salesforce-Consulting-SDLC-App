@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { formatEnumLabel } from "@/lib/format-enum"
 import { createStory, updateStory, updateStoryStatus, addStoryComponent } from "@/actions/stories"
 import { getAvailableTransitions } from "@/lib/story-status-machine"
 import { ComponentSelector, type ComponentEntry } from "./component-selector"
@@ -490,7 +491,9 @@ export function StoryForm({
                     onValueChange={(v: string | null) => v && field.onChange(v)}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue>
+                        {(value: string) => formatEnumLabel(value)}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="LOW">Low</SelectItem>

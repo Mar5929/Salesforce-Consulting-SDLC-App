@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createDefect } from "@/actions/defects"
+import { formatEnumLabel } from "@/lib/format-enum"
 
 // ────────────────────────────────────────────
 // Schema
@@ -175,7 +176,9 @@ export function DefectCreateSheet({
               }}
             >
               <SelectTrigger className="mt-1">
-                <SelectValue />
+                <SelectValue>
+                  {(value: string) => formatEnumLabel(value)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="CRITICAL">Critical</SelectItem>

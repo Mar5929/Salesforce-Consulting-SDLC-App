@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createTestCase } from "@/actions/test-executions"
+import { formatEnumLabel } from "@/lib/format-enum"
 
 // ────────────────────────────────────────────
 // Schema
@@ -163,7 +164,9 @@ export function TestCaseCreateForm({
             }}
           >
             <SelectTrigger className="mt-1">
-              <SelectValue />
+              <SelectValue>
+                {(value: string) => formatEnumLabel(value)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="HAPPY_PATH">Happy Path</SelectItem>

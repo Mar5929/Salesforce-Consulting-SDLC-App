@@ -187,7 +187,12 @@ export function TeamManagement({
                     }}
                   >
                     <SelectTrigger className="w-[170px]">
-                      <SelectValue />
+                      <SelectValue>
+                        {(value: string) => {
+                          const match = PROJECT_ROLES.find((r) => r.value === value)
+                          return match?.label ?? ROLE_LABELS[value] ?? value
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {PROJECT_ROLES.map((role) => (
@@ -233,7 +238,12 @@ export function TeamManagement({
           />
           <Select value={inviteRole} onValueChange={(value) => { if (value) setInviteRole(value) }}>
             <SelectTrigger className="w-[170px]">
-              <SelectValue />
+              <SelectValue>
+                {(value: string) => {
+                  const match = PROJECT_ROLES.find((r) => r.value === value)
+                  return match?.label ?? ROLE_LABELS[value] ?? value
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {PROJECT_ROLES.map((role) => (

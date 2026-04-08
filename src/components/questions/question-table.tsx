@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
+import { formatEnumLabel } from "@/lib/format-enum"
 
 // ────────────────────────────────────────────
 // Types
@@ -129,7 +130,9 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
           onValueChange={(v) => setStatusFilter(v === "all" ? null : v)}
         >
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder="Status">
+              {(value: string) => value === "all" ? "All Statuses" : formatEnumLabel(value)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
@@ -147,7 +150,9 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
           onValueChange={(v) => setScopeFilter(v === "all" ? null : v)}
         >
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Scope" />
+            <SelectValue placeholder="Scope">
+              {(value: string) => value === "all" ? "All Scopes" : (SCOPE_LABELS[value] ?? formatEnumLabel(value))}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Scopes</SelectItem>
@@ -162,7 +167,9 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
           onValueChange={(v) => setPriorityFilter(v === "all" ? null : v)}
         >
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Priority" />
+            <SelectValue placeholder="Priority">
+              {(value: string) => value === "all" ? "All Priorities" : formatEnumLabel(value)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Priorities</SelectItem>
@@ -178,7 +185,9 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
           onValueChange={(v) => setCategoryFilter(v === "all" ? null : v)}
         >
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Category" />
+            <SelectValue placeholder="Category">
+              {(value: string) => value === "all" ? "All Categories" : (CATEGORY_LABELS[value] ?? formatEnumLabel(value))}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
@@ -198,7 +207,9 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
           onValueChange={(v) => setReviewFilter(v === "all" ? null : v)}
         >
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Review" />
+            <SelectValue placeholder="Review">
+              {(value: string) => value === "all" ? "All Questions" : value === "needs_review" ? "Needs Review" : value}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Questions</SelectItem>
@@ -242,7 +253,7 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
                         variant="outline"
                         className={cn("text-[12px]", STATUS_STYLES[q.status])}
                       >
-                        {q.status}
+                        {formatEnumLabel(q.status)}
                       </Badge>
                       {q.needsReview && (
                         <Badge variant="outline" className="bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA] text-[11px]">
@@ -284,7 +295,7 @@ export function QuestionTable({ questions, projectId, onFilterChange }: Question
                       variant="outline"
                       className={cn("text-[12px]", PRIORITY_STYLES[q.priority])}
                     >
-                      {q.priority}
+                      {formatEnumLabel(q.priority)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-[13px] text-[#737373]">

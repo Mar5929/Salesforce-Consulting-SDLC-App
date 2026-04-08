@@ -80,7 +80,9 @@ export function ComponentSelector({ value, onChange }: ComponentSelectorProps) {
             onValueChange={(v: string | null) => v && updateEntry(index, "impactType", v)}
           >
             <SelectTrigger className="w-[120px]">
-              <SelectValue />
+              <SelectValue>
+                {(value: string) => IMPACT_LABELS[value as ImpactType] ?? value}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(IMPACT_LABELS) as ImpactType[]).map((type) => (

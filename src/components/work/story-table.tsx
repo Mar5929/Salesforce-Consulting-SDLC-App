@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { formatEnumLabel } from "@/lib/format-enum"
 import { SyncStatusBadge } from "@/components/jira/sync-status-badge"
 import { updateStoryStatus, updateStory } from "@/actions/stories"
 import { assignStoriesToSprint } from "@/actions/sprints"
@@ -218,7 +219,7 @@ export function StoryTable({
             variant="outline"
             className={cn("text-[12px]", PRIORITY_STYLES[row.original.priority])}
           >
-            {row.original.priority}
+            {formatEnumLabel(row.original.priority)}
           </Badge>
         ),
         size: 100,
@@ -368,7 +369,9 @@ export function StoryTable({
 
           <Select onValueChange={(v: string | null) => v && handleBulkStatusChange(v)}>
             <SelectTrigger className="h-8 w-[150px] text-[13px]">
-              <SelectValue placeholder="Change Status" />
+              <SelectValue placeholder="Change Status">
+                {(value: string) => STATUS_LABELS[value] ?? formatEnumLabel(value)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {ALL_STATUSES.map((s) => (

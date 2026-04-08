@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createQuestion } from "@/actions/questions"
+import { formatEnumLabel } from "@/lib/format-enum"
 
 const questionFormSchema = z.object({
   questionText: z.string().min(1, "Question text is required"),
@@ -138,7 +139,9 @@ export function QuestionForm({
               onValueChange={(v) => form.setValue("scope", v as QuestionFormValues["scope"])}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>
+                  {(value: string) => formatEnumLabel(value)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ENGAGEMENT">Engagement</SelectItem>
@@ -198,7 +201,9 @@ export function QuestionForm({
               onValueChange={(v) => form.setValue("priority", v as QuestionFormValues["priority"])}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>
+                  {(value: string) => formatEnumLabel(value)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="LOW">Low</SelectItem>
@@ -217,7 +222,9 @@ export function QuestionForm({
               onValueChange={(v) => form.setValue("category", v as QuestionFormValues["category"])}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>
+                  {(value: string) => formatEnumLabel(value)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="BUSINESS_PROCESS">Business Process</SelectItem>

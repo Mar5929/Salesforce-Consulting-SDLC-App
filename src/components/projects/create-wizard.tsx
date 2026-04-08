@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select"
 import { WizardStepIndicator } from "./wizard-step-indicator"
 import { createProject } from "@/actions/projects"
+import { formatEnumLabel } from "@/lib/format-enum"
 
 const ENGAGEMENT_TYPES = [
   { value: "GREENFIELD", label: "Greenfield" },
@@ -205,7 +206,12 @@ export function CreateWizard() {
                         onValueChange={field.onChange}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select engagement type" />
+                          <SelectValue placeholder="Select engagement type">
+                            {(value: string) => {
+                              const match = ENGAGEMENT_TYPES.find((t) => t.value === value)
+                              return match?.label ?? formatEnumLabel(value)
+                            }}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {ENGAGEMENT_TYPES.map((type) => (
@@ -326,7 +332,12 @@ export function CreateWizard() {
                           onValueChange={roleField.onChange}
                         >
                           <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select role" />
+                            <SelectValue placeholder="Select role">
+                              {(value: string) => {
+                                const match = PROJECT_ROLES.find((r) => r.value === value)
+                                return match?.label ?? formatEnumLabel(value)
+                              }}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {PROJECT_ROLES.map((role) => (

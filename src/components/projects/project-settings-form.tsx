@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { updateProject } from "@/actions/projects"
+import { formatEnumLabel } from "@/lib/format-enum"
 
 const ENGAGEMENT_TYPES = [
   { value: "GREENFIELD", label: "Greenfield" },
@@ -131,7 +132,12 @@ export function ProjectSettingsForm({
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select engagement type" />
+                <SelectValue placeholder="Select engagement type">
+                    {(value: string) => {
+                      const match = ENGAGEMENT_TYPES.find((t) => t.value === value)
+                      return match?.label ?? formatEnumLabel(value)
+                    }}
+                  </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {ENGAGEMENT_TYPES.map((type) => (
