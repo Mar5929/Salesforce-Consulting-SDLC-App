@@ -48,11 +48,11 @@ Exceptions: Epic Phase Grid cells use 12px internal padding (3 * 4px) for compac
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px | 400 (regular) | 1.5 |
-| Label | 12px | 500 (medium) | 1.4 |
+| Label | 12px | 400 (regular) | 1.4 |
 | Heading | 20px | 600 (semibold) | 1.2 |
 | Display | 28px | 600 (semibold) | 1.2 |
 
-Source: globals.css sets body at 14px/1.5. Label at 12px for table headers, grid column headers, and form labels. Heading at 20px for tab section titles and epic accordion headers. Display at 28px for page title "Roadmap" only.
+Source: globals.css sets body at 14px/1.5. Label at 12px for table headers, grid column headers, and form labels. Heading at 20px for tab section titles and epic accordion headers. Display at 28px for page title "Roadmap" only. Two weights only: 400 (regular) for body and labels, 600 (semibold) for headings and display.
 
 ---
 
@@ -62,12 +62,12 @@ Source: globals.css sets body at 14px/1.5. Label at 12px for table headers, grid
 |------|-------|-------|
 | Dominant (60%) | hsl(0 0% 100%) `--background` | Page background, table background, sheet background |
 | Secondary (30%) | hsl(0 0% 98%) `--muted` | Card surfaces, sidebar, AI summary card background, table header row, alternating row hint |
-| Accent (10%) | hsl(220 70% 50%) `--primary` | Primary CTA buttons ("New Milestone", "Link Stories"), active tab indicator, progress bar fill (green override for >75%), ring focus states |
+| Accent (10%) | hsl(220 70% 50%) `--primary` | Primary CTA buttons ("New Milestone", "Link Selected Stories"), active tab indicator, progress bar fill (green override for >75%), ring focus states |
 | Destructive | hsl(0 84% 60%) `--destructive` | Delete milestone button, progress bar fill when <25% |
 
 Accent reserved for:
 - "New Milestone" primary button
-- "Link Stories" action button in dialog
+- "Link Selected Stories" action button in dialog
 - Active tab underline indicator
 - Focus ring on interactive elements
 - Epic name links in grid rows (on hover)
@@ -105,7 +105,7 @@ All components are from the existing shadcn/ui library. No new shadcn components
 | AlertDialog | `@/components/ui/alert-dialog` | Milestone delete confirmation (D-07) |
 | Badge | `@/components/ui/badge` | Status badges throughout: milestone status, epic phase status, story status |
 | Progress | `@/components/ui/progress` | Milestone progress bar (D-16) |
-| Button | `@/components/ui/button` | "New Milestone", "Link Stories", form submit, refresh synthesis |
+| Button | `@/components/ui/button` | "New Milestone", "Link Selected Stories", form submit, refresh synthesis |
 | Card, CardHeader, CardContent | `@/components/ui/card` | AI summary card wrapper (D-17) |
 | Collapsible, CollapsibleTrigger, CollapsibleContent | `@/components/ui/collapsible` | Epic accordion sections in Execution Plan (D-11), phase sub-groups (D-13) |
 | Input | `@/components/ui/input` | Milestone name, sort order fields |
@@ -145,9 +145,9 @@ All components are from the existing shadcn/ui library. No new shadcn components
 | Interaction | Trigger | Behavior |
 |-------------|---------|----------|
 | Create milestone | Click "New Milestone" button | Sheet slides in from right. Form fields: name (required), description (textarea), target date (date picker, optional), status (select, default NOT_STARTED), sort order (number input). Submit creates via server action, toast confirms, sheet closes, table revalidates. |
-| Edit milestone | Click edit icon on table row | Same Sheet opens pre-populated with existing values. Submit updates via server action. |
-| Delete milestone | Click delete icon on table row | AlertDialog opens: "Delete [milestone name]? This will unlink all stories but will not delete them." Confirm triggers server action, toast confirms. |
-| Link stories | Click "Link Stories" on table row | Dialog opens. Shows unlinked stories grouped by epic in collapsible sections. Each story has a checkbox. "Link Selected" button at bottom. Server action links via MilestoneStory. |
+| Edit milestone | Click edit icon on table row | Same Sheet opens pre-populated with existing values. Submit updates via server action. Icon-only button must include `aria-label="Edit [milestone name]"`. |
+| Delete milestone | Click delete icon on table row | AlertDialog opens: "Delete [milestone name]? This will unlink all stories but will not delete them." Confirm triggers server action, toast confirms. Icon-only button must include `aria-label="Delete [milestone name]"`. |
+| Link stories | Click "Link Stories" on table row | Dialog opens. Shows unlinked stories grouped by epic in collapsible sections. Each story has a checkbox. "Link Selected Stories" button at bottom. Server action links via MilestoneStory. |
 | Sort milestones | Default display | Sorted by `sortOrder` ascending. No interactive sort controls needed (sortOrder is editable in the form). |
 
 ### Epic Phase Grid (D-08, D-09, D-10)
@@ -174,6 +174,16 @@ All components are from the existing shadcn/ui library. No new shadcn components
 | Auto-load synthesis | Page load (Milestones tab active) | Server action fires on mount. AiSummaryCard shows loading skeleton while generating. Renders "what must happen" and "what's currently blocking" summaries for next 2-3 milestones. |
 | Manual refresh | Click refresh icon on AI summary card | Server action re-generates synthesis. Card shows loading skeleton during generation. Updated content replaces previous. |
 | No milestones state | No milestones exist | AI summary section hidden entirely. Only the empty state for the milestone table is shown. |
+
+### Accessibility: Icon-Only Buttons
+
+All icon-only buttons must include accessible labels:
+
+| Button | aria-label Pattern |
+|--------|-------------------|
+| Edit milestone (pencil icon) | `aria-label="Edit [milestone name]"` where `[milestone name]` is the specific milestone's name |
+| Delete milestone (trash icon) | `aria-label="Delete [milestone name]"` where `[milestone name]` is the specific milestone's name |
+| Refresh AI synthesis (refresh icon) | `aria-label="Refresh milestone summary"` |
 
 ---
 
@@ -209,8 +219,8 @@ All components are from the existing shadcn/ui library. No new shadcn components
 | Milestone delete fails | "Failed to delete milestone. Please try again." | Toast with error variant. AlertDialog closes. |
 | Story linking fails | "Failed to link stories. Please try again." | Toast with error variant. Dialog stays open with selections preserved. |
 | Epic phase status update fails | "Failed to update phase status." | Toast with error variant. Cell reverts to previous status (optimistic rollback). |
-| AI synthesis fails | "Unable to generate milestone summary." | AiSummaryCard shows error state with "Retry" button. |
-| Page data load fails | "Failed to load roadmap data." | Full-page error boundary with "Reload" button. |
+| AI synthesis fails | "Unable to generate milestone summary." | AiSummaryCard shows error state with "Retry Generation" button. |
+| Page data load fails | "Failed to load roadmap data." | Full-page error boundary with "Reload Page" button. |
 
 ---
 
@@ -232,7 +242,10 @@ All components are from the existing shadcn/ui library. No new shadcn components
 | AI summary section title | "Upcoming Milestones" |
 | AI summary loading | "Generating milestone summary..." |
 | AI summary error | "Unable to generate milestone summary." |
+| AI summary retry | "Retry Generation" |
+| Page reload | "Reload Page" |
 | Story link dialog title | "Link Stories to [milestone name]" |
+| Story link action | "Link Selected Stories" |
 | Story link empty | "All stories are linked" |
 | Progress bar (no stories) | "No stories linked" (replaces progress bar) |
 | Grid column headers | "Discovery" / "Design" / "Build" / "Test" / "Deploy" |
@@ -266,11 +279,11 @@ All components are from the existing shadcn/ui library. No new shadcn components
 +------------------+------------+----------+----------+----------+----------+
 ```
 
-- Epic name column: 200px min-width, left-aligned, font weight 500
+- Epic name column: 200px min-width, left-aligned, font weight 400
 - Status cells: centered, min-width 100px, height 44px
 - Status chips: 8px horizontal padding, 4px vertical padding, border-radius 4px (--radius-sm)
 - Aggregate row: bottom border, muted-foreground text, font weight 400
-- Column headers: 12px label size, font weight 500, uppercase, muted-foreground color
+- Column headers: 12px label size, font weight 400, uppercase, muted-foreground color
 
 ---
 
