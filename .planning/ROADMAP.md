@@ -212,6 +212,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 | 7. Story Generation E2E Wiring | 1/1 | Complete | 2026-04-07 |
 | 8. Event Wiring and Integration Fixes | 1/1 | Complete | 2026-04-07 |
 | 9. Navigation and Badge Fixes | 1/1 | Complete | 2026-04-07 |
+| 10. Chat Session Management and Conversation Intelligence | 4/5 | In Progress (gaps) | — |
 
 ### Phase 10: Chat Session Management and Conversation Intelligence
 
@@ -228,10 +229,14 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5
 
 Plans:
 - [x] 10-01-PLAN.md -- Conversation sidebar UI, chat layout, schema migration (isArchived), lifecycle server actions
-- [ ] 10-02-PLAN.md -- BRIEFING_SESSION and ENRICHMENT_SESSION: task definitions, prompt builders, UI components, entry points
-- [ ] 10-03-PLAN.md -- QUESTION_SESSION hybrid (Inngest background + interactive), session lifecycle management
-- [ ] 10-04-PLAN.md -- Smart context retrieval: two-pass semantic + keyword search, full project data assembly
-- [ ] 10-05-PLAN.md -- Schema push and end-to-end verification
+- [x] 10-02-PLAN.md -- BRIEFING_SESSION and ENRICHMENT_SESSION: task definitions, prompt builders, UI components, entry points
+- [x] 10-03-PLAN.md -- QUESTION_SESSION hybrid (Inngest background + interactive), session lifecycle management
+- [x] 10-04-PLAN.md -- Smart context retrieval: two-pass semantic + keyword search, full project data assembly
+- [ ] 10-05-PLAN.md -- Schema push and end-to-end verification (NOT EXECUTED — see gaps below)
+
+**Known Gaps (from verification):**
+  - Enrichment/briefing session auto-complete not wired: `onAllEnrichmentsResolved` callback not passed from ChatInterface to MessageList
+  - Plan 10-05 schema push never run: `isArchived` column exists in Prisma schema but not in live database — archive/unarchive will throw runtime errors
 
 ### Phase 11: Agentic Chat with Database Awareness and Project Tool Use
 

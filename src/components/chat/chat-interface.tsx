@@ -56,6 +56,24 @@ export function ChatInterface({
 
   const isLoading = status === "submitted" || status === "streaming"
 
+  // Auto-complete briefing sessions after first AI response finishes
+  const [briefingAutoCompleted, setBriefingAutoCompleted] = useState(false)
+  useEffect(() => {
+    if (
+      conversationType !== "BRIEFING_SESSION" ||
+      briefingAutoCompleted ||
+      currentStatus !== "ACTIVE" ||
+      isLoading
+    ) return
+    const hasAssistantMessage = messages.some((m) => m.role === "assistant")
+    if (hasAssistantMessage) {
+      setBriefingAutoCompleted(true)
+      completeSession({ projectId, conversationId }).then((result) => {
+        if (result?.data) setCurrentStatus("COMPLETE")
+      })
+    }
+  }, [conversationType, briefingAutoCompleted, currentStatus, isLoading, messages, projectId, conversationId])
+
   // Load real session token totals from database
   const [sessionTokens, setSessionTokens] = useState({ totalTokens: 0, totalCost: 0 })
 
@@ -110,6 +128,15 @@ export function ChatInterface({
       setCurrentStatus("COMPLETE")
     }
   }
+
+  // Auto-complete for enrichment and briefing sessions
+  const handleAutoComplete = useCallback(async () => {
+    if (currentStatus !== "ACTIVE") return
+    const result = await completeSession({ projectId, conversationId })
+    if (result?.data) {
+      setCurrentStatus("COMPLETE")
+    }
+  }, [currentStatus, projectId, conversationId])
   const title =
     sessionTitle ??
     (isReadOnly ? "Transcript Session" : isTaskSession ? "Task Session" : "Project Chat")
@@ -145,6 +172,7 @@ export function ChatInterface({
               isLoading={isLoading}
               storySession={conversationType === "STORY_SESSION" ? { projectId, epicId: epicId ?? "", featureId } : undefined}
               enrichmentSession={conversationType === "ENRICHMENT_SESSION" && storyId ? { projectId, storyId } : undefined}
+              onAllEnrichmentsResolved={conversationType === "ENRICHMENT_SESSION" ? handleAutoComplete : undefined}
             />
           )}
 
