@@ -257,8 +257,8 @@ Plans:
 - [x] 11-02-PLAN.md -- Query tools for all 15 entities (query list + get detail)
 - [x] 11-03-PLAN.md -- Write tools for 10 mutable entities + batch variants
 - [ ] 11-04-PLAN.md -- Delete tools with needsApproval safety gate
-- [ ] 11-05-PLAN.md -- Chat route upgrade: wiring tools, multi-step, approval flow
-- [ ] 11-06-PLAN.md -- Tool result card components and message list rendering
+- [x] 11-05-PLAN.md -- Chat route upgrade: wiring tools, multi-step, approval flow
+- [x] 11-06-PLAN.md -- Tool result card components and message list rendering
 
 ### Phase 12: Roadmap and Execution View — Milestones, Epic Phase Grid, and Project Execution Order
 
