@@ -221,3 +221,26 @@ export const retryFailedSyncs = actionClient
 
     return { retriesInitiated: failedRecords.length }
   })
+
+const deleteJiraConfigSchema = z.object({
+  projectId: z.string(),
+})
+
+/**
+ * Delete Jira configuration for a project.
+ * Retains JiraSyncRecord entries for audit history.
+ */
+export const deleteJiraConfig = actionClient
+  .schema(deleteJiraConfigSchema)
+  .action(async ({ parsedInput }) => {
+    const { projectId } = parsedInput
+
+    await assertProjectNotArchived(projectId)
+    await requireRole(projectId, ["PM", "SOLUTION_ARCHITECT"])
+
+    await prisma.jiraConfig.delete({
+      where: { projectId },
+    })
+
+    return { success: true }
+  })

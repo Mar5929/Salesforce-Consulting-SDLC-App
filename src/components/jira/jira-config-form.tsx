@@ -240,9 +240,8 @@ export function JiraConfigForm({
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 opacity-50 cursor-not-allowed"
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => onDisconnect?.()}
-                    disabled
                   >
                     Disconnect
                   </AlertDialogAction>

@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { JiraConfigForm } from "@/components/jira/jira-config-form"
-import { retryFailedSyncs } from "@/actions/jira-sync"
+import { deleteJiraConfig, retryFailedSyncs } from "@/actions/jira-sync"
 
 // ────────────────────────────────────────────
 // Types
@@ -54,11 +54,17 @@ export function JiraSettingsSection({
     }
   )
 
+  const { execute: executeDisconnect } = useAction(deleteJiraConfig, {
+    onSuccess: () => {
+      toast.success("Jira configuration disconnected")
+      router.refresh()
+    },
+    onError: ({ error }) =>
+      toast.error(error.serverError ?? "Failed to disconnect Jira"),
+  })
+
   function handleDisconnect() {
-    // TODO: Implement deleteJiraConfig server action to actually remove the config.
-    // Until then, this handler is a no-op placeholder. The disconnect button is
-    // disabled in JiraConfigForm to prevent user confusion.
-    toast.info("Jira disconnect is not yet implemented")
+    executeDisconnect({ projectId })
   }
 
   return (
