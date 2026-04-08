@@ -257,10 +257,20 @@ Plans:
 
 ### Phase 12: Roadmap and Execution View — Milestones, Epic Phase Grid, and Project Execution Order
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** The team can track project milestones with computed progress, visualize epic phase status in an interactive matrix grid, view per-epic story execution ordering with dependency indicators, and receive AI-synthesized summaries for upcoming milestones
 **Depends on:** Phase 11
-**Plans:** 0 plans
+**Requirements**: PRD-17.2-MILESTONES, PRD-17.2-EPIC-PHASE-GRID, PRD-17.2-UPCOMING-MILESTONES, PRD-17.4-EXECUTION-PLAN
+**Success Criteria** (what must be TRUE):
+  1. User can navigate to /projects/[id]/roadmap from the sidebar and see three tabs: Milestones, Epic Phases, Execution Plan
+  2. User can create, edit, delete milestones and link stories via multi-select dialog, with computed progress bars
+  3. Epic Phase Grid shows an interactive epic x phase matrix where clicking a cell cycles the status
+  4. Execution Plan shows collapsible per-epic sections with stories grouped by phase, dependency indicators, and blocked story highlighting
+  5. AI-synthesized "what must happen" and "what's blocking" summaries appear for upcoming milestones
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 12 to break down)
+- [ ] 12-01-PLAN.md -- Routing, sidebar nav, milestone CRUD server actions, progress computation, Milestones tab UI
+- [ ] 12-02-PLAN.md -- Epic Phase Grid: interactive matrix with click-to-cycle status cells and aggregate counts
+- [ ] 12-03-PLAN.md -- Execution Plan tab with per-epic story ordering, AI milestone synthesis task and summary component
+
+**UI hint**: yes
