@@ -13,6 +13,7 @@ import { getStoriesContext } from "@/lib/agent-harness/context/stories-context"
 import { getProjectSummary } from "@/lib/agent-harness/context/project-summary"
 import { buildBriefingSessionPrompt } from "@/lib/chat-sessions/briefing"
 import { buildEnrichmentSessionPrompt } from "@/lib/chat-sessions/enrichment"
+import { buildQuestionSessionPrompt } from "@/lib/chat-sessions/question"
 
 export const maxDuration = 60
 
@@ -143,6 +144,16 @@ export async function POST(request: Request) {
     } else if (conversation.conversationType === "ENRICHMENT_SESSION" && resolvedStoryId) {
       // Enrichment session: suggest story improvements via tool calls
       systemPrompt = await buildEnrichmentSessionPrompt(projectId, resolvedStoryId)
+    } else if (conversation.conversationType === "QUESTION_SESSION") {
+      // Question session: conflict resolution for question/decision contradictions
+      const resolvedQuestionId = meta.questionId
+      if (resolvedQuestionId) {
+        systemPrompt = await buildQuestionSessionPrompt(projectId, resolvedQuestionId)
+      } else {
+        // Fallback if no questionId in metadata
+        const context = await assembleGeneralChatContext(projectId)
+        systemPrompt = buildChatSystemPrompt(context)
+      }
     } else {
       // General chat: use standard context assembly (T-02-11)
       const context = await assembleGeneralChatContext(projectId)

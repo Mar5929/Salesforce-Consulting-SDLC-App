@@ -57,13 +57,14 @@ export default async function ConversationPage({
   const resolvedStoryId = storyId ?? meta.storyId
 
   // Map DB conversation type to ChatInterface variant
-  type ChatType = "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION" | "TRANSCRIPT_SESSION" | "BRIEFING_SESSION" | "ENRICHMENT_SESSION"
+  type ChatType = "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION" | "TRANSCRIPT_SESSION" | "BRIEFING_SESSION" | "ENRICHMENT_SESSION" | "QUESTION_SESSION"
   const chatTypeMap: Record<string, ChatType> = {
     GENERAL_CHAT: "GENERAL_CHAT",
     STORY_SESSION: "STORY_SESSION",
     TRANSCRIPT_SESSION: "TRANSCRIPT_SESSION",
     BRIEFING_SESSION: "BRIEFING_SESSION",
     ENRICHMENT_SESSION: "ENRICHMENT_SESSION",
+    QUESTION_SESSION: "QUESTION_SESSION",
   }
   const chatType = chatTypeMap[conversation.conversationType] ?? "TASK_SESSION"
 
@@ -94,6 +95,7 @@ export default async function ConversationPage({
       epicId={resolvedEpicId}
       featureId={resolvedFeatureId}
       storyId={resolvedStoryId}
+      sessionStatus={conversation.status as "ACTIVE" | "COMPLETE" | "FAILED"}
     />
   )
 }

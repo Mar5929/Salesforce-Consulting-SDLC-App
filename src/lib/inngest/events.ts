@@ -51,4 +51,7 @@ export const EVENTS = {
 
   // PM Dashboard events (Phase 5)
   PM_DASHBOARD_SYNTHESIS_REQUESTED: "pm-dashboard/synthesis-requested",
+
+  // Question impact (Phase 10)
+  QUESTION_IMPACT_REQUESTED: "question/impact-requested",
 } as const

@@ -14,6 +14,7 @@ import { orgIngestionFunction } from "@/lib/inngest/functions/org-ingestion"
 import { generateDocumentFunction } from "@/lib/inngest/functions/document-generation"
 import { synthesizePmDashboard } from "@/lib/inngest/functions/pm-dashboard-synthesis"
 import { jiraSyncOnStatusChange, jiraSyncRetryFunction } from "@/lib/inngest/functions/jira-sync"
+import { questionImpactFunction } from "@/lib/inngest/functions/question-impact"
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -27,6 +28,7 @@ export const { GET, POST, PUT } = serve({
     dashboardSynthesisFunction,
     notificationDispatchFunction,
     questionImpactAssessmentFunction,
+    questionImpactFunction,
     sprintIntelligence,
     metadataSyncFunction,
     orgIngestionFunction,

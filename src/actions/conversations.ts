@@ -407,6 +407,106 @@ export const initiateEnrichmentSession = actionClient
   })
 
 // ============================================================================
+// Question Impact
+// ============================================================================
+
+const initiateQuestionImpactSchema = z.object({
+  projectId: z.string().min(1),
+  questionId: z.string().min(1),
+})
+
+/**
+ * Dispatch a question impact assessment via Inngest.
+ * The Inngest function runs the AI task and routes based on conflict detection:
+ * - No conflict: auto-answers the question
+ * - Conflict found: creates a QUESTION_SESSION conversation
+ */
+export const initiateQuestionImpact = actionClient
+  .schema(initiateQuestionImpactSchema)
+  .action(async ({ parsedInput: { projectId, questionId } }) => {
+    const member = await getCurrentMember(projectId)
+
+    // Dynamic import to avoid bundling Inngest client in all server actions
+    const { inngest } = await import("@/lib/inngest/client")
+    const { EVENTS } = await import("@/lib/inngest/events")
+
+    await inngest.send({
+      name: EVENTS.QUESTION_IMPACT_REQUESTED,
+      data: {
+        projectId,
+        questionId,
+        memberId: member.id,
+      },
+    })
+
+    return { dispatched: true, questionId }
+  })
+
+// ============================================================================
+// Session Lifecycle
+// ============================================================================
+
+const completeSessionSchema = z.object({
+  projectId: z.string().min(1),
+  conversationId: z.string().min(1),
+})
+
+/**
+ * Mark a session as COMPLETE. Prevents completing GENERAL_CHAT conversations.
+ */
+export const completeSession = actionClient
+  .schema(completeSessionSchema)
+  .action(async ({ parsedInput: { projectId, conversationId } }) => {
+    await getCurrentMember(projectId)
+    const scoped = scopedPrisma(projectId)
+
+    const conversation = await scoped.conversation.findFirst({
+      where: { id: conversationId },
+    })
+    if (!conversation) throw new Error("Conversation not found")
+    if (conversation.conversationType === "GENERAL_CHAT") {
+      throw new Error("Cannot complete a general chat conversation")
+    }
+
+    return prisma.conversation.update({
+      where: { id: conversationId },
+      data: { status: "COMPLETE" },
+    })
+  })
+
+const retrySessionSchema = z.object({
+  projectId: z.string().min(1),
+  conversationId: z.string().min(1),
+})
+
+/**
+ * Retry a failed session by creating a new conversation with the same type and metadata.
+ */
+export const retrySession = actionClient
+  .schema(retrySessionSchema)
+  .action(async ({ parsedInput: { projectId, conversationId } }) => {
+    const member = await getCurrentMember(projectId)
+    const scoped = scopedPrisma(projectId)
+
+    const original = await scoped.conversation.findFirst({
+      where: { id: conversationId },
+    })
+    if (!original) throw new Error("Conversation not found")
+
+    const newConversation = await prisma.conversation.create({
+      data: {
+        projectId,
+        conversationType: original.conversationType,
+        title: `Retry: ${original.title ?? "Session"}`,
+        createdById: member.id,
+        metadata: original.metadata ?? undefined,
+      },
+    })
+
+    return { conversationId: newConversation.id }
+  })
+
+// ============================================================================
 // Messages
 // ============================================================================
 

@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, type KeyboardEvent } from "react"
 import { useChat, type UIMessage } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { ArrowUp, AlertCircle, RefreshCw } from "lucide-react"
-import { getSessionTokenTotals } from "@/actions/conversations"
+import { ArrowUp, AlertCircle, RefreshCw, CheckCircle2, XCircle } from "lucide-react"
+import { getSessionTokenTotals, completeSession } from "@/actions/conversations"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { TokenDisplay } from "./token-display"
@@ -14,12 +14,13 @@ import { ContextPanel } from "./context-panel"
 interface ChatInterfaceProps {
   conversationId: string
   projectId: string
-  conversationType: "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION" | "TRANSCRIPT_SESSION" | "BRIEFING_SESSION" | "ENRICHMENT_SESSION"
+  conversationType: "GENERAL_CHAT" | "TASK_SESSION" | "STORY_SESSION" | "TRANSCRIPT_SESSION" | "BRIEFING_SESSION" | "ENRICHMENT_SESSION" | "QUESTION_SESSION"
   initialMessages?: UIMessage[]
   sessionTitle?: string
   epicId?: string
   featureId?: string
   storyId?: string
+  sessionStatus?: "ACTIVE" | "COMPLETE" | "FAILED"
 }
 
 /**
@@ -36,8 +37,10 @@ export function ChatInterface({
   epicId,
   featureId,
   storyId,
+  sessionStatus = "ACTIVE",
 }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState("")
+  const [currentStatus, setCurrentStatus] = useState(sessionStatus)
 
   const { messages, sendMessage, status, error, clearError } = useChat({
     id: conversationId,
@@ -97,8 +100,16 @@ export function ChatInterface({
     ),
   }))
 
-  const isTaskSession = conversationType === "TASK_SESSION" || conversationType === "STORY_SESSION" || conversationType === "BRIEFING_SESSION" || conversationType === "ENRICHMENT_SESSION"
+  const isTaskSession = conversationType === "TASK_SESSION" || conversationType === "STORY_SESSION" || conversationType === "BRIEFING_SESSION" || conversationType === "ENRICHMENT_SESSION" || conversationType === "QUESTION_SESSION"
   const isReadOnly = conversationType === "TRANSCRIPT_SESSION"
+  const isSessionComplete = currentStatus === "COMPLETE" || currentStatus === "FAILED"
+
+  async function handleMarkResolved() {
+    const result = await completeSession({ projectId, conversationId })
+    if (result?.data) {
+      setCurrentStatus("COMPLETE")
+    }
+  }
   const title =
     sessionTitle ??
     (isReadOnly ? "Transcript Session" : isTaskSession ? "Task Session" : "Project Chat")
@@ -108,10 +119,18 @@ export function ChatInterface({
       {/* Header */}
       <div className="border-border flex items-center justify-between border-b px-4 py-3">
         <h1 className="text-[18px] font-semibold">{title}</h1>
-        <TokenDisplay
-          totalTokens={sessionTokens.totalTokens}
-          totalCost={sessionTokens.totalCost}
-        />
+        <div className="flex items-center gap-3">
+          {conversationType === "QUESTION_SESSION" && currentStatus === "ACTIVE" && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleMarkResolved}>
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Mark Resolved
+            </Button>
+          )}
+          <TokenDisplay
+            totalTokens={sessionTokens.totalTokens}
+            totalCost={sessionTokens.totalCost}
+          />
+        </div>
       </div>
 
       {/* Content area */}
@@ -148,12 +167,32 @@ export function ChatInterface({
             </div>
           )}
 
-          {/* Input area — hidden for read-only transcript sessions */}
+          {/* Input area — hidden for read-only or completed sessions */}
           {isReadOnly ? (
             <div className="bg-muted border-border border-t px-4 py-3">
               <p className="text-muted-foreground text-center text-[13px]">
                 This is a read-only transcript processing session. View the full transcript for extraction results and accept/reject controls.
               </p>
+            </div>
+          ) : isSessionComplete ? (
+            <div className="bg-muted border-border border-t px-4 py-3">
+              <div className="flex items-center justify-center gap-2">
+                {currentStatus === "COMPLETE" ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <p className="text-muted-foreground text-[13px]">
+                      This session has been completed.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    <p className="text-muted-foreground text-[13px]">
+                      This session failed. You can retry by creating a new session.
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           ) : (
             <div className="bg-muted border-border border-t px-4 py-3">
