@@ -60,6 +60,7 @@ export function NewSessionDropdown({ projectId }: NewSessionDropdownProps) {
       })
       if (result?.data) {
         router.push(`/projects/${projectId}/chat/${result.data.id}`)
+        router.refresh()
       }
     } else {
       // Navigate with search params for entity selection in the chat page

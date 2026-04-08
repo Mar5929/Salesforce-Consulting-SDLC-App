@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback, useTransition } from "react"
+import { useState, useMemo, useCallback, useTransition, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -44,6 +44,11 @@ export function ConversationSidebar({
   const [showArchived, setShowArchived] = useState(false)
   const [conversations, setConversations] =
     useState<ConversationListItem[]>(initialConversations)
+
+  // Sync local state when server-fetched props change (e.g. after router.refresh())
+  useEffect(() => {
+    setConversations(initialConversations)
+  }, [initialConversations])
 
   // Derive selected conversation from URL
   const pathParts = pathname.split("/")
