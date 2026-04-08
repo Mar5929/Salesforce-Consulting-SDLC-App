@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useTransition, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { ConversationFilters } from "./conversation-filters"
@@ -114,22 +115,32 @@ export function ConversationSidebar({
 
   const handleArchive = useCallback(
     async (conversationId: string) => {
-      await archiveConversation({ projectId, conversationId })
-      startTransition(() => {
-        refreshConversations()
-        router.refresh()
-      })
+      try {
+        await archiveConversation({ projectId, conversationId })
+        startTransition(() => {
+          refreshConversations()
+          router.refresh()
+        })
+        toast.success("Conversation archived")
+      } catch {
+        toast.error("Failed to archive conversation")
+      }
     },
     [projectId, refreshConversations, router]
   )
 
   const handleUnarchive = useCallback(
     async (conversationId: string) => {
-      await unarchiveConversation({ projectId, conversationId })
-      startTransition(() => {
-        refreshConversations()
-        router.refresh()
-      })
+      try {
+        await unarchiveConversation({ projectId, conversationId })
+        startTransition(() => {
+          refreshConversations()
+          router.refresh()
+        })
+        toast.success("Conversation restored")
+      } catch {
+        toast.error("Failed to restore conversation")
+      }
     },
     [projectId, refreshConversations, router]
   )
