@@ -7,6 +7,7 @@
  * Handles tabbed review UI, bulk-confirm, trigger ingestion, and router.refresh().
  */
 
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { toast } from "sonner"
@@ -69,6 +70,24 @@ export function AnalysisClient({
   bpConfirmed,
 }: AnalysisClientProps) {
   const router = useRouter()
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Poll for pipeline progress while status is "running" (BUG-021)
+  const isRunning = pipelineStatus === "running"
+  useEffect(() => {
+    if (isRunning) {
+      pollRef.current = setInterval(() => {
+        router.refresh()
+      }, 3000) // Poll every 3 seconds
+    }
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+    }
+  }, [isRunning, router])
 
   const { execute: executeTrigger, isExecuting: isTriggering } = useAction(
     triggerIngestion,

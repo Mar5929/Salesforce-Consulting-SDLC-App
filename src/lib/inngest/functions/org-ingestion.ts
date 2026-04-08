@@ -268,13 +268,34 @@ export const orgIngestionFunction = inngest.createFunction(
     triggers: [{ event: EVENTS.ORG_INGESTION_REQUESTED }],
   },
   async ({ event, step }: { event: any; step: any }) => {
-    const { projectId, userId } = event.data as {
+    const { projectId, userId, ingestionRunId } = event.data as {
       projectId: string
       userId: string
+      ingestionRunId: string
+    }
+
+    /** Helper: update the OrgIngestionRun record with current phase and status */
+    async function updateRunStatus(
+      phase: number,
+      status: "RUNNING" | "COMPLETED" | "FAILED",
+      errorMessage?: string
+    ) {
+      await prisma.orgIngestionRun.update({
+        where: { id: ingestionRunId },
+        data: {
+          currentPhase: phase,
+          status,
+          ...(errorMessage ? { errorMessage } : {}),
+          ...(status === "COMPLETED" || status === "FAILED"
+            ? { completedAt: new Date() }
+            : {}),
+        },
+      })
     }
 
     // Step 1 — Parse
     const groupedComponents = await step.run("parse-org-components", async () => {
+      await updateRunStatus(1, "RUNNING")
       return parseOrgComponents(projectId)
     })
 
@@ -284,29 +305,35 @@ export const orgIngestionFunction = inngest.createFunction(
       0
     )
     if (totalComponents === 0) {
+      await updateRunStatus(1, "FAILED", "No active components found")
       return { success: false, reason: "No active components found" }
     }
 
     // Step 2 — Classify
     const domainGroupings = await step.run("classify-components", async () => {
+      await updateRunStatus(2, "RUNNING")
       return classifyComponents(projectId, userId, groupedComponents)
     })
 
     if (domainGroupings.length === 0) {
+      await updateRunStatus(2, "FAILED", "Classification produced no domain groupings")
       return { success: false, reason: "Classification produced no domain groupings" }
     }
 
     // Step 3 — Synthesize+Articulate
     await step.run("synthesize-business-processes", async () => {
+      await updateRunStatus(3, "RUNNING")
       return synthesizeBusinessProcesses(projectId, userId, domainGroupings)
     })
 
     // Step 4 — Finalize
     await step.run("finalize-ingestion", async () => {
+      await updateRunStatus(4, "RUNNING")
       await prisma.project.update({
         where: { id: projectId },
         data: { sfOrgLastSyncAt: new Date() },
       })
+      await updateRunStatus(4, "COMPLETED")
     })
 
     return {

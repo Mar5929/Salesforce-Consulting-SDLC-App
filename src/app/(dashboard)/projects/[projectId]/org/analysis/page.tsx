@@ -74,12 +74,46 @@ async function AnalysisData({ projectId }: { projectId: string }) {
     orderBy: [{ isConfirmed: "asc" }, { name: "asc" }],
   })
 
+  // Query the latest ingestion run for real pipeline status (BUG-021)
+  const latestIngestionRun = await prisma.orgIngestionRun.findFirst({
+    where: { projectId },
+    orderBy: { startedAt: "desc" },
+    select: { status: true, currentPhase: true },
+  })
+
   const hasRun = domainGroupings.length > 0
 
-  // Determine pipeline phase
-  // If domain groupings exist, ingestion has completed
-  const pipelinePhase = hasRun ? 4 : 0
-  const pipelineStatus = hasRun ? "completed" : "idle"
+  // Derive pipeline phase and status from the ingestion run record
+  let pipelinePhase: 0 | 1 | 2 | 3 | 4
+  let pipelineStatus: "idle" | "running" | "completed" | "failed"
+
+  if (latestIngestionRun) {
+    const phase = latestIngestionRun.currentPhase
+    pipelinePhase = (phase >= 0 && phase <= 4 ? phase : 0) as 0 | 1 | 2 | 3 | 4
+
+    switch (latestIngestionRun.status) {
+      case "RUNNING":
+        pipelineStatus = "running"
+        break
+      case "COMPLETED":
+        pipelineStatus = "completed"
+        break
+      case "FAILED":
+        pipelineStatus = "failed"
+        break
+      default:
+        // PENDING — pipeline is about to start
+        pipelineStatus = "running"
+        break
+    }
+  } else if (hasRun) {
+    // Legacy: domain groupings exist but no ingestion run record (pre-BUG-021 data)
+    pipelinePhase = 4
+    pipelineStatus = "completed"
+  } else {
+    pipelinePhase = 0
+    pipelineStatus = "idle"
+  }
 
   // Map data for client components
   const domainData = domainGroupings.map((dg) => ({

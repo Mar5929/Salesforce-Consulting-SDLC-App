@@ -48,12 +48,22 @@ export const triggerIngestion = actionClient
       throw new Error("No org components found. Run a metadata sync first.")
     }
 
+    // Create an OrgIngestionRun record to track pipeline progress (BUG-021)
+    const ingestionRun = await prisma.orgIngestionRun.create({
+      data: {
+        projectId,
+        status: "PENDING",
+        currentPhase: 0,
+      },
+    })
+
     // Send Inngest event to trigger ingestion pipeline
     await inngest.send({
       name: EVENTS.ORG_INGESTION_REQUESTED,
       data: {
         projectId,
         userId: ctx.userId,
+        ingestionRunId: ingestionRun.id,
       },
     })
 
