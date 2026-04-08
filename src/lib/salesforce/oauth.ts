@@ -47,15 +47,29 @@ export async function buildAuthorizationUrl(
 }
 
 /**
+ * Result of OAuth state validation.
+ * - `valid: true` — token is valid, includes projectId and clerkUserId
+ * - `valid: false` — token was expired or invalid, may include projectId for redirect
+ * - `null` — token not found at all
+ */
+export type OAuthStateResult =
+  | { valid: true; projectId: string; clerkUserId: string }
+  | { valid: false; projectId: string }
+  | null
+
+/**
  * Validate an OAuth state token and return the associated projectId and userId.
  * Deletes the token after validation (single-use).
  *
+ * Returns a discriminated result so the caller can redirect to the correct
+ * project settings page even when the token is expired.
+ *
  * @param stateToken - The state token from the OAuth callback
- * @returns The projectId and userId bound to this state token, or null if invalid/expired
+ * @returns Validation result with projectId preserved on expiry, or null if not found
  */
 export async function validateOAuthState(
   stateToken: string
-): Promise<{ projectId: string; clerkUserId: string } | null> {
+): Promise<OAuthStateResult> {
   const record = await prisma.oauthState.findUnique({
     where: { token: stateToken },
   })
@@ -65,10 +79,16 @@ export async function validateOAuthState(
   // Delete the token (single-use)
   await prisma.oauthState.delete({ where: { token: stateToken } })
 
-  // Check expiry
-  if (record.expiresAt < new Date()) return null
+  // Check expiry — return projectId so caller can redirect to correct page
+  if (record.expiresAt < new Date()) {
+    return { valid: false, projectId: record.projectId }
+  }
 
-  return { projectId: record.projectId, clerkUserId: record.clerkUserId }
+  return {
+    valid: true,
+    projectId: record.projectId,
+    clerkUserId: record.clerkUserId,
+  }
 }
 
 /**

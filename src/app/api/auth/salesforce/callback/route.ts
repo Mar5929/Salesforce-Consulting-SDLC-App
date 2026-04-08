@@ -33,7 +33,14 @@ export async function GET(request: NextRequest) {
   // Validate CSRF state token and resolve to projectId + userId
   const stateData = await validateOAuthState(state)
   if (!stateData) {
+    // Token not found at all — no projectId available
     return NextResponse.redirect(`${APP_URL}?error=oauth_failed`)
+  }
+  if (!stateData.valid) {
+    // Token expired — redirect to project org settings with error
+    return NextResponse.redirect(
+      `${APP_URL}/projects/${stateData.projectId}/settings/org?error=oauth_failed`
+    )
   }
 
   const { projectId, clerkUserId: initiatingUserId } = stateData
