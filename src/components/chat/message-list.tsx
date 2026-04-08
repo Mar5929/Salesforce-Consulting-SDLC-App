@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { MessageBubble } from "./message-bubble"
 import { StoryDraftCards } from "@/components/work/story-draft-cards"
 import { EnrichmentSuggestionCards, type EnrichmentSuggestionData } from "./enrichment-suggestion-cards"
+import { ToolPartRenderer } from "./tool-part-renderer"
 import type { StoryDraft } from "@/lib/agent-harness/tools/create-story-draft"
 import type { EnrichmentCategory } from "@/lib/agent-harness/tools/create-enrichment-suggestion"
 
@@ -43,6 +44,7 @@ interface MessageListProps {
     storyId: string
   }
   onAllEnrichmentsResolved?: () => void
+  addToolApprovalResponse?: (params: { id: string; approved: boolean }) => void
 }
 
 function formatDateGroup(date: Date): string {
@@ -65,7 +67,7 @@ function groupMessagesByDate(
   return groups
 }
 
-export function MessageList({ messages, isLoading, storySession, enrichmentSession, onAllEnrichmentsResolved }: MessageListProps) {
+export function MessageList({ messages, isLoading, storySession, enrichmentSession, onAllEnrichmentsResolved, addToolApprovalResponse }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom on new messages
@@ -175,6 +177,22 @@ export function MessageList({ messages, isLoading, storySession, enrichmentSessi
                             storyId={enrichmentSession.storyId}
                             onAllResolved={onAllEnrichmentsResolved}
                           />
+                        </div>
+                      )}
+                      {/* All other tool invocations (agentic database tools) — routed via ToolPartRenderer */}
+                      {msg.toolInvocations && msg.toolInvocations.some(
+                        t => t.toolName !== "create_story_draft" && t.toolName !== "create_enrichment_suggestion"
+                      ) && (
+                        <div className="mt-3 space-y-2">
+                          {msg.toolInvocations
+                            .filter(t => t.toolName !== "create_story_draft" && t.toolName !== "create_enrichment_suggestion")
+                            .map(part => (
+                              <ToolPartRenderer
+                                key={part.toolInvocationId}
+                                part={part}
+                                addToolApprovalResponse={addToolApprovalResponse}
+                              />
+                            ))}
                         </div>
                       )}
                     </div>
