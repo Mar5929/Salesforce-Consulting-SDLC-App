@@ -83,7 +83,7 @@ Source: `globals.css` CSS custom properties.
 | `EntityQueryCard` | Renders query results (list of entities) with summary fields. Used when AI calls `query_*` tools. Shows count header + compact entity rows. | `src/components/chat/tool-cards/entity-query-card.tsx` |
 | `EntityDetailCard` | Renders single-entity detail from `get_*` tools. Shows full field set for one entity. | `src/components/chat/tool-cards/entity-detail-card.tsx` |
 | `MutationConfirmCard` | Renders write/update results. Shows entity name, action taken (created/updated), and changed fields summary. | `src/components/chat/tool-cards/mutation-confirm-card.tsx` |
-| `DeleteConfirmationCard` | Hard-coded deletion gate (D-05). Renders entity name, type, and two buttons: "Confirm Delete" (destructive) and "Cancel". AI cannot proceed without user click. | `src/components/chat/tool-cards/delete-confirmation-card.tsx` |
+| `DeleteConfirmationCard` | Hard-coded deletion gate (D-05). Renders entity name, type, and two buttons: "Confirm Delete" (destructive) and "Keep It" (dismiss). AI cannot proceed without user click. | `src/components/chat/tool-cards/delete-confirmation-card.tsx` |
 | `ToolLoadingIndicator` | Inline indicator shown while a tool call is executing. Displays tool name and a spinner. | `src/components/chat/tool-cards/tool-loading-indicator.tsx` |
 | `ToolErrorCard` | Renders tool execution errors. Shows error message and AI-suggested recovery. | `src/components/chat/tool-cards/tool-error-card.tsx` |
 
@@ -101,7 +101,7 @@ Source: `globals.css` CSS custom properties.
 |-----------|-------------------|
 | `Card` | Base for all tool result cards |
 | `Badge` | Status badges on entity cards (e.g., story status, question status) |
-| `Button` | Confirm/Cancel in DeleteConfirmationCard, entity action links |
+| `Button` | Confirm/Keep It in DeleteConfirmationCard, entity action links |
 | `Separator` | Between entity rows in query results |
 | `ScrollArea` | Already used in message-list, no change |
 | `AlertDialog` | Deletion confirmation overlay if inline card is dismissed |
@@ -127,7 +127,7 @@ Source: `globals.css` CSS custom properties.
 ```
 
 - Card uses `bg-muted/50` background with `border border-border` and `rounded-lg`
-- Internal padding: 12px (3 units of 4px)
+- Internal padding: 16px (`md`)
 - Icon size: 16px (w-4 h-4), color `text-muted-foreground`
 - Entity type label: 13px semibold
 - Field labels: 13px regular `text-muted-foreground`
@@ -156,10 +156,10 @@ Source: `globals.css` CSS custom properties.
 - Header: "Delete [Entity Type]?" at 14px semibold
 - Body: "This will permanently delete [entity display name]. This action cannot be undone." at 14px regular
 - Two buttons right-aligned:
-  - "Cancel" — `variant="outline"` Button, 13px
+  - "Keep It" — `variant="outline"` Button, 13px
   - "Confirm Delete" — `variant="destructive"` Button, 13px
 - On "Confirm Delete" click: execute the actual deletion server action, then replace card with "Deleted [entity name]" confirmation text
-- On "Cancel" click: replace card with "Deletion cancelled." text at 13px `text-muted-foreground`
+- On "Keep It" click: replace card with "Deletion cancelled." text at 13px `text-muted-foreground`
 - This card is the hard-coded structural gate. The tool returns a `pending_confirmation` state; the actual delete only fires on user button click.
 
 ### Tool Loading Indicator
@@ -193,9 +193,9 @@ Source: `globals.css` CSS custom properties.
 
 1. User requests deletion (e.g., "Delete story STR-042")
 2. AI calls delete tool, which returns `pending_confirmation` status (NOT the actual deletion)
-3. `DeleteConfirmationCard` renders with entity details and Confirm/Cancel buttons
+3. `DeleteConfirmationCard` renders with entity details and Confirm/Keep It buttons
 4. User clicks "Confirm Delete" -> client calls server action -> card updates to "Deleted" state
-5. User clicks "Cancel" -> card updates to "Cancelled" state, AI acknowledges
+5. User clicks "Keep It" -> card updates to "Cancelled" state, AI acknowledges
 6. If user ignores the card and sends a new message, the pending deletion expires (no action taken)
 
 ### Context Panel Live Updates (D-17)
@@ -222,6 +222,7 @@ Source: `globals.css` CSS custom properties.
 | Error state (tool) | "This action could not be completed. [AI-generated explanation of what went wrong and what to try instead.]" |
 | Error state (stream) | "Response interrupted. Click to retry." |
 | Delete confirmation | "Delete [Entity Type]?": "This will permanently delete [entity display name]. This action cannot be undone." |
+| Delete dismiss | "Keep It" |
 | Delete cancelled | "Deletion cancelled." |
 | Delete completed | "Deleted [entity display name]." |
 | Tool loading | "Running [tool display name]..." |
@@ -273,7 +274,7 @@ No third-party registries. All components use shadcn official registry or are cu
 | `call` (no result) | ToolLoadingIndicator with spinner |
 | `result` (success) | Appropriate result card (EntityQueryCard, MutationConfirmCard, etc.) |
 | `result` (error) | ToolErrorCard with error details |
-| `result` (pending_confirmation) | DeleteConfirmationCard with Confirm/Cancel buttons |
+| `result` (pending_confirmation) | DeleteConfirmationCard with Confirm/Keep It buttons |
 
 ### Delete Confirmation States
 
@@ -293,7 +294,7 @@ No third-party registries. All components use shadcn official registry or are cu
 - "Confirm Delete" button has `aria-label="Confirm permanent deletion of [entity name]"`
 - Tool loading indicators use `aria-live="polite"` and `role="status"`
 - Entity name links within cards use standard anchor semantics with descriptive text
-- Tab order within DeleteConfirmationCard: Cancel first, then Confirm Delete (prevent accidental destructive action)
+- Tab order within DeleteConfirmationCard: "Keep It" first, then "Confirm Delete" (prevent accidental destructive action)
 
 ---
 
