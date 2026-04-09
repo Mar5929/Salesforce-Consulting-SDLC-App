@@ -124,7 +124,7 @@ Unchanged: BUG-038 (HIGH), BUG-042 (LOW), BUG-046 (MEDIUM), BUG-047 (HIGH)
 
 ---
 
-## Phase 5: Low-Priority Polish and Missing Features
+## Phase 5: Low-Priority Polish and Missing Features [COMPLETED - 2026-04-09]
 
 **Goal:** Close out remaining LOW severity items — DnD, visual hierarchy, and Projects tab content.
 
