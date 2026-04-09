@@ -26,7 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Pencil, Loader2 } from "lucide-react"
+import { Plus, Pencil, Loader2, Calendar, Layers } from "lucide-react"
+import { format } from "date-fns"
 import { updateFeature } from "@/actions/features"
 import { FeatureStatus, type ProjectRole } from "@/generated/prisma"
 
@@ -56,6 +57,8 @@ interface FeatureData {
   prefix: string
   description: string | null
   status: FeatureStatus
+  createdAt: string
+  updatedAt: string
   epic: { id: string; name: string; prefix: string }
 }
 
@@ -244,6 +247,22 @@ export function FeatureDetailClient({
                 {feature.description}
               </p>
             )}
+            <div className="flex items-center gap-3 text-[13px] text-muted-foreground mt-1">
+              <span className="flex items-center gap-1">
+                <Layers className="h-3.5 w-3.5" />
+                {stories.length} {stories.length === 1 ? "story" : "stories"}
+              </span>
+              <span>Epic: {feature.epic.name}</span>
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5" />
+                Created {format(new Date(feature.createdAt), "MMM d, yyyy")}
+              </span>
+              {feature.createdAt !== feature.updatedAt && (
+                <span>
+                  Updated {format(new Date(feature.updatedAt), "MMM d, yyyy")}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <ViewToggle />

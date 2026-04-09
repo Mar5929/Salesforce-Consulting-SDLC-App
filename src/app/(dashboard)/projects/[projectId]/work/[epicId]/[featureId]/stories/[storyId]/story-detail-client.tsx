@@ -11,7 +11,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Sparkles, Loader2 } from "lucide-react"
+import { ArrowLeft, Sparkles, Loader2, Calendar } from "lucide-react"
+import { format } from "date-fns"
+import { formatEnumLabel } from "@/lib/format-enum"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -31,11 +33,16 @@ interface StoryData {
   description: string | null
   acceptanceCriteria: string | null
   persona: string | null
+  dependencies: string | null
+  notes: string | null
   status: string
   priority: string
   storyPoints: number | null
+  createdAt: string
+  updatedAt: string
   feature: { id: string; name: string; prefix: string } | null
   assignee: { id: string; displayName: string; email: string } | null
+  testAssignee: { id: string; displayName: string; email: string } | null
   sprint: { id: string; name: string } | null
   storyComponents: Array<{
     id: string
@@ -76,6 +83,13 @@ const STATUS_LABELS: Record<string, string> = {
   IN_REVIEW: "In Review",
   QA: "QA",
   DONE: "Done",
+}
+
+const PRIORITY_STYLES: Record<string, string> = {
+  CRITICAL: "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]",
+  HIGH: "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]",
+  MEDIUM: "bg-[#FFFBEB] text-[#F59E0B] border-[#FDE68A]",
+  LOW: "bg-[#F5F5F5] text-[#737373] border-[#E5E5E5]",
 }
 
 // ────────────────────────────────────────────
@@ -165,16 +179,27 @@ export function StoryDetailClient({
             Enrich with AI
           </Button>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Badge
             variant="outline"
             className={STATUS_STYLES[story.status]}
           >
             {STATUS_LABELS[story.status] ?? story.status}
           </Badge>
+          <Badge
+            variant="outline"
+            className={PRIORITY_STYLES[story.priority]}
+          >
+            {formatEnumLabel(story.priority)}
+          </Badge>
           {story.assignee && (
             <span className="text-[13px] text-muted-foreground">
               Assigned to {story.assignee.displayName || story.assignee.email}
+            </span>
+          )}
+          {story.testAssignee && (
+            <span className="text-[13px] text-muted-foreground">
+              QA: {story.testAssignee.displayName || story.testAssignee.email}
             </span>
           )}
           {story.sprint && (
@@ -185,6 +210,22 @@ export function StoryDetailClient({
           {story.storyPoints !== null && (
             <span className="text-[13px] text-muted-foreground">
               {story.storyPoints} pts
+            </span>
+          )}
+          {story.feature && (
+            <span className="text-[13px] text-muted-foreground">
+              Feature: {story.feature.prefix} {story.feature.name}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 text-[12px] text-muted-foreground mt-1">
+          <span className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Created {format(new Date(story.createdAt), "MMM d, yyyy")}
+          </span>
+          {story.createdAt !== story.updatedAt && (
+            <span>
+              Updated {format(new Date(story.updatedAt), "MMM d, yyyy")}
             </span>
           )}
         </div>
@@ -242,6 +283,30 @@ export function StoryDetailClient({
                 </h3>
                 <p className="text-[14px] text-muted-foreground">
                   {story.persona}
+                </p>
+              </div>
+            )}
+
+            {/* Dependencies */}
+            {story.dependencies && (
+              <div>
+                <h3 className="text-[14px] font-medium text-foreground mb-1">
+                  Dependencies
+                </h3>
+                <p className="text-[14px] text-muted-foreground whitespace-pre-wrap">
+                  {story.dependencies}
+                </p>
+              </div>
+            )}
+
+            {/* Notes */}
+            {story.notes && (
+              <div>
+                <h3 className="text-[14px] font-medium text-foreground mb-1">
+                  Notes
+                </h3>
+                <p className="text-[14px] text-muted-foreground whitespace-pre-wrap">
+                  {story.notes}
                 </p>
               </div>
             )}

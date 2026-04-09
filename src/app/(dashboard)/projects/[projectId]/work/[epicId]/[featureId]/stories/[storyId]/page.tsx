@@ -39,6 +39,9 @@ export default async function StoryDetailPage({
       assignee: {
         select: { id: true, displayName: true, email: true },
       },
+      testAssignee: {
+        select: { id: true, displayName: true, email: true },
+      },
       sprint: {
         select: { id: true, name: true },
       },
