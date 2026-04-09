@@ -4,7 +4,15 @@ import { scopedPrisma } from "@/lib/project-scope"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Settings, Users } from "lucide-react"
+import {
+  Settings,
+  Users,
+  Layers,
+  LayoutGrid,
+  FileText,
+  HelpCircle,
+  MessageSquare,
+} from "lucide-react"
 
 interface ProjectPageProps {
   params: Promise<{ projectId: string }>
@@ -40,9 +48,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     notFound()
   }
 
-  const memberCount = await db.projectMember.count({
-    where: { projectId, status: "ACTIVE" },
-  })
+  const [memberCount, epicCount, featureCount, storyCount, questionCount, conversationCount] = await Promise.all([
+    db.projectMember.count({ where: { projectId, status: "ACTIVE" } }),
+    db.epic.count({ where: { projectId } }),
+    db.feature.count({ where: { projectId } }),
+    db.story.count({ where: { projectId } }),
+    db.question.count({ where: { projectId } }),
+    db.conversation.count({ where: { projectId } }),
+  ])
 
   return (
     <div>
@@ -136,16 +149,97 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         </Card>
       </div>
 
-      {/* Placeholder for future phases: Discovery dashboard, etc. */}
+      {/* Project Summary */}
       <div className="mt-8">
-        <Card>
-          <CardContent className="flex items-center justify-center p-12">
-            <p className="text-[14px] text-[#737373]">
-              Discovery dashboard and project content will appear here in future
-              phases.
-            </p>
-          </CardContent>
-        </Card>
+        <h2 className="text-[16px] font-semibold text-foreground">
+          Project Summary
+        </h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-[#737373]" />
+                <p className="text-[13px] font-semibold text-[#737373]">
+                  Epics
+                </p>
+              </div>
+              <p className="mt-1 text-[14px] text-foreground">{epicCount}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4 text-[#737373]" />
+                <p className="text-[13px] font-semibold text-[#737373]">
+                  Features
+                </p>
+              </div>
+              <p className="mt-1 text-[14px] text-foreground">
+                {featureCount}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-[#737373]" />
+                <p className="text-[13px] font-semibold text-[#737373]">
+                  Stories
+                </p>
+              </div>
+              <p className="mt-1 text-[14px] text-foreground">{storyCount}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="h-4 w-4 text-[#737373]" />
+                <p className="text-[13px] font-semibold text-[#737373]">
+                  Questions
+                </p>
+              </div>
+              <p className="mt-1 text-[14px] text-foreground">
+                {questionCount}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-[#737373]" />
+                <p className="text-[13px] font-semibold text-[#737373]">
+                  Conversations
+                </p>
+              </div>
+              <p className="mt-1 text-[14px] text-foreground">
+                {conversationCount}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Quick Navigation */}
+      <div className="mt-6 flex items-center gap-3">
+        <Link href={`/projects/${projectId}/work`}>
+          <Button variant="outline" size="sm">
+            View Work Items
+          </Button>
+        </Link>
+        <Link href={`/projects/${projectId}/questions`}>
+          <Button variant="outline" size="sm">
+            View Questions
+          </Button>
+        </Link>
+        <Link href={`/projects/${projectId}/chat`}>
+          <Button variant="outline" size="sm">
+            View Chat
+          </Button>
+        </Link>
       </div>
     </div>
   )
