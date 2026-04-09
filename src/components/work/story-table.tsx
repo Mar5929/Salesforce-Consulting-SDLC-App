@@ -12,7 +12,7 @@
  * Uses @tanstack/react-table for selection tracking.
  */
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   useReactTable,
@@ -136,10 +136,11 @@ export function StoryTable({
 }: StoryTableProps) {
   const router = useRouter()
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
+  const isBulkOperation = useRef(false)
 
-  const { execute: executeStatusChange } = useAction(updateStoryStatus, {
-    onSuccess: () => toast.success("Status updated"),
-    onError: ({ error }) => toast.error(error.serverError ?? "Failed to update status"),
+  const { execute: executeStatusChange, executeAsync: executeStatusChangeAsync } = useAction(updateStoryStatus, {
+    onSuccess: () => { if (!isBulkOperation.current) toast.success("Status updated") },
+    onError: ({ error }) => { if (!isBulkOperation.current) toast.error(error.serverError ?? "Failed to update status") },
   })
 
   const { execute: executeUpdate } = useAction(updateStory, {
@@ -319,14 +320,33 @@ export function StoryTable({
   // ── Bulk actions ──
 
   async function handleBulkStatusChange(status: string) {
-    const promises = selectedRows.map((row) =>
-      executeStatusChange({
-        projectId,
-        storyId: row.original.id,
-        status: status as typeof ALL_STATUSES[number],
-      })
-    )
-    await Promise.allSettled(promises)
+    isBulkOperation.current = true
+    try {
+      const results = await Promise.allSettled(
+        selectedRows.map((row) =>
+          executeStatusChangeAsync({
+            projectId,
+            storyId: row.original.id,
+            status: status as typeof ALL_STATUSES[number],
+          })
+        )
+      )
+      const succeeded = results.filter(
+        (r) => r.status === "fulfilled" && r.value?.data
+      ).length
+      const failed = results.length - succeeded
+
+      if (succeeded > 0) {
+        toast.success(`${succeeded} stor${succeeded === 1 ? "y" : "ies"} updated`)
+      }
+      if (failed > 0) {
+        toast.error(
+          `${failed} stor${failed === 1 ? "y" : "ies"} failed — invalid status transition`
+        )
+      }
+    } finally {
+      isBulkOperation.current = false
+    }
     setRowSelection({})
     router.refresh()
   }
@@ -367,11 +387,9 @@ export function StoryTable({
             {selectedCount} selected
           </span>
 
-          <Select onValueChange={(v: string | null) => v && handleBulkStatusChange(v)}>
+          <Select onValueChange={(value) => value && handleBulkStatusChange(value as string)}>
             <SelectTrigger className="h-8 w-[150px] text-[13px]">
-              <SelectValue placeholder="Change Status">
-                {(value: string) => STATUS_LABELS[value] ?? formatEnumLabel(value)}
-              </SelectValue>
+              <SelectValue placeholder="Change Status" />
             </SelectTrigger>
             <SelectContent>
               {ALL_STATUSES.map((s) => (
@@ -383,7 +401,7 @@ export function StoryTable({
           </Select>
 
           {sprints.length > 0 && (
-            <Select onValueChange={(v: string | null) => v && handleBulkSprintAssign(v)}>
+            <Select onValueChange={(value) => value && handleBulkSprintAssign(value as string)}>
               <SelectTrigger className="h-8 w-[150px] text-[13px]">
                 <SelectValue placeholder="Assign Sprint" />
               </SelectTrigger>
@@ -398,7 +416,7 @@ export function StoryTable({
           )}
 
           {members.length > 0 && (
-            <Select onValueChange={(v: string | null) => v && handleBulkAssigneeChange(v)}>
+            <Select onValueChange={(value) => value && handleBulkAssigneeChange(value as string)}>
               <SelectTrigger className="h-8 w-[150px] text-[13px]">
                 <SelectValue placeholder="Change Assignee" />
               </SelectTrigger>
