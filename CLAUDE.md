@@ -18,8 +18,9 @@ These are the source of truth. Read them before making architecture or implement
 
 | File | Contents |
 |------|----------|
-| `SF-Consulting-AI-Framework-PRD-v2.1.md` | Full product requirements (27 sections). The "what and why." |
-| `SESSION-3-TECHNICAL-SPEC.md` | Database schema, AI agent harness architecture, context window budget, dashboard implementation. The "how." |
+| `docs/bef/00-prd/PRD.md` | Full product requirements (27 sections). The "what and why." |
+| `docs/bef/01-architecture/TECHNICAL_SPEC.md` | Database schema, AI agent harness architecture, context window budget, dashboard implementation. The "how." |
+| `docs/bef/PROJECT_STATE.md` | BEF state tracker — current phase, progress, replan log. Read first. |
 
 ## Tech Stack
 
