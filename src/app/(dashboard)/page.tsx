@@ -2,10 +2,16 @@ import Link from "next/link"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { EmptyState } from "@/components/shared/empty-state"
+import { OAuthErrorToast } from "@/components/shared/oauth-error-toast"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  searchParams: Promise<{ error?: string }>
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const { error } = await searchParams
   const clerkUserId = await requireAuth()
 
   const memberships = await prisma.projectMember.findMany({
@@ -30,6 +36,7 @@ export default async function DashboardPage() {
   if (projects.length === 0) {
     return (
       <div>
+        {error === "oauth_failed" && <OAuthErrorToast />}
         <h1 className="text-[24px] font-semibold text-foreground">Projects</h1>
         <EmptyState
           heading="No projects yet"
@@ -43,6 +50,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      {error === "oauth_failed" && <OAuthErrorToast />}
       <div className="flex items-center justify-between">
         <h1 className="text-[24px] font-semibold text-foreground">Projects</h1>
       </div>
