@@ -11,7 +11,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { toast } from "sonner"
-import { Sparkles, LayoutGrid, FileText, Pencil, Loader2 } from "lucide-react"
+import { Sparkles, LayoutGrid, FileText, Pencil, Loader2, Layers } from "lucide-react"
 import { WorkBreadcrumb } from "@/components/work/work-breadcrumb"
 import { ViewToggle, useViewMode } from "@/components/work/view-toggle"
 import { FeatureForm } from "@/components/work/feature-form"
@@ -148,6 +148,10 @@ export function EpicDetailClient({ projectId, epic }: EpicDetailClientProps) {
       {isEditing ? (
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4">
           <div className="flex items-center gap-2">
+            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 gap-1">
+              <Layers className="h-3 w-3" />
+              Epic
+            </Badge>
             <span className="font-mono text-[14px] text-muted-foreground">
               {epic.prefix}
             </span>
@@ -173,7 +177,9 @@ export function EpicDetailClient({ projectId, epic }: EpicDetailClientProps) {
               onValueChange={(val) => setEditStatus(val as EpicStatus)}
             >
               <SelectTrigger className="w-[160px]" size="sm">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Status">
+                  {(value: string) => STATUS_LABELS[value as EpicStatus] ?? value}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {Object.values(EpicStatus).map((s) => (
@@ -208,6 +214,10 @@ export function EpicDetailClient({ projectId, epic }: EpicDetailClientProps) {
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
+              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 gap-1">
+                <Layers className="h-3 w-3" />
+                Epic
+              </Badge>
               <h1 className="text-[24px] font-semibold text-foreground">
                 <span className="font-mono text-[18px] text-muted-foreground mr-2">
                   {epic.prefix}

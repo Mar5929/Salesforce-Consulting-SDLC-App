@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Pencil, Loader2, Calendar, Layers } from "lucide-react"
+import { Plus, Pencil, Loader2, Calendar, Layers, LayoutGrid } from "lucide-react"
 import { format } from "date-fns"
 import { updateFeature } from "@/actions/features"
 import { FeatureStatus, type ProjectRole } from "@/generated/prisma"
@@ -160,6 +160,10 @@ export function FeatureDetailClient({
       {isEditing ? (
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4">
           <div className="flex items-center gap-2">
+            <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 gap-1">
+              <LayoutGrid className="h-3 w-3" />
+              Feature
+            </Badge>
             <span className="font-mono text-[14px] text-muted-foreground">
               {feature.prefix}
             </span>
@@ -185,7 +189,9 @@ export function FeatureDetailClient({
               onValueChange={(val) => setEditStatus(val as FeatureStatus)}
             >
               <SelectTrigger className="w-[160px]" size="sm">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Status">
+                  {(value: string) => STATUS_LABELS[value as FeatureStatus] ?? value}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {Object.values(FeatureStatus).map((s) => (
@@ -220,6 +226,10 @@ export function FeatureDetailClient({
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
+              <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 gap-1">
+                <LayoutGrid className="h-3 w-3" />
+                Feature
+              </Badge>
               <h1 className="text-[24px] font-semibold text-foreground">
                 <span className="mr-2 font-mono text-[18px] text-muted-foreground">
                   {feature.prefix}

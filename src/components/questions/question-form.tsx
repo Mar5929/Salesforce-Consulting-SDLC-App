@@ -159,7 +159,12 @@ export function QuestionForm({
                 onValueChange={(v) => form.setValue("scopeEpicId", v as string)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select epic" />
+                  <SelectValue placeholder="Select epic">
+                    {(value: string) => {
+                      const e = epics.find((ep) => ep.id === value)
+                      return e ? `${e.prefix} - ${e.name}` : value
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {epics.map((epic) => (
@@ -180,7 +185,12 @@ export function QuestionForm({
                 onValueChange={(v) => form.setValue("scopeFeatureId", v as string)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select feature" />
+                  <SelectValue placeholder="Select feature">
+                    {(value: string) => {
+                      const f = features.find((ft) => ft.id === value)
+                      return f ? `${f.prefix} - ${f.name}` : value
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {features.map((feature) => (
@@ -247,7 +257,12 @@ export function QuestionForm({
                 onValueChange={(v) => form.setValue("assigneeId", v as string)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Unassigned" />
+                  <SelectValue placeholder="Unassigned">
+                    {(value: string) => {
+                      const m = teamMembers.find((mb) => mb.id === value)
+                      return m ? (m.displayName || m.email || "Unknown Member") : value
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {teamMembers.map((member) => (

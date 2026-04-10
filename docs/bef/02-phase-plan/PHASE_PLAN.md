@@ -1,8 +1,8 @@
 # Phase Plan: Gap Closure
 
-> Last Updated: 2026-04-09
-> Total Phases: 9
-> Total Gaps: 153 (22 Critical, 77 Significant, 54 Minor)
+> Last Updated: 2026-04-10
+> Total Phases: 10
+> Total Gaps: 153 (22 Critical, 77 Significant, 54 Minor) + Phase 10 UI overhaul
 > Reference: [GAP-ANALYSIS-INDEX.md](./GAP-ANALYSIS-INDEX.md)
 
 ---
@@ -11,6 +11,8 @@
 
 ```
 Phase 1 (RBAC/Security) ─── foundational, unblocks all
+  ├── Phase 10 (Work Tab UI Overhaul) ─── shared components + page patterns
+  │     └── Phases 2-9 benefit from new layout patterns
   ├── Phase 2 (Agent Harness) ─── core AI infrastructure
   │     ├── Phase 3 (Discovery/Questions) ─── core value prop
   │     │     └── Phase 7 (Dashboards/Search) ─── integration layer
@@ -201,14 +203,39 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 
 ---
 
+### Phase 10: Work Tab UI Overhaul
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Build shared page-level component library (PageHeader, DetailPageLayout, FilterBar, StatusBadge, ProgressBar, EditableField, MetadataSidebar, StatCard, enhanced EmptyState). Overhaul Work overview page with filter bar, search, "All Stories" flat view, and view tabs. Redesign Epic detail as two-column layout with metadata sidebar, progress bar, rollup stats, and inline editing. Redesign Feature detail with same pattern. Redesign Story detail with two-column layout, inline-editable fields, metadata sidebar, and activity/comments section. Enhance kanban boards with swimlanes, richer cards, column counts, and quick actions. |
+| **Depends On** | Phase 1 |
+| **Unlocks** | All subsequent phases benefit from shared layout patterns |
+| **Parallel With** | Should run before Phases 2-9 so new features get built into correct patterns |
+| **Complexity** | XL |
+| **Tasks** | TBD (awaiting deep-dive) |
+
+**Key Deliverables:**
+- Shared component library: PageHeader, DetailPageLayout, FilterBar, StatusBadge, ProgressBar, EditableField, MetadataSidebar, StatCard
+- Centralized status color mapping (eliminates 4 duplicate inline definitions)
+- Work overview with filter/search/sort and "All Stories" flat view
+- Epic detail: two-column layout with metadata sidebar, progress bar, feature stats
+- Feature detail: two-column layout with metadata sidebar, story stats
+- Story detail: two-column layout with inline editing, metadata sidebar, activity section
+- Kanban enhancements: swimlanes, richer cards, column counts, quick actions
+
+**Design Inspiration:** Jira (two-column detail layout, swimlanes, quick filters), Linear (clean density, keyboard shortcuts, minimal cards), Asana (view tabs, progress visualization)
+
+---
+
 ## Execution Order Summary
 
 1. **Phase 1:** RBAC/Security — must complete first
-2. **Phase 2:** Agent Harness + **Phase 8:** Docs/Notifications — can run in parallel
-3. **Phase 3:** Discovery + **Phase 6:** Org/Knowledge — can run in parallel (both depend on Phase 2)
-4. **Phase 4:** Work Management — after Phase 3
-5. **Phase 5:** Sprint/Developer — after Phase 4
-6. **Phase 7:** Dashboards/Search + **Phase 9:** QA/Jira/Archival — can run in parallel (final wave)
+2. **Phase 10:** Work Tab UI Overhaul — shared components + page redesigns (after Phase 1)
+3. **Phase 2:** Agent Harness + **Phase 8:** Docs/Notifications — can run in parallel
+4. **Phase 3:** Discovery + **Phase 6:** Org/Knowledge — can run in parallel (both depend on Phase 2)
+5. **Phase 4:** Work Management — after Phase 3
+6. **Phase 5:** Sprint/Developer — after Phase 4
+7. **Phase 7:** Dashboards/Search + **Phase 9:** QA/Jira/Archival — can run in parallel (final wave)
 
 ---
 
@@ -217,5 +244,6 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 - **Phase 3 (Discovery):** Gap detection and readiness assessment are XL AI features. These are the PRD's headline capabilities and have the highest implementation uncertainty.
 - **Phase 7 (Dashboards):** Largest phase by gap count (26+3). May need splitting during deep-dive.
 - **Phase 9 (QA/Jira/Archival):** Covers 4 distinct subsystems. May benefit from splitting during deep-dive.
+- **Phase 10 (Work Tab UI):** XL complexity. Builds shared component library that all other phases benefit from. Running it early (after Phase 1) prevents rework — new features in Phases 2-9 get built into the correct layout patterns from the start.
 - **Deferred to V2:** OCC conflict UI (GAP-RBAC-011 full), fork-and-inherit reactivation (GAP-ARCH-004), org health assessment (GAP-ORG-009).
 - **Note on Phase 7 deferred gaps:** GAP-RBAC-010 (Usage & Costs dashboard), GAP-RBAC-014 (audit logging schema + basic implementation), and GAP-RBAC-016 (cost caps) are deferred FROM Phase 1 TO Phase 7. They are V1 scope, not V2. Full comprehensive access logging (all reads) may extend into V2.

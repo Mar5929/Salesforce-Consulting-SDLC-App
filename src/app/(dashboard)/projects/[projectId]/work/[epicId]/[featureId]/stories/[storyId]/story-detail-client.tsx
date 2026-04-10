@@ -11,7 +11,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Sparkles, Loader2, Calendar, Pencil } from "lucide-react"
+import { ArrowLeft, Sparkles, Loader2, Calendar, Pencil, FileText } from "lucide-react"
 import { format } from "date-fns"
 import { formatEnumLabel } from "@/lib/format-enum"
 import { Badge } from "@/components/ui/badge"
@@ -168,12 +168,18 @@ export function StoryDetailClient({
       {/* Title and metadata */}
       <div className="flex flex-col gap-1">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="text-[24px] font-semibold text-foreground">
-            <span className="mr-2 font-mono text-[18px] text-muted-foreground">
-              {story.displayId}
-            </span>
-            {story.title}
-          </h1>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 gap-1">
+              <FileText className="h-3 w-3" />
+              Story
+            </Badge>
+            <h1 className="text-[24px] font-semibold text-foreground">
+              <span className="mr-2 font-mono text-[18px] text-muted-foreground">
+                {story.displayId}
+              </span>
+              {story.title}
+            </h1>
+          </div>
           <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"

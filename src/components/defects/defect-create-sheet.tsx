@@ -200,7 +200,13 @@ export function DefectCreateSheet({
                 }
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select story" />
+                  <SelectValue placeholder="Select story">
+                    {(value: string) => {
+                      if (value === "none") return "No linked story"
+                      const s = stories.find((st) => st.id === value)
+                      return s ? `${s.displayId} - ${s.title.length > 40 ? s.title.slice(0, 40) + "..." : s.title}` : value
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No linked story</SelectItem>
@@ -225,7 +231,13 @@ export function DefectCreateSheet({
                 }
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select assignee" />
+                  <SelectValue placeholder="Select assignee">
+                    {(value: string) => {
+                      if (value === "none") return "Unassigned"
+                      const m = members.find((mb) => mb.id === value)
+                      return m ? m.displayName : value
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Unassigned</SelectItem>

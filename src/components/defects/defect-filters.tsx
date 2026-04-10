@@ -141,7 +141,13 @@ export function DefectFilters({
         onValueChange={(v: string | null) => setAssigneeId(v === "all" ? "" : v ?? "")}
       >
         <SelectTrigger className="h-8 w-[150px] text-[13px]">
-          <SelectValue placeholder="Assignee" />
+          <SelectValue placeholder="Assignee">
+            {(value: string) => {
+              if (value === "all") return "All Assignees"
+              const m = members.find((mb) => mb.id === value)
+              return m ? m.displayName : value
+            }}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Assignees</SelectItem>
@@ -159,7 +165,13 @@ export function DefectFilters({
         onValueChange={(v: string | null) => setStoryId(v === "all" ? "" : v ?? "")}
       >
         <SelectTrigger className="h-8 w-[180px] text-[13px]">
-          <SelectValue placeholder="Story" />
+          <SelectValue placeholder="Story">
+            {(value: string) => {
+              if (value === "all") return "All Stories"
+              const s = stories.find((st) => st.id === value)
+              return s ? `${s.displayId} - ${s.title.length > 30 ? s.title.slice(0, 30) + "..." : s.title}` : value
+            }}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Stories</SelectItem>

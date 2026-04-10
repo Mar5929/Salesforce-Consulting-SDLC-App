@@ -372,7 +372,12 @@ export function StoryForm({
                   disabled={isEditing}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select epic" />
+                    <SelectValue placeholder="Select epic">
+                      {(value: string) => {
+                        const e = epics.find((ep) => ep.id === value)
+                        return e ? `${e.prefix} - ${e.name}` : value
+                      }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {epics.map((epic) => (
@@ -404,7 +409,13 @@ export function StoryForm({
                     onValueChange={(v: string | null) => field.onChange(v ?? "")}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Optional" />
+                      <SelectValue placeholder="Optional">
+                        {(value: string) => {
+                          if (value === "") return "None"
+                          const f = filteredFeatures.find((ft) => ft.id === value)
+                          return f ? `${f.prefix} - ${f.name}` : value
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">None</SelectItem>

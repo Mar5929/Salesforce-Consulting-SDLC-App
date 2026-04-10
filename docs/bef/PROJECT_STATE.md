@@ -23,12 +23,13 @@
 | 7 | Dashboards, Search | Phase 3, 4, 5, 6 | 26+3 | Done | Done (15 tasks) | Not Started |
 | 8 | Documents, Notifications | Phase 1 | 21 | Done | Done (9 tasks) | Not Started |
 | 9 | QA, Jira, Archival, Lifecycle | Phase 1, 4, 8 | 22 | Done | Done (11 tasks) | Not Started |
+| 10 | Work Tab UI Overhaul | Phase 1 | — | Done | Done (12 tasks) | Not Started |
 
 ## Current Focus
 
-**All 9 phases fully specced and tasked.** Stage 4 (Phase Deep Dive) is complete. 106 total tasks across all phases.
+**All 10 phases fully specced and tasked** (118 total tasks). Phase 10 deep-dive complete (12 tasks).
 
-Next action: `/bef:execute 1` to start building Phase 1 (RBAC, Security, Governance).
+Next action: `/bef:execute 1` to start building Phase 1 (RBAC, Security, Governance), then Phase 10 (Work Tab UI Overhaul).
 
 ## Replan Log
 
@@ -43,3 +44,4 @@ Next action: `/bef:execute 1` to start building Phase 1 (RBAC, Security, Governa
 | 2026-04-10 | Phase 5 deep-dive complete. 12 tasks from 14 gaps (all addressed). GAP-SPRINT-009 (NLP org query) scoped as keyword translation with Phase 6 semantic enhancement hook. GAP-SPRINT-013 resolved by updating docs to match key-derived routing (not changing code). GAP-SPRINT-014 addressed by harness integration refactor. Key deliverables: capacity assessment, parallelization groups, developer attribution, full context package, org query + component report endpoints, API key expiry/rotation, brownfield warning. |
 | 2026-04-10 | Phase 6 deep-dive complete. 13 tasks from 15 gaps (1 deferred, 4 consolidated). GAP-ORG-009 (Org Health Assessment, XL) deferred to V2 — no downstream blockers. NLP org query uses 3-tier approach (regex → full-text → semantic). Agent staleness as DB-only post-loop scan. Article confirmation: confirmed-only for Claude Code, unconfirmed-with-disclaimer for internal AI. |
 | 2026-04-10 | Phase 7 deep-dive complete. 15 tasks from 29 gaps (25 addressed, 4 deferred to V2). Deferred: GAP-DASH-008 (AI milestone summaries), GAP-DASH-018 (Inngest event volume), GAP-DASH-020 (semantic search expansion), GAP-DASH-023 (dependency chain visualization). Health score fully rewritten from weighted percentage to PRD signal counter. Search expanded with tsvector for 3 new entity types. Absorbed Phase 1 deferred gaps: RBAC-010 (Usage & Costs), RBAC-014 (audit logging), RBAC-016 (cost caps). Stage 4 complete — all 9 phases specced. |
+| 2026-04-10 | Phase 10 added: Work Tab UI Overhaul. Scope: shared component library (PageHeader, DetailPageLayout, FilterBar, StatusBadge, ProgressBar, EditableField, MetadataSidebar, StatCard), Work overview redesign with "All Stories" view, Epic/Feature/Story detail page overhauls to two-column layout, kanban enhancements (swimlanes, richer cards, quick actions). Depends on Phase 1. Recommended to run second (after Phase 1, before Phases 2-9) so new features get built into correct patterns. XL complexity. |

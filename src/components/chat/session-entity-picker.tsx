@@ -226,7 +226,12 @@ export function SessionEntityPicker({
           ) : (
             <Select value={selectedId} onValueChange={(val) => setSelectedId(val ?? "")}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={meta.placeholder} />
+                <SelectValue placeholder={meta.placeholder}>
+                  {(value: string) => {
+                    const entity = entities.find((e) => e.id === value)
+                    return entity ? entity.label : value
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {entities.map((entity) => (

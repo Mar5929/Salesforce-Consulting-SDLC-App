@@ -201,7 +201,13 @@ export function GenerationDialog({
                   <Label className="text-[14px] font-medium">Scope</Label>
                   <Select value={scopeEpicId} onValueChange={(v) => setScopeEpicId(v ?? "all")}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select scope" />
+                      <SelectValue placeholder="Select scope">
+                        {(value: string) => {
+                          if (value === "all") return "All Epics"
+                          const e = epics.find((ep) => ep.id === value)
+                          return e ? e.title : value
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Epics</SelectItem>
