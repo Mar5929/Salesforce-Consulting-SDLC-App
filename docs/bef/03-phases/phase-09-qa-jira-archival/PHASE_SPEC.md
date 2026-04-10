@@ -2,7 +2,7 @@
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
 > Gap Report: [09-qa-jira-archival-gaps.md](./09-qa-jira-archival-gaps.md)
-> Depends On: Phase 1 (RBAC, Security, Governance), Phase 8 (Documents, Notifications)
+> Depends On: Phase 1 (RBAC, Security, Governance), Phase 4 (Work Management), Phase 8 (Documents, Notifications)
 > Status: Draft
 > Last Updated: 2026-04-10
 
@@ -266,6 +266,11 @@ model Project {
 - **Role gates** — `requireRole` used for phase advancement (PM/SA), test execution (QA/SA), and Jira config (SA/PM).
 - **Auth layer** — `getCurrentMember` with active status check used in all new actions.
 - **Story status machine** — Modified to include BA in management transitions.
+
+### From Phase 4
+- **DRAFT-to-READY validation gate** — Phase 4's mandatory field validation ensures stories reaching READY have complete data (persona, AC, components, test case stubs). Phase 9's AI test case generation (REQ-QA-007) triggers on READY status, so it can assume validated story content.
+- **Test case stubs** — Phase 4 creates `TestCase` records with `source: "STUB"` during story generation. Phase 9's AI test case generation creates records with `source: "AI_GENERATED"`. When Phase 9 regenerates test cases for a story, it replaces only `AI_GENERATED` records — `STUB` records from Phase 4 are preserved as the user's accepted baseline.
+- **Story status machine** — Phase 9's BA management transition fix (REQ-QA-001) extends the same `story-status-machine.ts` that Phase 4's validation gate wires into. Phase 1 REQ-RBAC-009 adds BA to management transitions; Phase 9 adds QA DRAFT-only enforcement.
 
 ### From Phase 8
 - **Notification types** — Phase 8 adds DEFECT_CREATED, DEFECT_STATUS_CHANGED, TEST_EXECUTION_RECORDED to the enum. Phase 9 wires the Inngest consumers.

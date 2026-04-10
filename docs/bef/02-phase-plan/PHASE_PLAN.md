@@ -19,7 +19,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
   │     └── Phase 5 (Sprint/Developer) ─── depends on Phase 4
   │           └── Phase 7 (Dashboards/Search)
   ├── Phase 8 (Docs/Notifications) ─── event wiring
-  │     └── Phase 9 (QA/Jira/Archival) ─── depends on Phase 1 + 8
+  │     └── Phase 9 (QA/Jira/Archival) ─── depends on Phase 1 + 4 + 8
   └── Phase 7 (Dashboards/Search) ─── last, depends on many upstream
 ```
 
@@ -186,7 +186,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | Attribute | Details |
 |-----------|---------|
 | **Scope** | Build AI test case generation from acceptance criteria, test execution UI on story detail page, defect edit sheet, test coverage metric, configurable Jira field mapping, implement credential deletion on archive, Jira disconnect on archive, final project summary document, phase advancement, default epic templates. |
-| **Depends On** | Phase 1, Phase 8 |
+| **Depends On** | Phase 1, Phase 4, Phase 8 |
 | **Unlocks** | None |
 | **Parallel With** | Phase 7 |
 | **Complexity** | XL |

@@ -22,7 +22,7 @@
 | 6 | Org, Knowledge | Phase 2 | 16 | Done | Done (13 tasks) | Not Started |
 | 7 | Dashboards, Search | Phase 3, 4, 5, 6 | 26+3 | Done | Done (15 tasks) | Not Started |
 | 8 | Documents, Notifications | Phase 1 | 21 | Done | Done (9 tasks) | Not Started |
-| 9 | QA, Jira, Archival, Lifecycle | Phase 1, 8 | 22 | Done | Done (11 tasks) | Not Started |
+| 9 | QA, Jira, Archival, Lifecycle | Phase 1, 4, 8 | 22 | Done | Done (11 tasks) | Not Started |
 
 ## Current Focus
 

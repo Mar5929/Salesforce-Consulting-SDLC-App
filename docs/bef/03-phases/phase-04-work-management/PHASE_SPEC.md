@@ -123,6 +123,7 @@ Implement the story quality gate (DRAFT-to-READY mandatory field validation), wi
   - **StoryDraft interface:** Add a `testCases` array to the `StoryDraft` interface in `create-story-draft.ts`. When the AI calls `create_test_case_stub`, the handler appends to the draft's test cases array rather than persisting immediately (the draft hasn't been persisted yet).
   - **Draft accept flow:** In `StoryDraftCards.handleAccept`, after calling `createStory` and `addStoryComponent`, also call a new `createTestCases` action to persist the draft's test cases with the newly created story ID.
   - **`createTestCases` server action:** New action in `src/actions/test-cases.ts` (or add to `stories.ts`) that accepts an array of test case objects and creates them via `prisma.testCase.createMany`. Validates: title required, expectedResult required, testType must be valid enum.
+  - **Source field:** All test cases created by this pipeline use `source: "STUB"` to distinguish them from Phase 9's AI-generated test cases (`source: "AI_GENERATED"`). Phase 9's regeneration replaces only `AI_GENERATED` records, preserving `STUB` records as the user's accepted baseline from story generation.
   - **StoryDraftCards UI:** Show test case stubs in the draft preview card so the user can see them before accepting.
 - **Files:** New `src/lib/agent-harness/tools/create-test-case-stub.ts`, modify `src/lib/agent-harness/tools/create-story-draft.ts` (interface), modify `src/lib/agent-harness/tasks/story-generation.ts` (tools array + prompt), modify `src/components/work/story-draft-cards.tsx` (accept flow + preview), new or modify `src/actions/test-cases.ts`
 
@@ -143,7 +144,8 @@ Implement the story quality gate (DRAFT-to-READY mandatory field validation), wi
   - **Error format:** Return an array of field-specific messages, e.g., `["Persona is required", "At least one test case must be defined"]`. The UI displays all missing fields at once, not one at a time.
   - **Wire into `updateStoryStatus`:** After the existing `canTransition` role check (line 282), add the readiness validation check. Only applies when transitioning TO `READY` from `DRAFT`.
   - **Other transitions:** No validation gate on other transitions (Ready->Sprint Planned, etc.). Only DRAFT->READY is gated.
-  - **AI assistance:** When validation fails, the response includes a suggestion: "Use 'Enrich with AI' to help fill missing fields." This is informational text, not an automatic action.
+  - **AI-assisted remediation:** When validation fails, the response includes the field-specific errors plus a call-to-action that triggers AI content generation for the missing fields. Specifically: the UI shows a "Fix with AI" button alongside the error list. Clicking it calls the existing `storyEnrichmentTask` with a targeted prompt: "The following fields are missing or incomplete: [list]. Generate suggestions for each." The enrichment response populates the missing fields as suggestions the user can accept or edit. This satisfies PRD Section 10.4 step 5: "the AI highlights what needs to be corrected and suggests specific content."
+  - **Fallback:** If the user dismisses the AI suggestion, the static error messages remain visible with a manual "Use 'Enrich with AI' to fill missing fields" hint.
 - **Files:** New `src/lib/story-validation.ts`, modify `src/actions/stories.ts` (`updateStoryStatus`)
 
 ---
@@ -269,10 +271,12 @@ prisma/
 - [ ] `create_test_case_stub` tool is available during story generation
 - [ ] AI generates at least one happy-path and one edge-case test case per story draft
 - [ ] Test cases are displayed in the draft preview card
-- [ ] Test cases are persisted when a story draft is accepted
+- [ ] Test cases are persisted when a story draft is accepted with `source: "STUB"`
 - [ ] DRAFT->READY transition validates all 7 mandatory fields
 - [ ] Validation returns all missing fields at once (not one at a time)
 - [ ] DRAFT->READY with missing fields returns field-specific error messages
+- [ ] DRAFT->READY failure shows "Fix with AI" button that triggers targeted enrichment for missing fields
+- [ ] AI remediation generates suggestions for each missing field that the user can accept or edit
 - [ ] Other status transitions (READY->SPRINT_PLANNED, etc.) are not gated by field validation
 - [ ] No regressions in existing story CRUD, generation, enrichment, or status transition flows
 

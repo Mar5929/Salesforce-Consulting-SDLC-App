@@ -244,7 +244,8 @@ Task 8 (Test case stubs)       ─── independent L task
 - **StoryDraft interface:** In `src/lib/agent-harness/tools/create-story-draft.ts`, add `testCases?: Array<{ title: string; expectedResult: string; testType: string }>` to the interface.
 - **Draft card UI:** In `src/components/work/story-draft-cards.tsx`, add a "Test Cases" section below the existing content showing each test case as a compact row: `[type badge] title — expected: ...`.
 - **Accept flow:** In `handleAccept`, after `createStory` returns the new story ID, call `createTestCases(storyId, draft.testCases)`.
-- **Server action:** In `src/actions/test-cases.ts`, create `createTestCases(storyId, testCases[])`. Use `prisma.testCase.createMany({ data: testCases.map(tc => ({ storyId, title: tc.title, expectedResult: tc.expectedResult, testType: tc.testType, source: "AI_GENERATED", sortOrder: index })) })`.
+- **Server action:** In `src/actions/test-cases.ts`, create `createTestCases(storyId, testCases[])`. Use `prisma.testCase.createMany({ data: testCases.map(tc => ({ storyId, title: tc.title, expectedResult: tc.expectedResult, testType: tc.testType, source: "STUB", sortOrder: index })) })`.
+- **Source value:** Use `source: "STUB"` (not `"AI_GENERATED"`). Phase 9's AI test case generation uses `"AI_GENERATED"` and its regeneration only replaces `"AI_GENERATED"` records — `"STUB"` records are preserved as the user's accepted baseline from story generation.
 - **Prompt update:** Add to the story generation system prompt: "After creating each story draft, generate test case stubs from the acceptance criteria. Create at minimum: one HAPPY_PATH test case covering the primary workflow, and one EDGE_CASE test case covering a boundary condition or exception. Use the create_test_case_stub tool for each."
 
 ---
@@ -299,7 +300,7 @@ Task 8 (Test case stubs)       ─── independent L task
   }
   ```
 - The UI (StoryForm transition buttons, Task 4's detail page controls) should handle the `validationErrors` response and display each error.
-- Include a helpful message: "Use 'Enrich with AI' to help fill missing fields, or add test cases from the QA tab."
+- **AI-assisted remediation:** When validation fails, the UI shows the error list plus a "Fix with AI" button. Clicking it calls the enrichment task with a targeted prompt listing the missing fields. The AI generates suggestions that the user can accept or edit. Fallback: static message "Use 'Enrich with AI' to fill missing fields, or add test cases from the QA tab."
 - This task depends on Task 8 because without the test case generation pipeline, the "at least one test case" check would block all DRAFT->READY transitions since no mechanism exists to create test cases during story creation.
 
 ---
