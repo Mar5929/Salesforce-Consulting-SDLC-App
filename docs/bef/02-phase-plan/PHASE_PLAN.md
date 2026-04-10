@@ -56,7 +56,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | Phase 3, Phase 6 |
 | **Parallel With** | Phase 8 (partially) |
 | **Complexity** | L |
-| **Tasks** | TBD (13 gaps) |
+| **Tasks** | 10 (3 gaps moved out: GAP-001→Phase 8, GAP-002→Phase 5, GAP-005→Phase 1 dup) |
 
 **Key Deliverables:**
 - Two new agent task implementations
