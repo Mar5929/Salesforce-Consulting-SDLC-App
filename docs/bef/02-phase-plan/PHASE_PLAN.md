@@ -147,7 +147,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | Attribute | Details |
 |-----------|---------|
 | **Scope** | Rework health score model, complete briefing with all PRD sections, add sprint dashboard workload view and conflict alerts, complete PM dashboard (risk register, deadlines, client items), build Usage & Costs settings tab, expand search to Story/OrgComponent/BusinessProcess, verify discovery dashboard auto-refresh. Also receives deferred gaps from Phase 1 (RBAC-010, RBAC-014, RBAC-016). |
-| **Depends On** | Phase 3, Phase 4, Phase 5 |
+| **Depends On** | Phase 3, Phase 4, Phase 5, Phase 6 |
 | **Unlocks** | None |
 | **Parallel With** | Phase 9 |
 | **Complexity** | XL |
@@ -217,4 +217,5 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 - **Phase 3 (Discovery):** Gap detection and readiness assessment are XL AI features. These are the PRD's headline capabilities and have the highest implementation uncertainty.
 - **Phase 7 (Dashboards):** Largest phase by gap count (26+3). May need splitting during deep-dive.
 - **Phase 9 (QA/Jira/Archival):** Covers 4 distinct subsystems. May benefit from splitting during deep-dive.
-- **Deferred to V2:** OCC conflict UI (GAP-RBAC-011 full), fork-and-inherit reactivation (GAP-ARCH-004), full access logging (GAP-RBAC-014 implementation), org health assessment (GAP-ORG-009).
+- **Deferred to V2:** OCC conflict UI (GAP-RBAC-011 full), fork-and-inherit reactivation (GAP-ARCH-004), org health assessment (GAP-ORG-009).
+- **Note on Phase 7 deferred gaps:** GAP-RBAC-010 (Usage & Costs dashboard), GAP-RBAC-014 (audit logging schema + basic implementation), and GAP-RBAC-016 (cost caps) are deferred FROM Phase 1 TO Phase 7. They are V1 scope, not V2. Full comprehensive access logging (all reads) may extend into V2.

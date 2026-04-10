@@ -5,7 +5,7 @@
 ## Pipeline Progress
 
 - [x] Stage 1: PRD — Complete (existing: `docs/bef/00-prd/PRD.md`)
-- [x] Stage 2: Architecture — Complete (existing: `docs/bef/01-architecture/TECHNICAL_SPEC.md`)
+- [x] Stage 2: Architecture — Complete (consolidated in `docs/bef/01-architecture/TECHNICAL_SPEC.md`; tech stack in `CLAUDE.md`; see `01-architecture/README.md` for file map)
 - [x] Stage 3: Phase Plan — Complete (`docs/bef/02-phase-plan/PHASE_PLAN.md`)
 - [ ] Stage 4: Phase Deep Dive — In Progress (1/9 phases refined)
 - [ ] Stage 5: Execute — Not Started

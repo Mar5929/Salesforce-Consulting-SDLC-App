@@ -6,8 +6,8 @@ This document describes the end-to-end workflow for closing the 153 gaps identif
 
 ## Current State
 
-- **Gap analysis complete:** 10 reports in `.planning/gap-analysis/` covering 9 code domains + V2 roadmap
-- **Master index:** `00-GAP-ANALYSIS-INDEX.md` has all gaps indexed, phase groupings, dependency graph, and recommended build order
+- **Gap analysis complete:** 9 gap reports in `docs/bef/03-phases/phase-*/` + V2 roadmap in `docs/bef/02-phase-plan/`
+- **Master index:** `docs/bef/02-phase-plan/GAP-ANALYSIS-INDEX.md` has all gaps indexed, phase groupings, dependency graph, and recommended build order
 - **153 V1 gaps:** 22 Critical, 77 Significant, 54 Minor
 - **22 V2 items:** assessed for readiness (8 ready, 9 needs prep, 5 major work)
 
@@ -32,13 +32,13 @@ What happens in this stage:
 
 This stage is interactive — the human and AI work through each gap together, pushing back on over-engineering, asking clarifying questions, and ensuring nothing is ambiguous.
 
-**Use the prompt template in `workflow/REFINEMENT-PROMPT.md` to start each refinement session.**
+**Use the prompt template in `docs/bef/REFINEMENT-PROMPT.md` to start each refinement session.**
 
 ### Stage 2: Execute (AI agents)
 
 **Goal:** Implement all requirements from the refined spec.
 
-**Input:** Refined spec (e.g., `refined/01-rbac-security-spec.md`)
+**Input:** Refined spec (e.g., `docs/bef/03-phases/phase-01-rbac-security/PHASE_SPEC.md`)
 **Output:** Working code committed to the repo
 
 What happens in this stage:
@@ -66,7 +66,7 @@ What happens in this stage:
 
 ## Domain Processing Order
 
-Based on the dependency graph in `00-GAP-ANALYSIS-INDEX.md`, process domains in this order:
+Based on the dependency graph in `docs/bef/02-phase-plan/GAP-ANALYSIS-INDEX.md`, process domains in this order:
 
 | Order | Domain | File | Why This Order |
 |-------|--------|------|----------------|

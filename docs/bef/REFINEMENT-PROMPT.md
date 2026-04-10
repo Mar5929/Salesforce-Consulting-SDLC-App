@@ -9,7 +9,7 @@ Example: paste the prompt, then type `1` to refine RBAC/Security.
 ## The Prompt
 
 ```markdown
-@.planning/gap-analysis/workflow/WORKFLOW.md @.planning/gap-analysis/00-GAP-ANALYSIS-INDEX.md @CLAUDE.md
+@docs/bef/WORKFLOW.md @docs/bef/02-phase-plan/GAP-ANALYSIS-INDEX.md @CLAUDE.md
 
 # Domain Refinement Session
 
@@ -26,15 +26,15 @@ I have a gap analysis with 153 gaps across 9 domains comparing my PRD against th
 
 | # | Domain | Gap Report | Output Spec |
 |---|--------|-----------|-------------|
-| 1 | RBAC, Security, Governance | .planning/gap-analysis/01-rbac-security-gaps.md | refined/01-rbac-security-spec.md |
-| 2 | AI Agent Harness, Transcripts | .planning/gap-analysis/02-agent-harness-gaps.md | refined/02-agent-harness-spec.md |
-| 3 | Discovery, Questions | .planning/gap-analysis/03-discovery-questions-gaps.md | refined/03-discovery-questions-spec.md |
-| 4 | Work Management | .planning/gap-analysis/04-work-management-gaps.md | refined/04-work-management-spec.md |
-| 5 | Sprint, Developer API | .planning/gap-analysis/05-sprint-developer-gaps.md | refined/05-sprint-developer-spec.md |
-| 6 | Org, Knowledge | .planning/gap-analysis/06-org-knowledge-gaps.md | refined/06-org-knowledge-spec.md |
-| 7 | Dashboards, Search | .planning/gap-analysis/07-dashboards-search-gaps.md | refined/07-dashboards-search-spec.md |
-| 8 | Documents, Notifications | .planning/gap-analysis/08-docs-notifications-gaps.md | refined/08-docs-notifications-spec.md |
-| 9 | QA, Jira, Archival, Lifecycle | .planning/gap-analysis/09-qa-jira-archival-gaps.md | refined/09-qa-jira-archival-spec.md |
+| 1 | RBAC, Security, Governance | docs/bef/03-phases/phase-01-rbac-security/01-rbac-security-gaps.md | docs/bef/03-phases/phase-01-rbac-security/PHASE_SPEC.md |
+| 2 | AI Agent Harness, Transcripts | docs/bef/03-phases/phase-02-agent-harness/02-agent-harness-gaps.md | docs/bef/03-phases/phase-02-agent-harness/PHASE_SPEC.md |
+| 3 | Discovery, Questions | docs/bef/03-phases/phase-03-discovery-questions/03-discovery-questions-gaps.md | docs/bef/03-phases/phase-03-discovery-questions/PHASE_SPEC.md |
+| 4 | Work Management | docs/bef/03-phases/phase-04-work-management/04-work-management-gaps.md | docs/bef/03-phases/phase-04-work-management/PHASE_SPEC.md |
+| 5 | Sprint, Developer API | docs/bef/03-phases/phase-05-sprint-developer/05-sprint-developer-gaps.md | docs/bef/03-phases/phase-05-sprint-developer/PHASE_SPEC.md |
+| 6 | Org, Knowledge | docs/bef/03-phases/phase-06-org-knowledge/06-org-knowledge-gaps.md | docs/bef/03-phases/phase-06-org-knowledge/PHASE_SPEC.md |
+| 7 | Dashboards, Search | docs/bef/03-phases/phase-07-dashboards-search/07-dashboards-search-gaps.md | docs/bef/03-phases/phase-07-dashboards-search/PHASE_SPEC.md |
+| 8 | Documents, Notifications | docs/bef/03-phases/phase-08-docs-notifications/08-docs-notifications-gaps.md | docs/bef/03-phases/phase-08-docs-notifications/PHASE_SPEC.md |
+| 9 | QA, Jira, Archival, Lifecycle | docs/bef/03-phases/phase-09-qa-jira-archival/09-qa-jira-archival-gaps.md | docs/bef/03-phases/phase-09-qa-jira-archival/PHASE_SPEC.md |
 
 ## What To Do
 
@@ -63,7 +63,7 @@ Read the gap report for my domain, then work with me to:
 
 ## Output Format
 
-Write the refined spec to `.planning/gap-analysis/[Output Spec path from table]`
+Write the refined spec to the Output Spec path from the domain lookup table above (e.g., `docs/bef/03-phases/phase-01-rbac-security/PHASE_SPEC.md`). Also create a corresponding `TASKS.md` in the same directory.
 
 Use this structure for each requirement:
 

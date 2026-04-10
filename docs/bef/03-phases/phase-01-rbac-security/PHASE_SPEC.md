@@ -154,6 +154,7 @@ prisma/
 - **Phase 2 (Agent Harness):** Receives the deferred GAP-RBAC-007 secondary gap (AI tool call role enforcement). The `getCurrentMember` fix here means the auth foundation is correct before Phase 2 builds on it.
 - **Phase 4 (Work Management):** GAP-WORK-007 (BA cannot transition stories) is resolved by REQ-RBAC-009 in this phase. Phase 4 can mark it as handled.
 - **Phase 7 (Dashboards):** Receives GAP-RBAC-010 (Usage & Costs), GAP-RBAC-014 (audit logging), GAP-RBAC-016 (cost caps).
+- **V2 (Deferred):** GAP-RBAC-011 full OCC (conflict detection, diff UI, VersionHistory writes) is deferred to V2. Task 14 in this phase adds the `version` field as schema prep so V2 can build on it without a migration.
 
 ---
 
