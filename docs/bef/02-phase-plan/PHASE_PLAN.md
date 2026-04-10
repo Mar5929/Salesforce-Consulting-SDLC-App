@@ -171,7 +171,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | Phase 9 |
 | **Parallel With** | Phase 2 (partially) |
 | **Complexity** | L |
-| **Tasks** | TBD (21 gaps, includes 2 Critical) |
+| **Tasks** | 9 (21 gaps consolidated; GAP-DOCS-007→V2, HEALTH_SCORE_CHANGED→Phase 7; received status report + rate limit notifs from Phase 2) |
 
 **Key Deliverables:**
 - 4 new document templates
