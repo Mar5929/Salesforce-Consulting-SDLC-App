@@ -63,6 +63,20 @@ export default async function StoryDetailPage({
     notFound()
   }
 
+  // Load epics and features for the story edit form
+  const [epics, allFeatures] = await Promise.all([
+    prisma.epic.findMany({
+      where: { projectId },
+      select: { id: true, name: true, prefix: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.feature.findMany({
+      where: { projectId },
+      select: { id: true, name: true, prefix: true, epicId: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ])
+
   const defaultTab =
     typeof search.tab === "string" && search.tab === "qa" ? "qa" : "details"
 
@@ -75,6 +89,9 @@ export default async function StoryDetailPage({
       memberRole={member.role}
       defaultTab={defaultTab}
       openDefectCount={story._count.defects}
+      epics={epics}
+      features={allFeatures}
+      userRole={member.role}
     />
   )
 }

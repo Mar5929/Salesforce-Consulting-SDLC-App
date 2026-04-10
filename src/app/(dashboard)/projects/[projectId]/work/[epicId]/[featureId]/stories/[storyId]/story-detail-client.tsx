@@ -11,7 +11,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Sparkles, Loader2, Calendar } from "lucide-react"
+import { ArrowLeft, Sparkles, Loader2, Calendar, Pencil } from "lucide-react"
 import { format } from "date-fns"
 import { formatEnumLabel } from "@/lib/format-enum"
 import { Badge } from "@/components/ui/badge"
@@ -19,8 +19,10 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TestExecutionTable } from "@/components/qa/test-execution-table"
 import { DefectCreateSheet } from "@/components/defects/defect-create-sheet"
+import { StoryForm } from "@/components/work/story-form"
 import { initiateEnrichmentSession } from "@/actions/conversations"
 import { toast } from "sonner"
+import type { ProjectRole } from "@/generated/prisma"
 
 // ────────────────────────────────────────────
 // Types
@@ -38,6 +40,7 @@ interface StoryData {
   status: string
   priority: string
   storyPoints: number | null
+  epicId: string
   createdAt: string
   updatedAt: string
   feature: { id: string; name: string; prefix: string } | null
@@ -59,6 +62,9 @@ interface StoryDetailClientProps {
   memberRole: string
   defaultTab: string
   openDefectCount: number
+  epics: Array<{ id: string; name: string; prefix: string }>
+  features: Array<{ id: string; name: string; prefix: string; epicId: string }>
+  userRole: ProjectRole
 }
 
 // ────────────────────────────────────────────
@@ -104,9 +110,13 @@ export function StoryDetailClient({
   memberRole,
   defaultTab,
   openDefectCount,
+  epics,
+  features,
+  userRole,
 }: StoryDetailClientProps) {
   const router = useRouter()
   const [defectSheetOpen, setDefectSheetOpen] = useState(false)
+  const [editFormOpen, setEditFormOpen] = useState(false)
   const [enrichLoading, setEnrichLoading] = useState(false)
   const [defectPrefill, setDefectPrefill] = useState<{
     storyId?: string
@@ -164,20 +174,31 @@ export function StoryDetailClient({
             </span>
             {story.title}
           </h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEnrichWithAI}
-            disabled={enrichLoading}
-            className="shrink-0 gap-1.5"
-          >
-            {enrichLoading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5" />
-            )}
-            Enrich with AI
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditFormOpen(true)}
+              className="gap-1.5"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEnrichWithAI}
+              disabled={enrichLoading}
+              className="gap-1.5"
+            >
+              {enrichLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              Enrich with AI
+            </Button>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Badge
@@ -252,71 +273,81 @@ export function StoryDetailClient({
         <TabsContent value="details" className="mt-4">
           <div className="flex flex-col gap-6">
             {/* Description */}
-            {story.description && (
-              <div>
-                <h3 className="text-[14px] font-medium text-foreground mb-1">
-                  Description
-                </h3>
+            <div>
+              <h3 className="text-[14px] font-medium text-foreground mb-1">
+                Description
+              </h3>
+              {story.description ? (
                 <p className="text-[14px] text-muted-foreground whitespace-pre-wrap">
                   {story.description}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-[14px] text-muted-foreground/60 italic">No description</p>
+              )}
+            </div>
 
             {/* Acceptance Criteria */}
-            {story.acceptanceCriteria && (
-              <div>
-                <h3 className="text-[14px] font-medium text-foreground mb-1">
-                  Acceptance Criteria
-                </h3>
+            <div>
+              <h3 className="text-[14px] font-medium text-foreground mb-1">
+                Acceptance Criteria
+              </h3>
+              {story.acceptanceCriteria ? (
                 <p className="text-[14px] text-muted-foreground whitespace-pre-wrap">
                   {story.acceptanceCriteria}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-[14px] text-muted-foreground/60 italic">No acceptance criteria</p>
+              )}
+            </div>
 
             {/* Persona */}
-            {story.persona && (
-              <div>
-                <h3 className="text-[14px] font-medium text-foreground mb-1">
-                  Persona
-                </h3>
+            <div>
+              <h3 className="text-[14px] font-medium text-foreground mb-1">
+                Persona
+              </h3>
+              {story.persona ? (
                 <p className="text-[14px] text-muted-foreground">
                   {story.persona}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-[14px] text-muted-foreground/60 italic">No persona defined</p>
+              )}
+            </div>
 
             {/* Dependencies */}
-            {story.dependencies && (
-              <div>
-                <h3 className="text-[14px] font-medium text-foreground mb-1">
-                  Dependencies
-                </h3>
+            <div>
+              <h3 className="text-[14px] font-medium text-foreground mb-1">
+                Dependencies
+              </h3>
+              {story.dependencies ? (
                 <p className="text-[14px] text-muted-foreground whitespace-pre-wrap">
                   {story.dependencies}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-[14px] text-muted-foreground/60 italic">No dependencies</p>
+              )}
+            </div>
 
             {/* Notes */}
-            {story.notes && (
-              <div>
-                <h3 className="text-[14px] font-medium text-foreground mb-1">
-                  Notes
-                </h3>
+            <div>
+              <h3 className="text-[14px] font-medium text-foreground mb-1">
+                Notes
+              </h3>
+              {story.notes ? (
                 <p className="text-[14px] text-muted-foreground whitespace-pre-wrap">
                   {story.notes}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-[14px] text-muted-foreground/60 italic">No notes</p>
+              )}
+            </div>
 
             {/* Impacted Components */}
-            {story.storyComponents.length > 0 && (
-              <div>
-                <h3 className="text-[14px] font-medium text-foreground mb-1">
-                  Impacted Components
-                </h3>
+            <div>
+              <h3 className="text-[14px] font-medium text-foreground mb-1">
+                Impacted Components
+              </h3>
+              {story.storyComponents.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {story.storyComponents.map((sc) => (
                     <Badge key={sc.id} variant="outline" className="text-[12px]">
@@ -327,8 +358,10 @@ export function StoryDetailClient({
                     </Badge>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-[14px] text-muted-foreground/60 italic">No components identified</p>
+              )}
+            </div>
           </div>
         </TabsContent>
 
@@ -350,6 +383,31 @@ export function StoryDetailClient({
         onOpenChange={setDefectSheetOpen}
         onCreated={() => setDefectSheetOpen(false)}
         prefill={defectPrefill}
+      />
+
+      {/* Story edit form slide-over */}
+      <StoryForm
+        projectId={projectId}
+        open={editFormOpen}
+        onOpenChange={setEditFormOpen}
+        story={{
+          id: story.id,
+          title: story.title,
+          persona: story.persona,
+          description: story.description,
+          acceptanceCriteria: story.acceptanceCriteria ?? "",
+          storyPoints: story.storyPoints,
+          priority: story.priority,
+          status: story.status,
+          epicId: story.epicId,
+          featureId: story.feature?.id ?? null,
+          storyComponents: story.storyComponents,
+        }}
+        epics={epics}
+        features={features}
+        defaultEpicId={epicId}
+        defaultFeatureId={featureId}
+        userRole={userRole}
       />
     </div>
   )

@@ -236,17 +236,15 @@ export function FeatureDetailClient({
                 variant="ghost"
                 size="sm"
                 onClick={handleEdit}
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                className="h-7 gap-1 px-2 text-muted-foreground hover:text-foreground"
               >
                 <Pencil className="h-3.5 w-3.5" />
-                <span className="sr-only">Edit feature</span>
+                Edit
               </Button>
             </div>
-            {feature.description && (
-              <p className="text-[14px] text-muted-foreground">
-                {feature.description}
-              </p>
-            )}
+            <p className="text-[14px] text-muted-foreground">
+              {feature.description || <span className="italic text-muted-foreground/60">No description</span>}
+            </p>
             <div className="flex items-center gap-3 text-[13px] text-muted-foreground mt-1">
               <span className="flex items-center gap-1">
                 <Layers className="h-3.5 w-3.5" />
