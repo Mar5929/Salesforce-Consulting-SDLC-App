@@ -10,7 +10,7 @@ export async function requireAuth() {
 export async function getCurrentMember(projectId: string) {
   const userId = await requireAuth()
   const member = await prisma.projectMember.findUnique({
-    where: { projectId_clerkUserId: { projectId, clerkUserId: userId } },
+    where: { projectId_clerkUserId: { projectId, clerkUserId: userId }, status: "ACTIVE" },
   })
   if (!member) throw new Error("Not a member of this project")
   return member

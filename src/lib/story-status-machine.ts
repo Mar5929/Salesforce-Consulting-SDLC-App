@@ -2,9 +2,10 @@
  * Story Status Machine
  *
  * Validates story status transitions with role-based gating.
- * PM roles manage lifecycle: DRAFT -> READY -> SPRINT_PLANNED
+ * PM/BA roles manage lifecycle: DRAFT -> READY -> SPRINT_PLANNED
  * Dev roles manage execution: SPRINT_PLANNED -> IN_PROGRESS -> IN_REVIEW -> QA -> DONE
- * BA and QA roles cannot transition stories.
+ * SA can do both management and execution transitions.
+ * QA roles cannot transition stories.
  *
  * Per D-03/WORK-04/WORK-05 from planning context.
  */
@@ -23,9 +24,9 @@ export const TRANSITIONS: Record<StoryStatus, StoryStatus[]> = {
 
 // PM roles manage lifecycle: DRAFT->READY, auto READY->SPRINT_PLANNED
 // Dev roles manage execution: SPRINT_PLANNED->IN_PROGRESS->IN_REVIEW->QA->DONE
-const PM_ROLES: ProjectRole[] = ["PM", "SOLUTION_ARCHITECT"]
+const PM_ROLES: ProjectRole[] = ["PM", "SOLUTION_ARCHITECT", "BA"]
 const DEV_ROLES: ProjectRole[] = ["DEVELOPER"]
-// BA and QA can view but not transition
+// QA can view but not transition
 
 type RoleGroup = "PM" | "DEV" | "NONE"
 
@@ -58,6 +59,11 @@ export function canTransition(from: StoryStatus, to: StoryStatus, role: ProjectR
   if (!TRANSITIONS[from]?.includes(to)) return false
   const group = getRoleGroup(role)
   if (group === "NONE") return false
+  // SA can do both management and execution transitions
+  if (role === "SOLUTION_ARCHITECT") {
+    return PM_TRANSITIONS.some(([f, t]) => f === from && t === to) ||
+           DEV_TRANSITIONS.some(([f, t]) => f === from && t === to)
+  }
   // Check role-specific permissions
   if (group === "PM") return PM_TRANSITIONS.some(([f, t]) => f === from && t === to)
   if (group === "DEV") return DEV_TRANSITIONS.some(([f, t]) => f === from && t === to)

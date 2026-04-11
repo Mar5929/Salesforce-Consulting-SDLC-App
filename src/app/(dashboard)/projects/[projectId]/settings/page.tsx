@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
+import { requireRole } from "@/lib/auth"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProjectSettingsForm } from "@/components/projects/project-settings-form"
 import { JiraSettingsSection } from "./jira-settings-section"
@@ -17,8 +18,24 @@ function formatDateForInput(date: Date | null): string {
 export default async function SettingsPage({ params }: SettingsPageProps) {
   const { projectId } = await params
 
+  try {
+    await requireRole(projectId, ["SOLUTION_ARCHITECT", "PM"]);
+  } catch {
+    redirect(`/projects/${projectId}`);
+  }
+
   const project = await prisma.project.findUnique({
     where: { id: projectId },
+    select: {
+      id: true,
+      name: true,
+      clientName: true,
+      engagementType: true,
+      startDate: true,
+      targetEndDate: true,
+      sandboxStrategy: true,
+      status: true,
+    },
   })
 
   if (!project) {

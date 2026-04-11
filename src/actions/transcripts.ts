@@ -4,7 +4,7 @@ import { z } from "zod"
 import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
 import { scopedPrisma } from "@/lib/project-scope"
-import { getCurrentMember } from "@/lib/auth"
+import { getCurrentMember, requireRole } from "@/lib/auth"
 import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
 
@@ -220,9 +220,11 @@ export const rejectExtractionItem = actionClient
         await prisma.question.delete({ where: { id: entityId } })
         break
       case "decision":
+        await requireRole(projectId, ["SOLUTION_ARCHITECT", "PM", "BA", "DEV"])
         await prisma.decision.delete({ where: { id: entityId } })
         break
       case "risk":
+        await requireRole(projectId, ["SOLUTION_ARCHITECT", "PM", "BA"])
         await prisma.risk.delete({ where: { id: entityId } })
         break
       default:

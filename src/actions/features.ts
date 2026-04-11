@@ -14,7 +14,7 @@ import { revalidatePath } from "next/cache"
 import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
 import { scopedPrisma } from "@/lib/project-scope"
-import { getCurrentMember } from "@/lib/auth"
+import { getCurrentMember, requireRole } from "@/lib/auth"
 import { createId } from "@paralleldrive/cuid2"
 import { FeatureStatus } from "@/generated/prisma"
 
@@ -55,7 +55,7 @@ const getFeaturesSchema = z.object({
 export const createFeature = actionClient
   .schema(createFeatureSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM", "BA"])
 
     // Validate epicId belongs to project
     const epic = await prisma.epic.findUnique({
@@ -92,7 +92,7 @@ export const createFeature = actionClient
 export const updateFeature = actionClient
   .schema(updateFeatureSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM", "BA"])
 
     // Validate featureId belongs to project
     const existing = await prisma.feature.findUnique({
@@ -121,7 +121,7 @@ export const updateFeature = actionClient
 export const deleteFeature = actionClient
   .schema(deleteFeatureSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM", "BA"])
 
     // Validate featureId belongs to project
     const existing = await prisma.feature.findUnique({

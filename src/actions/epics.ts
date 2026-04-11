@@ -13,7 +13,7 @@ import { revalidatePath } from "next/cache"
 import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
 import { scopedPrisma } from "@/lib/project-scope"
-import { getCurrentMember } from "@/lib/auth"
+import { getCurrentMember, requireRole } from "@/lib/auth"
 import { createId } from "@paralleldrive/cuid2"
 import { EpicStatus } from "@/generated/prisma"
 
@@ -57,7 +57,7 @@ const getEpicSchema = z.object({
 export const createEpic = actionClient
   .schema(createEpicSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM", "BA"])
 
     // Auto-compute sortOrder as max existing + 1
     const maxSort = await prisma.epic.aggregate({
@@ -84,7 +84,7 @@ export const createEpic = actionClient
 export const updateEpic = actionClient
   .schema(updateEpicSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM", "BA"])
 
     // Validate epicId belongs to project
     const existing = await prisma.epic.findUnique({
@@ -113,7 +113,7 @@ export const updateEpic = actionClient
 export const deleteEpic = actionClient
   .schema(deleteEpicSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM", "BA"])
 
     // Validate epicId belongs to project
     const existing = await prisma.epic.findUnique({

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
 import { getCurrentMember, requireRole } from "@/lib/auth"
+import { stripTokenFields } from "@/lib/safe-project"
 import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
 import { createId } from "@paralleldrive/cuid2"
@@ -153,5 +154,5 @@ export const updateProject = actionClient
       data: updateData,
     })
 
-    return { project }
+    return { project: stripTokenFields(project) }
   })

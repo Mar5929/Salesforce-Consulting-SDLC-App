@@ -17,7 +17,7 @@ import { revalidatePath } from "next/cache"
 import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
 import { scopedPrisma } from "@/lib/project-scope"
-import { getCurrentMember } from "@/lib/auth"
+import { getCurrentMember, requireRole } from "@/lib/auth"
 import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
 import { createId } from "@paralleldrive/cuid2"
@@ -72,7 +72,7 @@ const removeStoriesSchema = z.object({
 export const createSprint = actionClient
   .schema(createSprintSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM"])
 
     // Validate endDate > startDate (T-03-12)
     const start = new Date(parsedInput.startDate)
@@ -100,7 +100,7 @@ export const createSprint = actionClient
 export const updateSprint = actionClient
   .schema(updateSprintSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM"])
 
     // Verify sprint belongs to project (T-03-13)
     const existing = await prisma.sprint.findUnique({
@@ -186,12 +186,8 @@ export const getSprint = actionClient
 
 export const assignStoriesToSprint = actionClient
   .schema(assignStoriesSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    // Verify membership (uses findFirst for testability with mock prisma)
-    const member = await prisma.projectMember.findFirst({
-      where: { projectId: parsedInput.projectId, clerkUserId: ctx.userId },
-    })
-    if (!member) throw new Error("Not a member of this project")
+  .action(async ({ parsedInput }) => {
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM"])
 
     // Verify sprint belongs to project (T-03-11)
     const sprint = await prisma.sprint.findUnique({
@@ -237,11 +233,8 @@ export const assignStoriesToSprint = actionClient
 
 export const removeStoriesFromSprint = actionClient
   .schema(removeStoriesSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const member = await prisma.projectMember.findFirst({
-      where: { projectId: parsedInput.projectId, clerkUserId: ctx.userId },
-    })
-    if (!member) throw new Error("Not a member of this project")
+  .action(async ({ parsedInput }) => {
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM"])
 
     // Track which sprint(s) were affected for event firing
     const affectedSprintIds = new Set<string>()

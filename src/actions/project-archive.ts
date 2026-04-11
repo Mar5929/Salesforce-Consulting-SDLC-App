@@ -4,6 +4,7 @@ import { z } from "zod"
 import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
 import { requireRole } from "@/lib/auth"
+import { stripTokenFields } from "@/lib/safe-project"
 import { inngest } from "@/lib/inngest/client"
 import { EVENTS } from "@/lib/inngest/events"
 
@@ -13,7 +14,7 @@ const archiveProjectSchema = z.object({
 
 /**
  * Archive a project, making it read-only.
- * T-05-18: Restricted to PM role. Sprint completion check prevents
+ * T-05-18: Restricted to SA + PM roles. Sprint completion check prevents
  * archiving active sprints.
  * T-05-19: Archive event emitted to Inngest. Notifications sent to all members.
  */
@@ -22,8 +23,8 @@ export const archiveProject = actionClient
   .action(async ({ parsedInput }) => {
     const { projectId } = parsedInput
 
-    // T-05-18: Verify PM role
-    const member = await requireRole(projectId, ["PM"])
+    // T-05-18: Verify SA or PM role
+    const member = await requireRole(projectId, ["SOLUTION_ARCHITECT", "PM"])
 
     // Check for active sprints
     const activeSprints = await prisma.sprint.findMany({
@@ -83,7 +84,7 @@ export const archiveProject = actionClient
       },
     })
 
-    return updated
+    return stripTokenFields(updated)
   })
 
 const reactivateProjectSchema = z.object({
@@ -92,7 +93,7 @@ const reactivateProjectSchema = z.object({
 
 /**
  * Reactivate an archived project.
- * T-05-18: Restricted to PM role.
+ * T-05-18: Restricted to SA + PM roles.
  * T-05-19: Reactivate event emitted. Notifications sent to all members.
  */
 export const reactivateProject = actionClient
@@ -100,8 +101,8 @@ export const reactivateProject = actionClient
   .action(async ({ parsedInput }) => {
     const { projectId } = parsedInput
 
-    // T-05-18: Verify PM role
-    const member = await requireRole(projectId, ["PM"])
+    // T-05-18: Verify SA or PM role
+    const member = await requireRole(projectId, ["SOLUTION_ARCHITECT", "PM"])
 
     // Check project is actually archived
     const project = await prisma.project.findUniqueOrThrow({
@@ -146,5 +147,5 @@ export const reactivateProject = actionClient
       },
     })
 
-    return updated
+    return stripTokenFields(updated)
   })

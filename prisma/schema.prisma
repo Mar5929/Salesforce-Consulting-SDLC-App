@@ -502,6 +502,7 @@ model Epic {
   description String?
   status      EpicStatus @default(NOT_STARTED)
   sortOrder   Int
+  version     Int        @default(1)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -542,6 +543,7 @@ model Feature {
   description String?
   status      FeatureStatus @default(NOT_STARTED)
   sortOrder   Int
+  version     Int           @default(1)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -577,6 +579,7 @@ model Story {
   dependencies       String?
   notes              String?
   sortOrder          Int
+  version            Int         @default(1)
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
@@ -621,6 +624,7 @@ model Question {
   confidence        Confidence     @default(HIGH)
   needsReview       Boolean        @default(false)
   reviewReason      String?
+  version           Int            @default(1)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
@@ -649,6 +653,7 @@ model Decision {
   confidence   Confidence   @default(HIGH)
   needsReview  Boolean      @default(false)
   reviewReason String?
+  version      Int          @default(1)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -671,6 +676,7 @@ model Requirement {
   confidence   Confidence        @default(HIGH)
   needsReview  Boolean           @default(false)
   reviewReason String?
+  version      Int               @default(1)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
@@ -695,6 +701,7 @@ model Risk {
   confidence          Confidence     @default(HIGH)
   needsReview         Boolean        @default(false)
   reviewReason        String?
+  version             Int            @default(1)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 

@@ -12,7 +12,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { actionClient } from "@/lib/safe-action"
 import { prisma } from "@/lib/db"
-import { getCurrentMember } from "@/lib/auth"
+import { getCurrentMember, requireRole } from "@/lib/auth"
 import { createId } from "@paralleldrive/cuid2"
 import { MilestoneStatus } from "@/generated/prisma"
 
@@ -66,7 +66,7 @@ const getMilestoneProgressSchema = z.object({
 export const createMilestone = actionClient
   .schema(createMilestoneSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM"])
 
     // Auto-compute sortOrder as max existing + 1
     const maxSort = await prisma.milestone.aggregate({
@@ -96,7 +96,7 @@ export const createMilestone = actionClient
 export const updateMilestone = actionClient
   .schema(updateMilestoneSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM"])
 
     // Validate milestone belongs to project
     const existing = await prisma.milestone.findUnique({
@@ -129,7 +129,7 @@ export const updateMilestone = actionClient
 export const deleteMilestone = actionClient
   .schema(deleteMilestoneSchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    await requireRole(parsedInput.projectId, ["SOLUTION_ARCHITECT", "PM"])
 
     // Validate milestone belongs to project
     const existing = await prisma.milestone.findUnique({

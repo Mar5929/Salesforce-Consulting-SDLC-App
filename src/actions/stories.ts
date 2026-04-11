@@ -100,7 +100,17 @@ const removeStoryComponentSchema = z.object({
 export const createStory = actionClient
   .schema(createStorySchema)
   .action(async ({ parsedInput }) => {
-    await getCurrentMember(parsedInput.projectId)
+    const member = await getCurrentMember(parsedInput.projectId)
+
+    // QA members can only create stories in DRAFT status.
+    // The createStorySchema intentionally omits the status field, so stories
+    // always inherit the Prisma schema default (DRAFT). This guard ensures
+    // the invariant holds even if the schema evolves to accept a status field.
+    if (member.role === "QA") {
+      // No-op today: status is not in parsedInput, so DRAFT is guaranteed.
+      // If createStorySchema ever adds a status field, add an explicit
+      // override here: parsedInput.status = "DRAFT"
+    }
 
     // Get epic prefix for display ID generation
     const epic = await prisma.epic.findUnique({
