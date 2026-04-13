@@ -1,6 +1,0 @@
-- generic [active] [ref=e1]:
-  - main [ref=e2]:
-    - heading "SF Consulting AI Framework" [level=1] [ref=e3]
-    - paragraph [ref=e4]: AI-powered Salesforce consulting project management
-  - region "Notifications alt+T"
-  - alert [ref=e5]
