@@ -2,7 +2,7 @@
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
 > Gap Report: [05-sprint-developer-gaps.md](./05-sprint-developer-gaps.md)
-> Depends On: Phase 4 (Work Management)
+> Depends On: Phase 4 (Work Management), Phase 6 (Org/Knowledge — added per Addendum v1 for `search_org_kb`)
 > Status: Draft
 > Last Updated: 2026-04-10
 
@@ -15,6 +15,29 @@ Complete sprint intelligence with capacity assessment, parallelization output, d
 **In scope:** 14 of 14 domain gaps -> 12 tasks
 **Resolved/deferred:** None. All 14 gaps addressed. GAP-SPRINT-009 (NLP org query) is scoped as a thin keyword-to-filter translation layer in this phase; full embedding-based semantic search is built in Phase 6 and wired in here as an optional enhancement.
 **GAP-SPRINT-013 decision:** Update PRD endpoint documentation to match the key-derived `/api/v1/` routing (docs-to-code alignment). The key-derived approach is better security since projectId cannot be spoofed in the URL.
+
+---
+
+## Addendum v1 Amendments (April 13, 2026)
+
+These amendments integrate PRD Addendum v1 into Phase 5. They are additive — existing requirements below are unchanged except where noted.
+
+- **Context Package Assembly rewrite:** Context Package Assembly is now a specified deterministic pipeline (Addendum §4.6), not an agent loop. Nine steps:
+  1. Fetch story + acceptance criteria + parent epic/feature.
+  2. Read `story.impacted_components` (Layer 1 component IDs).
+  3. For each component: fetch + 1-hop neighbors via `component_edges`, domain memberships, annotations.
+  4. For each unique domain: fetch domain description + annotations.
+  5. Fetch related discovery Q&A via `search_project_kb` (story description as query).
+  6. Fetch in-flight stories sharing any impacted component (coordination flags).
+  7. Apply token budget (target 20k tokens); trim by lowest semantic similarity if over.
+  8. Single Sonnet call: generate 200-word "context brief" header.
+  9. Return structured package.
+
+  Latency target: <3s p95. Only one LLM call (step 8). Everything else is SQL + vector search.
+- **Sprint health briefing routing:** Sprint health briefing now calls the Briefing/Status Pipeline (Phase 2) with `briefing_type = sprint_health`.
+- **NEW dependency: Phase 6.** `search_org_kb` (Layer 5) must exist for step 5 of Context Package Assembly. The Depends On header above has been updated accordingly.
+- **What does not change:** Capacity assessment, parallelization groups, developer attribution, API key expiry/rotation, brownfield warning, component report endpoint.
+- **Eval fixture ownership (Context Package Assembly):** Phase 5 owns eval fixtures for Context Package Assembly (10 labeled fixtures covering brownfield + greenfield + high-component-count stories). Harness infrastructure from Phase 11 hosts them (fixtures live under `/evals/context_package_assembly/`), but authorship, gold labels, and maintenance belong to Phase 5. See Task 15 below.
 
 ---
 

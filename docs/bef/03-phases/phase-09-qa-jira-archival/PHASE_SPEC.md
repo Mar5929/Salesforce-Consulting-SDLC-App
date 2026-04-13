@@ -21,6 +21,15 @@ Complete the QA workflow (AI test case generation, test execution UI, defect edi
 
 ---
 
+## Addendum v1 Amendments (April 13, 2026)
+
+These amendments integrate PRD Addendum v1 into Phase 9. Review-only; no new tasks unless review surfaces a gap.
+
+- **Review note:** Verify test case generation consumes Story Generation Pipeline output (acceptance criteria from pipeline stage 7). No code changes expected — confirm integration point during Phase 9 execution.
+- No other material changes expected from the addendum.
+
+---
+
 ## 2. Functional Requirements
 
 ### 2.1 QA RBAC Fixes (REQ-QA-001)

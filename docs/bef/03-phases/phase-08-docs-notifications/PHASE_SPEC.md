@@ -2,7 +2,7 @@
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
 > Gap Report: [08-docs-notifications-gaps.md](./08-docs-notifications-gaps.md)
-> Depends On: Phase 1 (RBAC, Security, Governance)
+> Depends On: Phase 1 (RBAC, Security, Governance), Phase 2 (Pipelines: `pending_review` + `conflicts_flagged`), Phase 7 (HEALTH_SCORE_CHANGED handoff)
 > Status: Draft
 > Last Updated: 2026-04-10
 
@@ -19,6 +19,16 @@ Fix the notification system (schema mismatches causing runtime errors, dead send
 **Received from Phase 2:**
 - GAP-AGENT-001 (STATUS_REPORT as document type variant in document templates)
 - GAP-AGENT-008 notifications (80% rate limit threshold alerts)
+
+---
+
+## Addendum v1 Amendments (April 13, 2026)
+
+These amendments integrate PRD Addendum v1 into Phase 8. They are additive — existing requirements below are unchanged.
+
+- **Pipeline notifications:** `pending_review` items (from Transcript Processing + Answer Logging pipelines) generate notifications when queued. `conflicts_flagged` records also trigger notifications. Phase 8 wires these into the existing notification dispatch infrastructure.
+- Pipeline run history may surface in the notification activity feed if time permits.
+- **What does not change:** Document templates, Word/PPT/PDF generation, branding admin, notification delivery, recipient resolution, 14 existing notification event types.
 
 ---
 

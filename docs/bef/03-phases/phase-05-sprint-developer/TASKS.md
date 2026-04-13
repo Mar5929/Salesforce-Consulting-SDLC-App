@@ -524,3 +524,32 @@ Task 1 (Schema migration)     ─── must be first (fields needed by Tasks 2-
 | 10 | Brownfield warning | M | Task 1 | GAP-012 |
 | 11 | Developer API docs update | S | Tasks 7, 8, 9 | GAP-013 |
 | 12 | Sprint intelligence UI | M | Task 3 | GAP-001, 002, 004, 005 (UI) |
+| 13 | Rewrite Context Package Assembly per Addendum §4.6 (9 steps, 1 LLM call, <3s p95) | L | Phase 6 (`search_org_kb`) | Addendum v1 |
+| 14 | Route sprint health briefing to Briefing/Status Pipeline (Phase 2) | S | Phase 2 | Addendum v1 |
+| 15 | Context Package Assembly eval fixtures (10 labeled, brownfield + greenfield + high-component-count) | M | Task 13, Phase 11 eval harness | Addendum §5.6 |
+
+---
+
+### Task 15: Context Package Assembly eval fixtures
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Author 10 labeled eval fixtures for Context Package Assembly (Addendum §5.6). Coverage split: 4 brownfield stories (rescue/takeover with existing org metadata + annotations + domains), 4 greenfield stories (no existing org metadata, relying on discovery Q&A + requirements), 2 high-component-count stories (10+ impacted components, exercising the 20k-token budget trim logic). Fixtures live under `/evals/context_package_assembly/` in Phase 11 harness infrastructure; Phase 5 owns authorship, gold labels, and maintenance. |
+| **Depends On** | Task 13 (pipeline implementation), Phase 11 eval harness delivered |
+| **Complexity** | M |
+| **Status** | Not Started |
+| **Completed** | -- |
+| **Linear ID** | -- |
+
+**Acceptance Criteria:**
+- [ ] 10 fixtures committed under `/evals/context_package_assembly/` with README documenting the scenario mix.
+- [ ] Each fixture input: `{storyId, projectFixtureId}`; gold: `{businessContext, impactedComponents[], domains[], discoveryNotes[], inFlightConflicts[], contextBriefSummary}`.
+- [ ] Assertions: (1) all mandatory context sections populated, (2) impacted-component set matches gold within tolerance, (3) token count <=20k, (4) p95 latency <3s over repeated runs.
+- [ ] Brownfield fixtures exercise `search_org_kb` (Layer 5).
+- [ ] Greenfield fixtures exercise discovery Q&A retrieval path.
+- [ ] High-component-count fixtures exercise the trim-by-lowest-semantic-similarity step.
+- [ ] Eval suite registered with Phase 11 harness, tagged `context-package-assembly`.
+
+**Implementation Notes:**
+- Reuse project fixture data from Phase 11 where possible; add minimal fixture rows for edge scenarios.
+- Fixture gold labels should be authored collaboratively with the architect role during deep-dive of Task 13.

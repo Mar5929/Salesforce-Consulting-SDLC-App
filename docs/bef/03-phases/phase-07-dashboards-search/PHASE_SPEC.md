@@ -28,6 +28,17 @@ Rework the health score model from a weighted percentage formula to the PRD's si
 
 ---
 
+## Addendum v1 Amendments (April 13, 2026)
+
+These amendments integrate PRD Addendum v1 into Phase 7. They are additive — existing requirements below are unchanged.
+
+- **Briefing generation routing:** Briefing generation now routes through the Briefing/Status Pipeline (Phase 2). Phase 7 calls the pipeline with the appropriate `briefing_type` — it does not implement its own AI generation.
+- **Dashboard metrics are deterministic SQL.** Confirm all dashboard data comes from SQL queries, not AI inference. Sonnet synthesizes narrative prose around the deterministic metrics (via the Briefing Pipeline).
+- **Search substrate:** `search_project_kb` (Phase 11 hybrid retrieval) is the substrate. Phase 7 builds the UI over this function. The three new entity type expansions (Story, OrgComponent, BusinessProcess) resolve to Layer 1/2 queries via `search_org_kb` for org entities.
+- **What does not change:** Project overview, sprint analytics, team productivity view, risk/decision dashboards, filter UI, Usage & Costs tab, audit logging.
+
+---
+
 ## 2. Functional Requirements
 
 ### 2.1 Health Score Rework -- Signal Counter Model (REQ-DASH-001)

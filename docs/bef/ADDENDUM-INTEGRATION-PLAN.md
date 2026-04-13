@@ -63,6 +63,7 @@ This phase exists because the addendum specified these items for Phase 1, which 
    - `search_project_kb(project_id, query, options)` — BM25 + vector + RRF across all project KB entities
    - `search_org_kb(project_id, query, options)` — function signature only; full implementation in Phase 6
    - RRF formula: `score = Σ (1 / (60 + rank_i))` across rank lists
+   - **Audit → generalize → relocate (not rewrite):** Existing `src/lib/search/global-search.ts` implements a three-layer hybrid (structured + tsvector + pgvector) used today by `src/lib/agent-harness/context/smart-retrieval.ts`. Phase 11 should generalize and relocate this to `src/lib/ai/search.ts` rather than rebuild. Audit `globalSearch()` first for reuse as the primitive; refactor; retain call sites.
 
 4. **Embedding infrastructure**:
    - Inngest job: enqueue embedding on entity create/update, re-embed only on hash change
@@ -101,7 +102,7 @@ Embedding provider: Voyage AI (`voyage-3-lite`) vs. OpenAI (`text-embedding-3-sm
 **What's added (addendum — four pipelines):**
 
 **Transcript Processing Pipeline** (Addendum §5.2.1):
-Replaces generic `TRANSCRIPT_PROCESSING` harness task. Seven stages:
+Replaces generic `TRANSCRIPT_PROCESSING` harness task. Each stage is idempotent and retry-safe; stage failure after 3 retries escalates to the human-review queue with partial state preserved. Raw transcript text is always retained on input. Seven stages:
 1. Segment (Haiku) — split into speaker turns + chunk to ~500 tokens
 2. Extract candidates (Haiku) — structured output: questions, answers, decisions, requirements, risks, action items with confidence
 3. Entity resolution (deterministic + hybrid search) — retrieve top-K existing entities per candidate
@@ -148,11 +149,14 @@ Write tools (confirmation required in UI before apply): `create_question`, `crea
 
 Not available to the agent: story creation, transcript processing, answer logging, document generation, sprint modification. Agent suggests; pipelines execute.
 
+**Orphan TaskType mapping (deep-dive requirement):**
+Existing `TaskType` enum values not covered by the four pipelines (`QUESTION_ANSWERING`, `STORY_ENRICHMENT`, `STATUS_REPORT_GENERATION`, `DOCUMENT_GENERATION`, `SPRINT_ANALYSIS`, `CONTEXT_PACKAGE_ASSEMBLY`, `ORG_QUERY`, `DASHBOARD_SYNTHESIS`, `ARTICLE_SYNTHESIS`) must be explicitly re-mapped during the Phase 2 deep-dive: either fold into a pipeline (e.g., `QUESTION_ANSWERING` → Answer Logging), route to a different phase (e.g., `DOCUMENT_GENERATION` → Phase 8), or deprecate. No generic task-type execution remains after Phase 2.
+
 **Model router integration:**
 All existing direct Claude calls in `engine.ts` and task files are retrofitted to use `model_router.resolve_model(intent)`. No stage hardcodes a model string.
 
 **Eval harness extension:**
-10 labeled fixtures for Story Generation pipeline. Eval assertions: mandatory field presence, semantic similarity of acceptance criteria to gold, component cross-reference accuracy.
+15 labeled fixtures for Story Generation pipeline (per Addendum §5.2.3). Eval assertions: mandatory field presence, semantic similarity of acceptance criteria to gold, component cross-reference accuracy.
 
 ---
 
@@ -364,24 +368,35 @@ All entities below are new additions from the addendum. Schema goes in Phase 11 
 | `pipeline_stage_runs` | Per-stage trace within a pipeline run |
 | `pending_review` | Items from pipelines awaiting human confirmation |
 | `conflicts_flagged` | Contradictions detected by impact assessment |
+| `unresolved_references` (materialized view) | Materialized view over `component_edges` where `target_component_id IS NULL`; surfaces dynamic SOQL/Apex callouts and feeds Org Health findings |
 
-### Phase 6 Schema Additions
+> Footnote: `eval_runs` (Addendum §7) is an optional persistence table (file-only vs. DB persistence to be decided) and is deferred unless needed.
+
+### Phase 6 Schema Migrations (existing models)
+
+These are not clean additions. Each requires a migration path, back-fill, and (where noted) a dual-write transition.
+
+| Existing model | Target | Migration work |
+|----------------|--------|----------------|
+| `DomainGrouping` | `domains` | Rename; add `source` enum (`ai_proposed | human_asserted`), `status` enum (`proposed | confirmed | archived`), `archived_reason` fields |
+| `BusinessContextAnnotation` | `annotations` | Polymorphic rewrite with `entity_type` + `entity_id` (covers `component | edge | domain`); add `content_type`, `source` (`human | ai_derived_from_discovery`), `status` fields |
+| `OrgComponent.embedding` (inline `vector(1536)` column) | `component_embeddings` table | Extract column into parallel table; add `embedded_text`, `embedded_text_hash`, `embedding_model`; include back-fill strategy and drop-column step |
+| `KnowledgeArticle.embedding` (inline `vector(1536)` column) | Decide and document | Decide fate (retain inline, migrate to parallel table, or deprecate) during Phase 6 deep-dive |
+
+### Phase 6 Schema Additions (truly new)
 
 | Table | Purpose |
 |-------|---------|
-| `component_embeddings` | Layer 2: vector embeddings for org components |
 | `component_history` | Rename/modification audit trail per component |
 | `domain_memberships` | Layer 3: many-to-many component-to-domain |
-| `annotations` | Layer 4: polymorphic, covers component/edge/domain |
 | `annotation_embeddings` | Layer 4: semantic search over annotations |
 | `org_health_reports` | Org Health Assessment output records |
 
-### Phase 2 Schema (if not already in existing schema)
+> Footnote: `annotation_versions` (Addendum §4.5) is an optional persistence table deferred unless needed.
 
-| Table | Purpose |
-|-------|---------|
-| `agent_conversations` | Freeform agent conversation records |
-| `agent_messages` | Freeform agent message records (may extend existing ChatMessage) |
+### Phase 2 Schema (extends existing models)
+
+Phase 2 extends the existing `Conversation` + `ChatMessage` + `ConversationType` models already in `prisma/schema.prisma`. Add an `agent_conversation_type` value or reuse `ConversationType` enum values (e.g., `GENERAL_CHAT` maps to the freeform agent). No new top-level table is required unless agent-specific metadata demands it.
 
 ---
 
@@ -407,6 +422,7 @@ All entities below are new additions from the addendum. Schema goes in Phase 11 
 | Domain proposal confidence threshold | Phase 6 | Start at manual-review-for-all; revisit after first 5 brownfield projects. |
 | Org Health Assessment cost ceiling | Phase 6 | Default $25 per run; architect-override for rescue engagements. |
 | Embedding migration strategy | Future (post-V1) | Document in Phase 11 spec: dual-write during transition window, incremental re-embedding job. |
+| Rename collision edge case | Phase 6 implementation | Per Addendum §8.F: "If a Salesforce metadata ID is reused after a component is deleted and a new component is created with the same `api_name`, the sync may produce ambiguous matches. Current rule: match by ID first; if ID mismatch, treat as new component. Validate this behavior with an edge-case fixture in Phase 3." |
 
 ---
 

@@ -540,5 +540,6 @@ Task 1 (Schema migration)  ─── must be first (AuditLog table, cost cap fie
 | 13 | Audit logging implementation | M | Task 1 | GAP-RBAC-014 |
 | 14 | Cost cap enforcement | M | Tasks 1, 8 | GAP-RBAC-016 |
 | 15 | Pricing consolidation + verification | S | Tasks 2, 7, 8 | GAP-DASH-025 |
+| 16 | Route briefing generation calls to Briefing/Status Pipeline (remove any direct AI calls) | S | Phase 2 | Addendum v1 |
 
 **Totals:** 15 tasks (4 Small, 11 Medium). 25 gaps addressed, 4 deferred to V2 (GAP-DASH-008, GAP-DASH-018, GAP-DASH-020, GAP-DASH-023 visualization only).

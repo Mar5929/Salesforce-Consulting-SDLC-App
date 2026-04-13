@@ -667,3 +667,4 @@ Modify `src/app/(dashboard)/projects/[projectId]/dashboard/page.tsx`:
 | 11 | Implement readiness assessment | 8 | L | Not Started |
 | 12 | Build blocking-priority question ranking | 1 | M | Not Started |
 | 13 | Complete discovery dashboard sections | 10, 11, 12 | M | Not Started |
+| 14 | Wire UI answer-submission to Answer Logging Pipeline + enqueue question embeddings (Addendum v1; references Phase 2 + Phase 11) | 1 | S | Not Started |

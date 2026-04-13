@@ -121,7 +121,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | Attribute | Details |
 |-----------|---------|
 | **Scope** | Implement DRAFT-to-READY mandatory field validation, AI test case stub generation, linked OrgComponent mode in story form, auto-initialize EpicPhase records, fix enrichment dedup, add Salesforce guardrails to AI prompts, cross-reference knowledge base in story generation. |
-| **Depends On** | Phase 1, Phase 3 |
+| **Depends On** | Phase 2, Phase 3 |
 | **Unlocks** | Phase 5 |
 | **Parallel With** | None |
 | **Complexity** | L |
@@ -205,7 +205,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | Attribute | Details |
 |-----------|---------|
 | **Scope** | Add missing document types (SOW, SDD, Training, Runbook), implement branding admin, fix epic-scoped generation, add document versioning model, wire all dead notification event senders, fix recipient resolution, fix proxy notification types. |
-| **Depends On** | Phase 1 |
+| **Depends On** | Phase 1, Phase 2, Phase 7 |
 | **Unlocks** | Phase 9 |
 | **Parallel With** | Phase 2 (partially) |
 | **Complexity** | L |

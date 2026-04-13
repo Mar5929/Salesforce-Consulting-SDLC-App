@@ -1,717 +1,564 @@
-# Phase 6 Tasks: Org, Knowledge
+# Phase 6 Tasks: Org Knowledge — Five-Layer Intelligence Model
 
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
-> Total Tasks: 13
-> Status: 0/13 complete
-> Last Updated: 2026-04-10
+> Pre-Addendum Tasks: [TASKS.pre-addendum.md](./TASKS.pre-addendum.md)
+> Last Updated: 2026-04-13
+> Status: Draft (populated from integration plan — deep-dive still required)
 
 ---
 
-## Execution Order
+## Organization
+
+Tasks are grouped by the five-layer model plus cross-cutting infrastructure, migrations, and preserved requirements. Layer order is the execution order: Layer 1 → 2 → 3 → 4 → 5, with schema migrations gating everything and preserved features parallelizable.
 
 ```
-Task 1 (PKCE OAuth) ──────────────────────────────────────────┐
-Task 2 (Sync cron + fixes) ──┐                                │
-  └── Task 3 (Sync schedule UI)                                │ parallel
-Task 4 (Phase 4 Articulate) ─┐                                │
-  ├── Task 5 (BP dependencies)│── parallel                     │
-  └── Task 6 (Knowledge refresh) ─────────────────────┐       │
-       └── Task 7 (Article confirmation model) ─────── │ ──────┘
-Task 8 (Annotation CRUD + context) ────────────────── parallel
-Task 9 (Planned components) ──┐                               │
-  └── Task 10 (PLANNED upgrade in sync) ── parallel            │
-Task 11 (NLP org query) ────────────────── parallel            │
-       ┌───────────────────────────────────────────────────────┘
-Task 12 (Agent staleness flagging) ─── depends on Phase 2 Task 4
-Task 13 (Semantic retrieval Pass 2) ── depends on Task 4 (articles must exist)
+Gate 0: Schema migrations (Tasks 1–5) — must complete before layer work
+  |
+Layer 1: Graph (Tasks 6–8)
+Layer 2: Embeddings (Tasks 9–10) — depends on Layer 1 components existing
+Layer 3: Domains (Tasks 11–13) — depends on Layers 1+2 for brownfield proposal
+Layer 4: Annotations (Tasks 14–16) — independent of Layer 3; depends on Phase 2 Answer Logging
+Layer 5: search_org_kb (Task 17) — depends on Layers 1–4
+  |
+Knowledge pipeline updates (Tasks 18–20) — depend on Layer 3/4
+Org Health Assessment (Tasks 21–23) — depends on Layer 1
+NLP query + context + observability (Tasks 24–26)
+  |
+Preserved features (Tasks 27–32) — parallelizable, independent
 ```
 
 ---
 
-## Tasks
+## Gate 0: Schema Migrations
 
-### Task 1: Add PKCE to Salesforce OAuth Web Server Flow
+### Task 1: Migrate `DomainGrouping` → `domains` + create `domain_memberships`
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Generate `code_verifier` and `code_challenge` during authorization, store verifier alongside CSRF state token, include `code_verifier` in token exchange. |
+| **Scope** | Rename/restructure `DomainGrouping` to `domains` with `source`, `status`, `archived_reason`, `rationale` fields. Create `domain_memberships` many-to-many. Back-fill existing rows as `source=human_asserted, status=confirmed`. |
+| **Depends On** | None (deep-dive must confirm strategy) |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] `domains` table with new enums and fields exists.
+- [ ] `domain_memberships` table exists.
+- [ ] All existing `DomainGrouping` rows migrated; memberships derived from `OrgComponent.domainGroupingId`.
+- [ ] `OrgComponent.domainGroupingId` dropped after verification.
+
+---
+
+### Task 2: Migrate `BusinessContextAnnotation` → polymorphic `annotations`
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Create `annotations` polymorphic table. Back-fill existing `BusinessContextAnnotation` rows as `entity_type='component', source='human', status='confirmed'`. Drop old table. |
+| **Depends On** | None |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] `annotations` table created with polymorphic `entity_type + entity_id`.
+- [ ] All existing `BusinessContextAnnotation` rows migrated with fidelity.
+- [ ] Old `BusinessContextAnnotation` table dropped after verification.
+
+---
+
+### Task 3: Extract `OrgComponent.embedding` → `component_embeddings`
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Back-fill `component_embeddings` (schema from Phase 11) from the inline `OrgComponent.embedding` column. Dual-write window. Cut over readers. Drop column. |
+| **Depends On** | Phase 11 migration complete |
+| **Complexity** | L |
+
+**Acceptance:**
+- [ ] All non-null `OrgComponent.embedding` values migrated with `embedded_text` + hash.
+- [ ] Dual-write period verified (sync writes to both locations).
+- [ ] Readers (`search_org_kb`, smart retrieval) cut over.
+- [ ] `OrgComponent.embedding` column dropped.
+
+---
+
+### Task 4: Resolve `KnowledgeArticle.embedding` fate (deep-dive output)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Decision: retain inline / migrate to parallel / deprecate. Implement chosen path. |
+| **Depends On** | Deep-dive decision |
+| **Complexity** | S–M (depends on decision) |
+
+**Acceptance:**
+- [ ] Decision documented in `PHASE_SPEC.md` §6.4.
+- [ ] Migration implemented per decision.
+
+---
+
+### Task 5: Create new tables (`component_history`, `annotation_embeddings`, `org_health_reports`)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Add Prisma models + migrations for three net-new tables. `domain_memberships` covered in Task 1. |
 | **Depends On** | None |
 | **Complexity** | S |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
 
-**Acceptance Criteria:**
-- [ ] Given a user initiates SF org connection, the authorization URL includes `code_challenge` and `code_challenge_method=S256`
-- [ ] Given the callback fires, the token exchange body includes the `code_verifier` from the stored session
-- [ ] Given the `code_verifier` is missing from session (expired/corrupted), the callback returns a user-friendly error directing them to retry
-- [ ] Existing OAuth flow continues to work end-to-end (connect org, store tokens, refresh tokens)
-
-**Implementation Notes:**
-File: `src/lib/salesforce/oauth.ts`
-- Add a `generatePKCE()` function:
-```ts
-import { randomBytes, createHash } from "crypto";
-
-function generatePKCE() {
-  const verifier = randomBytes(32).toString("base64url"); // 43 chars
-  const challenge = createHash("sha256").update(verifier).digest("base64url");
-  return { verifier, challenge };
-}
-```
-- In `buildAuthorizationUrl`: generate PKCE, store `verifier` alongside the state token (same storage mechanism - cookie or session), append `&code_challenge=${challenge}&code_challenge_method=S256` to the URL.
-- In `src/app/api/auth/salesforce/callback/route.ts`: retrieve `code_verifier` from storage, include in the `jsforce.OAuth2.requestToken()` call. Note: jsforce may not support `code_verifier` natively - if not, use a direct HTTP POST to the Salesforce token endpoint instead.
-- In `src/app/api/auth/salesforce/authorize/route.ts`: pass PKCE through to the URL builder.
+**Acceptance:**
+- [ ] `component_history` created with `component_id`, `change_type`, old/new value columns, `source`, `created_at`.
+- [ ] `annotation_embeddings` created mirroring `component_embeddings` shape.
+- [ ] `org_health_reports` created with summary, findings JSON, remediation backlog, cost, duration, status fields.
 
 ---
 
-### Task 2: Implement automated incremental sync cron with needsAssignment and soft-delete fixes
+## Layer 1: Component Graph
+
+### Task 6: Implement sync reconciliation algorithm with rename detection
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create the Inngest cron function for automated incremental sync. Add `needsAssignment = true` flagging for unclassified components. Extend soft-delete to incremental syncs. |
-| **Depends On** | None |
+| **Scope** | Rewrite `metadata-sync.ts` upsert logic to follow the 5-step reconciliation: match by `salesforce_metadata_id`, fallback `(api_name, component_type, parent_component_id)`, create new, detect rename (write `component_history`), soft-archive unseen. Flag managed-package components. |
+| **Depends On** | Task 5 |
 | **Complexity** | L |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
 
-**Acceptance Criteria:**
-- [ ] Inngest function `incremental-metadata-sync-cron` is registered with cron trigger `"0 */4 * * *"`
-- [ ] On cron, all active projects with SF org connections are evaluated; only those past their sync interval are processed
-- [ ] After incremental sync, new components with no `domainGroupingId` have `needsAssignment = true`
-- [ ] After incremental sync, components that exist in DB but were NOT returned by the SF metadata API are set to `isActive = false`
-- [ ] `sfOrgLastSyncAt` is updated on the project after successful sync
-- [ ] Manual sync via existing button continues to work (event trigger preserved)
-- [ ] `METADATA_SYNC_COMPLETE` notification is emitted
-
-**Implementation Notes:**
-File: `src/lib/inngest/functions/metadata-sync.ts`
-
-Create a new function alongside the existing event-triggered one:
-```ts
-const incrementalSyncCronFunction = inngest.createFunction(
-  {
-    id: "incremental-metadata-sync-cron",
-    concurrency: { limit: 1, scope: "env", key: "event.data.projectId" },
-  },
-  { cron: "0 */4 * * *" },
-  async ({ step }) => {
-    // Step 1: Get all active projects with SF org connections
-    const projects = await step.run("get-active-projects", async () => {
-      return prisma.project.findMany({
-        where: { status: "ACTIVE", sfOrgInstanceUrl: { not: null } },
-        select: { id: true, sfOrgLastSyncAt: true, sfOrgSyncIntervalHours: true },
-      });
-    });
-
-    // Step 2: For each project past its interval, dispatch sync
-    for (const project of projects) {
-      const intervalMs = (project.sfOrgSyncIntervalHours ?? 4) * 60 * 60 * 1000;
-      if (project.sfOrgSyncIntervalHours === 0) continue; // Disabled
-      if (project.sfOrgLastSyncAt && Date.now() - project.sfOrgLastSyncAt.getTime() < intervalMs) continue;
-
-      await step.sendEvent(`sync-${project.id}`, {
-        name: EVENTS.ORG_SYNC_REQUESTED,
-        data: { projectId: project.id, syncType: "INCREMENTAL" },
-      });
-    }
-  }
-);
-```
-
-File: `src/lib/salesforce/metadata-sync.ts`
-- After component upsert loop, add: `WHERE domainGroupingId IS NULL → UPDATE needsAssignment = true`
-- After upsert loop, add soft-delete for incremental: compare fetched API names against existing active components for this project. Any not in the fetched set get `isActive = false`.
-- Note: the soft-delete comparison should scope to the same component types that were fetched (do not deactivate Apex classes if only objects were fetched in this sync cycle).
-
-File: `src/app/api/inngest/route.ts` - register the new cron function.
+**Acceptance:**
+- [ ] 5-step reconciliation runs for every fetched component.
+- [ ] Renames recorded in `component_history`; api_name updated; annotations/memberships/edges preserved.
+- [ ] Components not seen in sync are soft-archived with reason.
+- [ ] Managed-package components flagged `is_managed = true`.
+- [ ] Existing fixtures pass; new rename fixture passes.
 
 ---
 
-### Task 3: Build sync schedule configuration UI
+### Task 7: Build Layer 1 graph-builder (component_edges extraction)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Replace the read-only sync interval display with an editable form. Add server action for updating `sfOrgSyncIntervalHours`. |
-| **Depends On** | Task 2 |
-| **Complexity** | S |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
-
-**Acceptance Criteria:**
-- [ ] Settings Org page shows an editable number input for sync interval hours (replacing static text)
-- [ ] Input validates: integer, 0-168 range (0 = disabled)
-- [ ] Only SA and PM roles can edit
-- [ ] Displays "Next sync: {sfOrgLastSyncAt + interval}" or "Disabled" when 0
-- [ ] After save, the new interval is immediately used by the cron function on its next evaluation
-
-**Implementation Notes:**
-File: `src/app/(dashboard)/projects/[projectId]/settings/org/page.tsx`
-- Replace `"Every {project.sfOrgSyncIntervalHours} hours"` text with a form containing a number input.
-- Use `react-hook-form` + Zod for validation: `z.object({ sfOrgSyncIntervalHours: z.number().int().min(0).max(168) })`.
-- Compute and display next sync time: `new Date(sfOrgLastSyncAt.getTime() + intervalHours * 3600000)`.
-
-File: `src/actions/org-connection.ts`
-- Add `updateSyncInterval` server action with `requireRole(["SOLUTION_ARCHITECT", "PM"])` gate.
-- Prisma update: `prisma.project.update({ where: { id: projectId }, data: { sfOrgSyncIntervalHours } })`.
-
----
-
-### Task 4: Add Phase 4 (Articulate) to org ingestion pipeline - create KnowledgeArticle records
-
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | Add the Articulate step to `org-ingestion.ts` that creates KnowledgeArticle drafts from BusinessProcess and DomainGrouping data after the Synthesize step. Create KnowledgeArticleReference records. |
-| **Depends On** | None |
-| **Complexity** | L |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
-
-**Acceptance Criteria:**
-- [ ] After full org ingestion, KnowledgeArticle records exist: one per BusinessProcess (`articleType = BUSINESS_PROCESS`) and one per DomainGrouping with >5 components (`articleType = DOMAIN_OVERVIEW`)
-- [ ] Each article has: title, content (markdown), summary (~50 tokens), confidence, `authorType = AI_GENERATED`, `isConfirmed = false`
-- [ ] KnowledgeArticleReference records link each article to its referenced BusinessProcess, DomainGrouping components, and OrgComponents
-- [ ] `embedding.batch-requested` event is emitted for all new articles
-- [ ] Existing ingestion steps (Parse, Classify, Synthesize) are unchanged
-- [ ] The article synthesis uses the existing `articleSynthesisTask` in the agent harness (or creates it if it does not exist)
-
-**Implementation Notes:**
-File: `src/lib/inngest/functions/org-ingestion.ts`
-- Add a new step after `synthesize-business-processes`:
-```ts
-const articles = await step.run("articulate-knowledge", async () => {
-  const processes = await prisma.businessProcess.findMany({
-    where: { projectId },
-    include: { components: { include: { orgComponent: true } } },
-  });
-  const domains = await prisma.domainGrouping.findMany({
-    where: { projectId },
-    include: { components: true },
-  });
-
-  // Call article synthesis task for each process
-  const articleRecords = [];
-  for (const process of processes) {
-    const article = await prisma.knowledgeArticle.create({
-      data: {
-        projectId,
-        articleType: "BUSINESS_PROCESS",
-        title: `Business Process: ${process.name}`,
-        content: /* AI-generated markdown */,
-        summary: /* AI-generated ~50 token summary */,
-        confidence: /* from AI output */,
-        authorType: "AI_GENERATED",
-        isConfirmed: false,
-      },
-    });
-    articleRecords.push(article);
-    // Create references
-    await prisma.knowledgeArticleReference.createMany({
-      data: [
-        { articleId: article.id, entityType: "BUSINESS_PROCESS", entityId: process.id },
-        ...process.components.map(c => ({
-          articleId: article.id,
-          entityType: "ORG_COMPONENT",
-          entityId: c.orgComponentId,
-        })),
-      ],
-    });
-  }
-  // Similar for domain overview articles
-  return articleRecords;
-});
-```
-
-File: `src/lib/agent-harness/tasks/article-synthesis.ts`
-- Verify the task exists and produces: title, content (markdown), summary, confidence.
-- If the task definition is a stub, implement it: system prompt instructs Claude to synthesize understanding of a business process or domain into a clear markdown article.
-
----
-
-### Task 5: Persist BusinessProcessDependency records from synthesis output
-
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | Modify the synthesize step in org-ingestion.ts to read the `dependsOn` field from AI output and create BusinessProcessDependency records. |
-| **Depends On** | None |
-| **Complexity** | S |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
-
-**Acceptance Criteria:**
-- [ ] After synthesis, BusinessProcessDependency records exist for each dependency the AI identified
-- [ ] Each record has: sourceProcessId, targetProcessId, dependencyType, description
-- [ ] Dependencies referencing processes not found by name are logged as warnings but do not fail the pipeline
-- [ ] Re-running synthesis does not create duplicate dependencies (idempotent via unique constraint)
-
-**Implementation Notes:**
-File: `src/lib/inngest/functions/org-ingestion.ts`
-
-In `synthesizeBusinessProcesses`, after creating BusinessProcess records, add:
-```ts
-// Build name->id lookup from just-created processes
-const processLookup = new Map(createdProcesses.map(p => [p.name.toLowerCase(), p.id]));
-
-for (const process of aiOutput.processes) {
-  if (!process.dependsOn?.length) continue;
-  const sourceId = processLookup.get(process.name.toLowerCase());
-  if (!sourceId) continue;
-
-  for (const depName of process.dependsOn) {
-    const targetId = processLookup.get(depName.toLowerCase());
-    if (!targetId) {
-      console.warn(`Dependency target "${depName}" not found for process "${process.name}"`);
-      continue;
-    }
-    await prisma.businessProcessDependency.upsert({
-      where: { sourceProcessId_targetProcessId: { sourceProcessId: sourceId, targetProcessId: targetId } },
-      create: { sourceProcessId: sourceId, targetProcessId: targetId, dependencyType: "FEEDS_DATA", description: `${process.name} depends on ${depName}` },
-      update: {},
-    });
-  }
-}
-```
-
-Also update `org-synthesize.ts` task to request `dependencyType` in the AI output schema (not just `dependsOn: string[]` but `dependsOn: { name: string, type: string }[]`). If the AI returns just names, default type to `FEEDS_DATA`.
-
----
-
-### Task 6: Build full knowledge refresh Inngest function with UI trigger
-
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | Create the `knowledgeRefreshFunction` that runs Phases 3-4 on stale/unassigned targets. Add "Refresh Knowledge Base" button. Add weekly cron trigger. |
-| **Depends On** | Task 4 |
-| **Complexity** | L |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
-
-**Acceptance Criteria:**
-- [ ] Inngest function `full-knowledge-refresh` is registered with event trigger `org.knowledge-refresh-requested` and cron trigger `"0 2 * * 0"`
-- [ ] Function gathers targets: `needsAssignment = true` components, `isStale = true` articles, modified BusinessProcesses
-- [ ] Function returns early if no targets (no AI cost)
-- [ ] After refresh, `needsAssignment` is cleared on processed components, `isStale` is cleared on refreshed articles
-- [ ] New articles created as `isAiSuggested = true`, `isConfirmed = false`
-- [ ] Confirmed non-stale articles are never overwritten
-- [ ] Stale confirmed articles are updated in-place (version incremented)
-- [ ] `embedding.batch-requested` emitted for new/updated articles
-- [ ] "Refresh Knowledge Base" button visible to SA/PM on knowledge page
-- [ ] Button click emits `org.knowledge-refresh-requested` event
-
-**Implementation Notes:**
-File: `src/lib/inngest/functions/knowledge-refresh.ts` (new)
-- Follow the pattern from tech spec Section 7.4 (`knowledgeRefreshFunction`).
-- Reuse the article synthesis logic from Task 4 for the Articulate step.
-- For cron trigger: query active projects with SF org connections, similar to Task 2's cron pattern.
-
-File: `src/actions/org-analysis.ts`
-- Add `triggerKnowledgeRefresh` action with role gate (SA/PM only).
-- Emits `org.knowledge-refresh-requested` event via Inngest.
-
-File: `src/app/(dashboard)/projects/[projectId]/knowledge/page.tsx`
-- Add a "Refresh Knowledge Base" button (e.g., RefreshCw icon from lucide-react).
-- Show loading state while refresh runs.
-- Optionally show last refresh timestamp.
-
----
-
-### Task 7: Build KnowledgeArticle confirmation model and UI
-
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | Add `isConfirmed` to KnowledgeArticle schema. Build confirmation server actions. Add confirmation UI to knowledge list page. Update context assembly to respect confirmation status. |
+| **Scope** | New `src/lib/salesforce/graph-builder.ts` with per-type extractors: field lookups, Apex references, trigger → parent, Flow invocations/field access, validation rule formula refs. Write to `component_edges`. |
 | **Depends On** | Task 6 |
-| **Complexity** | M |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
+| **Complexity** | L |
 
-**Acceptance Criteria:**
-- [ ] KnowledgeArticle model has `isConfirmed Boolean @default(false)` in Prisma schema
-- [ ] Migration runs successfully, existing articles default to `isConfirmed = false`
-- [ ] `confirmArticle(articleId)` action sets `isConfirmed = true` (SA only)
-- [ ] `rejectArticle(articleId)` action deletes the article or marks it discarded (SA only)
-- [ ] `editAndConfirmArticle(articleId, { title, content })` action updates content and sets `isConfirmed = true` (SA only)
-- [ ] `bulkConfirmHighConfidence()` action confirms all unconfirmed articles with `confidence = HIGH` (SA only)
-- [ ] Knowledge list page shows confirmation status column (badge: Confirmed/Unconfirmed)
-- [ ] Each row has confirm/reject/edit action buttons
-- [ ] Bulk confirm button above the table
-- [ ] Context assembly in `article-summaries.ts` filters to `isConfirmed = true` for context packages (default mode)
-- [ ] Context assembly includes unconfirmed articles with `[UNCONFIRMED]` prefix for internal AI tasks when configured
-
-**Implementation Notes:**
-Schema change: `prisma/schema.prisma`
-```prisma
-model KnowledgeArticle {
-  // ... existing fields
-  isConfirmed  Boolean  @default(false)
-}
-```
-Run `npx prisma migrate dev --name add-knowledge-article-confirmation`.
-
-File: `src/actions/knowledge.ts`
-- Model after the existing confirmation pattern in DomainGrouping/BusinessProcess actions.
-- `rejectArticle`: soft-delete approach - either physically delete or set a `status = DISCARDED` field. Since the schema does not have a status field, use physical delete (the article was AI-generated and unconfirmed, so no data loss).
-
-File: `src/lib/agent-harness/context/article-summaries.ts`
-- Add `isConfirmed` to the `where` clause: `isConfirmed: true` by default.
-- Accept an option `{ includeUnconfirmed: boolean }` for internal AI tasks.
-
-File: `src/lib/agent-harness/context/smart-retrieval.ts`
-- Pass the `includeUnconfirmed` option through based on the task type. Context packages to Claude Code (external) use confirmed-only. Internal tasks (transcript processing, story generation) can see unconfirmed with disclaimer.
+**Acceptance:**
+- [ ] `component_edges` populated during every sync.
+- [ ] Lookup / master-detail relationships captured as edges.
+- [ ] Apex class/trigger references captured.
+- [ ] Flow invocations and field access captured.
+- [ ] Validation rule formula references captured.
+- [ ] Managed-package edges recorded (but flagged).
 
 ---
 
-### Task 8: Build BusinessContextAnnotation CRUD and context package inclusion
+### Task 8: Unresolved reference handling
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create server actions for annotation CRUD. Build annotation panel UI on component detail page. Include annotations in org component context loader for context packages. |
-| **Depends On** | None |
-| **Complexity** | M |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
-
-**Acceptance Criteria:**
-- [ ] `createAnnotation(orgComponentId, annotationText)` action creates a BusinessContextAnnotation record (SA/BA/PM roles)
-- [ ] `deleteAnnotation(annotationId)` action deletes annotation (creator or SA only)
-- [ ] Org component detail page shows annotation panel listing existing annotations with author name and date
-- [ ] "Add Annotation" form with textarea and submit button
-- [ ] Context packages include annotations: `loadOrgComponentContext` in `org-components.ts` includes `.annotations` relation
-- [ ] Context package output includes format: "Human context for {apiName}: {annotationText} (added by {author})"
-- [ ] Empty annotation text (whitespace-only) is rejected with validation error
-
-**Implementation Notes:**
-File: `src/actions/annotations.ts` (new)
-```ts
-"use server";
-export async function createAnnotation(orgComponentId: string, annotationText: string) {
-  const member = await getCurrentMember(projectId);
-  requireRole(member, ["SOLUTION_ARCHITECT", "BA", "PM"]);
-  // Validate annotationText is non-empty after trim
-  return prisma.businessContextAnnotation.create({
-    data: { orgComponentId, annotationText: annotationText.trim(), createdById: member.id },
-  });
-}
-
-export async function deleteAnnotation(annotationId: string) {
-  const annotation = await prisma.businessContextAnnotation.findUnique({ where: { id: annotationId }, include: { createdBy: true } });
-  const member = await getCurrentMember(projectId);
-  // Allow creator or SA to delete
-  if (annotation.createdById !== member.id) requireRole(member, ["SOLUTION_ARCHITECT"]);
-  return prisma.businessContextAnnotation.delete({ where: { id: annotationId } });
-}
-```
-
-File: `src/lib/agent-harness/context/org-components.ts`
-- Add `annotations: { include: { createdBy: true } }` to the OrgComponent query's `include` clause.
-- Format annotations in the context string builder.
-
-File: Component detail page (locate or create `src/app/(dashboard)/projects/[projectId]/org/components/[componentId]/page.tsx`)
-- Add an "Annotations" section below component metadata.
-- List existing annotations as cards with author, date, text.
-- "Add Annotation" form at the bottom.
-
----
-
-### Task 9: Create PLANNED OrgComponent records from story component assignment
-
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | When a free-text story component is added and no matching OrgComponent exists, create a PLANNED OrgComponent and link it. |
-| **Depends On** | None |
-| **Complexity** | M |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
-
-**Acceptance Criteria:**
-- [ ] Given a story component is added with `orgComponentId = null` and `componentName = "Renewal_Trigger"`, and no OrgComponent with that apiName exists, a new OrgComponent is created with `componentStatus = PLANNED`
-- [ ] The StoryComponent record is linked to the new OrgComponent via `orgComponentId`
-- [ ] Component type is inferred from the name: `__c` fields -> FIELD (if contains `.`), `__c` objects -> OBJECT, `Trigger` suffix -> APEX_TRIGGER, `Flow` or `_Flow` -> FLOW, default -> OTHER
-- [ ] Given a second story references the same planned component name, it links to the existing PLANNED OrgComponent (no duplicate)
-- [ ] Enrichment path (`applyEnrichmentSuggestion`) also creates PLANNED components
-- [ ] PLANNED components appear in the org components list with a visual "Planned" badge
-
-**Implementation Notes:**
-File: `src/actions/stories.ts` (modify `addStoryComponent`)
-```ts
-// After checking orgComponentId is null (free-text mode):
-if (!orgComponentId && componentName) {
-  // Check if an OrgComponent already exists with this name
-  const existing = await prisma.orgComponent.findFirst({
-    where: { projectId, apiName: componentName },
-  });
-
-  if (existing) {
-    orgComponentId = existing.id;
-  } else {
-    // Infer component type from name
-    const componentType = inferComponentType(componentName);
-    const planned = await prisma.orgComponent.create({
-      data: {
-        projectId,
-        apiName: componentName,
-        componentType,
-        componentStatus: "PLANNED",
-        isActive: true,
-      },
-    });
-    orgComponentId = planned.id;
-  }
-}
-```
-
-Create a helper `inferComponentType(name: string): ComponentType`:
-- Names containing `.` with `__c` suffix -> FIELD (e.g., `Account.Renewal_Status__c`)
-- Names ending in `__c` without dot -> OBJECT
-- Names ending in `Trigger` -> APEX_TRIGGER
-- Names containing `Flow` -> FLOW
-- Names ending in `.cls` -> APEX_CLASS
-- Default -> OTHER
-
-File: `src/actions/enrichment.ts` - apply same logic in the component enrichment path.
-
----
-
-### Task 10: Upgrade PLANNED components to EXISTING during metadata sync
-
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | During metadata sync upsert, detect when a PLANNED component is found in the org and upgrade it to EXISTING with full metadata. |
-| **Depends On** | Task 9 |
+| **Scope** | Edges with no resolvable target persist with `target_component_id = null` + `unresolved_reference_text`. Attempt re-resolution on subsequent syncs. Confirm `unresolved_references` materialized view (Phase 11) refreshes correctly. |
+| **Depends On** | Task 7 |
 | **Complexity** | S |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
 
-**Acceptance Criteria:**
-- [ ] Given a PLANNED OrgComponent with `apiName = "Account_Trigger"` exists, and a metadata sync finds `Account_Trigger` in the org, the component is updated to `componentStatus = EXISTING` with all org metadata (label, apiVersion, namespace, etc.)
-- [ ] Existing annotations and StoryComponent links on the PLANNED component are preserved
-- [ ] `lastSyncedAt` is updated on the upgraded component
-- [ ] Component is no longer flagged with `needsAssignment` after upgrade (it now has real metadata for classification)
-
-**Implementation Notes:**
-File: `src/lib/salesforce/metadata-sync.ts`
-
-In the upsert logic, modify the update portion:
-```ts
-await prisma.orgComponent.upsert({
-  where: { projectId_apiName_componentType: { projectId, apiName, componentType } },
-  create: { /* standard create for new components */ },
-  update: {
-    // Merge all metadata fields
-    label, apiVersion, namespace, parentComponentId,
-    isActive: true,
-    lastSyncedAt: new Date(),
-    // Upgrade PLANNED to EXISTING
-    componentStatus: "EXISTING",
-    // Clear needsAssignment since we have real metadata now
-    needsAssignment: false,
-  },
-});
-```
-
-The key insight: Prisma's `upsert` naturally handles this - the `update` block runs when the record exists (whether PLANNED or EXISTING), and setting `componentStatus = "EXISTING"` upgrades PLANNED components while being a no-op for already-EXISTING ones.
+**Acceptance:**
+- [ ] Dynamic SOQL references persist as unresolved edges.
+- [ ] Later sync that makes the target resolvable back-fills `target_component_id` and clears text.
+- [ ] Materialized view surfaces the current unresolved set.
 
 ---
 
-### Task 11: Build NLP org query API endpoint
+## Layer 2: Semantic Embeddings
+
+### Task 9: Build deterministic embedded-text pipeline
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `POST /api/v1/org/query` endpoint with regex pattern matching, full-text fallback, and semantic search fallback for natural language org metadata queries. |
+| **Scope** | `src/lib/salesforce/embedding-pipeline.ts` — per-component-type text builder (default, Apex, Flow, validation rule, trigger), SHA-256 hash, Inngest enqueue for changed hashes only. |
+| **Depends On** | Task 3 |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Embedded-text builder produces deterministic output per component type (spec §2.5).
+- [ ] Re-embed skipped when `embedded_text_hash` unchanged.
+- [ ] `embedding_model` field recorded.
+
+---
+
+### Task 10: Sync integration + HNSW index verification
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Invoke the embedding pipeline from the sync step function (fan-out). Verify HNSW cosine index on `component_embeddings.embedding`. Add failure handling (`status=failed` + retry next sync). |
+| **Depends On** | Task 9 |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Sync triggers embedding generation for new or changed components only.
+- [ ] Failures do not break sync; retried next cycle.
+- [ ] HNSW cosine index present and used by `search_org_kb`.
+
+---
+
+## Layer 3: Business Domains
+
+### Task 11: Domain CRUD + confirm/reject actions + UI
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | `src/actions/domains.ts` for CRUD on `domains` and `domain_memberships`. Review UI (`/knowledge/domains`) listing proposed/confirmed/archived domains. SA-only role gate on confirm/reject/edit/archive. Bulk confirm for high-confidence proposals. |
+| **Depends On** | Task 1 |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Architect can view, confirm, edit, reject, archive domains.
+- [ ] Membership add/remove supported.
+- [ ] Bulk confirm available.
+
+---
+
+### Task 12: Brownfield domain proposal via Claude Managed Agents
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | New agent task `propose-domains.ts` (Opus 4.6, `reason_deeply`). Walks Layer 1 graph + Layer 2 embeddings, clusters, proposes `domains` + `domain_memberships` + rationales. Writes `source=ai_proposed, status=proposed`. Runs once per project at initial ingestion. Excludes managed-package components by default. Writes `pipeline_runs` entry with cost. |
+| **Depends On** | Task 7, Task 10, Task 11 |
+| **Complexity** | L |
+
+**Acceptance:**
+- [ ] Managed Agent produces domain proposals with rationales.
+- [ ] Proposals written with correct source/status enums.
+- [ ] Managed-package components excluded unless project override set.
+- [ ] `pipeline_runs` entry records cost + duration.
+- [ ] Architect review UI surfaces proposals.
+
+---
+
+### Task 13: Domain review nudge notification
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | When incremental sync adds new fields to an object whose other fields have domain memberships, emit `DOMAIN_REVIEW_NEEDED` notification to architect. |
+| **Depends On** | Task 6, Task 11 |
+| **Complexity** | S |
+
+**Acceptance:**
+- [ ] Notification emitted after sync when pattern detected.
+- [ ] Notification links to the domain review UI.
+
+---
+
+## Layer 4: Annotations
+
+### Task 14: Polymorphic annotation CRUD
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Rewrite `src/actions/annotations.ts` for polymorphic `annotations`. Support `entity_type` in (`component`, `edge`, `domain`). Role gates (SA/BA/PM create, creator or SA delete). Reject empty/whitespace content. |
+| **Depends On** | Task 2 |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Create/delete work for all three entity types.
+- [ ] Role gates enforced.
+- [ ] Empty content rejected.
+
+---
+
+### Task 15: Annotation embedding pipeline + semantic index
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Generate embeddings for annotation content, write to `annotation_embeddings`. Re-embed on content change. Used by `search_org_kb`. |
+| **Depends On** | Task 5, Task 14 |
+| **Complexity** | S |
+
+**Acceptance:**
+- [ ] New and edited annotations enqueue embedding generation.
+- [ ] `annotation_embeddings` populated; HNSW cosine index present.
+
+---
+
+### Task 16: Answer Logging Pipeline — AI-derived annotation proposals
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Hook into Phase 2 Answer Logging Pipeline: when a decision mentions a Salesforce component or concept, propose annotation with `source=ai_derived_from_discovery, status=proposed`. Architect confirms/rejects via review UI. |
+| **Depends On** | Task 14, Phase 2 Answer Logging Pipeline |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Pipeline emits annotation proposals tied to confirmed-existing component IDs.
+- [ ] Proposals appear in architect review queue.
+- [ ] Confirmed AI-derived annotations are retrieval-indistinguishable from human annotations.
+
+---
+
+## Layer 5: Query & Retrieval
+
+### Task 17: Implement `search_org_kb` SQL function + Prisma wrapper
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Implement the `search_org_kb` function body (signature from Phase 11). BM25 over api_name/label/raw_metadata/annotations.content. Vector over `component_embeddings.embedding` + `annotation_embeddings.embedding`. RRF merge. Filters. Optional 1-hop neighbor expansion via `component_edges`. Prisma wrapper at `src/lib/salesforce/search-org-kb.ts`. |
+| **Depends On** | Tasks 7, 10, 15 |
+| **Complexity** | L |
+
+**Acceptance:**
+- [ ] Function returns correctly-scored hits (BM25 + vector + RRF).
+- [ ] Filters by entity_types, component_types, domain_ids work.
+- [ ] `expand_neighbors=true` returns 1-hop neighbors.
+- [ ] Graceful degradation if no embeddings (BM25 only).
+- [ ] Phase 5 Context Package Assembly can call this end-to-end.
+
+---
+
+## Knowledge Pipeline Updates
+
+### Task 18: Phase 4 Articulate in ingestion (KnowledgeArticle creation)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Preserved from pre-addendum spec. After Layer 3 domain confirmation, create KnowledgeArticle per business process and per confirmed domain (>5 components). Write into Layer 3/4 structures. |
+| **Depends On** | Task 12 |
+| **Complexity** | L |
+
+**Acceptance:**
+- [ ] Articles created: one per BusinessProcess, one per confirmed domain with >5 components.
+- [ ] References stored in `KnowledgeArticleReference`.
+- [ ] Embedding enqueued (pending Task 4 decision).
+
+---
+
+### Task 19: Full knowledge refresh pipeline (Layer 3/4 aware)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | `knowledgeRefreshFunction` dual trigger (event + weekly cron). Writes domain memberships and annotations into Layer 3/4 tables. Preserves confirmation/staleness logic. UI refresh button. |
+| **Depends On** | Task 18 |
+| **Complexity** | L |
+
+**Acceptance:**
+- [ ] Function registered with `{ event: "org.knowledge-refresh-requested" }` + `{ cron: "0 2 * * 0" }`.
+- [ ] No-op when zero targets.
+- [ ] Writes Layer 3/4 rows with correct source/status.
+- [ ] Refresh button visible to SA/PM.
+
+---
+
+### Task 20: BusinessProcessDependency persistence
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Preserved from pre-addendum spec. Persist `dependsOn` from AI synthesis as `BusinessProcessDependency` records (idempotent, name-matched). |
 | **Depends On** | None |
-| **Complexity** | M |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
+| **Complexity** | S |
 
-**Acceptance Criteria:**
-- [ ] `POST /api/v1/org/query` with `{ query: "fields on Account" }` returns Field-type components with Account as parent
-- [ ] `POST /api/v1/org/query` with `{ query: "triggers on Case" }` returns APEX_TRIGGER components with Case as parent
-- [ ] `POST /api/v1/org/query` with `{ query: "all flows" }` returns all FLOW components
-- [ ] `POST /api/v1/org/query` with `{ query: "components in Sales domain" }` returns components in the Sales DomainGrouping
-- [ ] Unrecognized queries fall back to full-text search against apiName and label
-- [ ] If full-text returns <3 results and semantic search is available, pgvector cosine similarity is used
-- [ ] Response includes `queryType` field indicating which strategy was used
-- [ ] Endpoint uses the same API key auth as other v1 endpoints
-- [ ] Rate limit: 60 req/min per API key
-
-**Implementation Notes:**
-File: `src/lib/salesforce/org-query.ts` (new)
-```ts
-interface OrgQueryResult {
-  results: OrgComponentWithContext[];
-  queryType: "structured" | "fulltext" | "semantic";
-  totalCount: number;
-  suggestion?: string;
-}
-
-const QUERY_PATTERNS = [
-  { regex: /^fields?\s+on\s+(\w+)$/i, handler: (match) => ({ componentType: "FIELD", parentApiName: match[1] }) },
-  { regex: /^triggers?\s+on\s+(\w+)$/i, handler: (match) => ({ componentType: "APEX_TRIGGER", parentApiName: match[1] }) },
-  { regex: /^flows?\s+on\s+(\w+)$/i, handler: (match) => ({ componentType: "FLOW", parentApiName: match[1] }) },
-  { regex: /^all\s+(\w+)s?$/i, handler: (match) => ({ componentType: mapPluralToType(match[1]) }) },
-  { regex: /^components?\s+in\s+(.+?)\s+domain$/i, handler: (match) => ({ domainName: match[1] }) },
-  { regex: /^(?:classes|apex)\s+referencing\s+(\w+)$/i, handler: (match) => ({ componentType: "APEX_CLASS", referencesApiName: match[1] }) },
-];
-
-export async function executeOrgQuery(projectId: string, query: string): Promise<OrgQueryResult> {
-  // 1. Try regex patterns
-  for (const pattern of QUERY_PATTERNS) {
-    const match = query.match(pattern.regex);
-    if (match) {
-      const filter = pattern.handler(match);
-      const results = await executeStructuredQuery(projectId, filter);
-      return { results, queryType: "structured", totalCount: results.length };
-    }
-  }
-
-  // 2. Full-text search fallback
-  const ftResults = await fullTextSearchComponents(projectId, query);
-  if (ftResults.length >= 3) {
-    return { results: ftResults, queryType: "fulltext", totalCount: ftResults.length };
-  }
-
-  // 3. Semantic search fallback
-  const semanticResults = await semanticSearchComponents(projectId, query);
-  const combined = [...ftResults, ...semanticResults];
-  if (combined.length > 0) {
-    return { results: combined, queryType: "semantic", totalCount: combined.length };
-  }
-
-  return { results: [], queryType: "structured", totalCount: 0, suggestion: 'Try: "fields on Account", "triggers on Case", "all flows"' };
-}
-```
-
-File: `src/app/api/v1/org/query/route.ts` (new)
-- Authenticate via API key (same pattern as existing v1 routes).
-- Parse body: `{ query: string }`.
-- Call `executeOrgQuery` and return results.
-- Include annotations in results where available.
+**Acceptance:**
+- [ ] Dependencies persisted with source/target/type.
+- [ ] Re-run is idempotent.
+- [ ] Unresolved targets logged, non-fatal.
 
 ---
 
-### Task 12: Implement agent staleness flagging at end of loop
+## Org Health Assessment
+
+### Task 21: Deterministic health analyzers
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `flagStaleArticles` function and call it at the end of `executeTask()` in the agent harness engine. |
-| **Depends On** | Phase 2 Task 4 (entity tracking) |
-| **Complexity** | M |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
+| **Scope** | Six analyzers in `src/lib/salesforce/health-analyzers/`: test-coverage, governor-limit-risk, sharing-model, fls-compliance, hardcoded-ids, tech-debt. Each reads org data and produces structured findings JSON. |
+| **Depends On** | Task 6 (sync must be reliable) |
+| **Complexity** | XL |
 
-**Acceptance Criteria:**
-- [ ] After every agent harness execution, `flagStaleArticles` queries KnowledgeArticleReference for entities modified during the session
-- [ ] Matching articles are flagged: `isStale = true`, `staleReason = "Referenced entities modified during {taskType} session"`, `staleSince = now()`
-- [ ] `article.flagged-stale` Inngest event is emitted for each flagged article
-- [ ] If entity tracking arrays are empty (no entities modified), function is a no-op
-- [ ] If no KnowledgeArticleReference records match, no articles are flagged
-- [ ] Function does not make AI calls (DB operations only)
-- [ ] Adds <100ms to end-of-loop latency
-
-**Implementation Notes:**
-File: `src/lib/agent-harness/staleness.ts` (new)
-- Implement `flagStaleArticles` exactly per tech spec Section 7.5.
-- Use a single `prisma.knowledgeArticleReference.findMany` with an OR clause across all modified entity IDs.
-- Batch the article updates (use `prisma.$transaction` for multiple updates).
-
-File: `src/lib/agent-harness/engine.ts`
-- At the end of `executeTask`, after tool execution loop completes but before returning the result:
-```ts
-// Flag stale articles based on entities modified during this session
-await flagStaleArticles(projectId, tracking);
-```
-- Import from `staleness.ts`.
-- Wrap in try/catch to prevent staleness flagging failures from breaking the main task execution.
+**Acceptance:**
+- [ ] Each analyzer runs independently and returns structured findings.
+- [ ] Analyzers are pure functions over fetched org data (no AI calls).
+- [ ] Unit-tested with sample fixtures.
 
 ---
 
-### Task 13: Implement two-pass semantic retrieval for article selection
+### Task 22: Managed Agent synthesis + Word output
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Add Pass 2 (embed task query, cosine similarity against article embeddings, select top-N) to the smart retrieval flow. |
-| **Depends On** | Task 4 (articles must exist with embeddings) |
+| **Scope** | `synthesize-health-report.ts` Managed Agent task (Opus 4.6, `reason_deeply`) takes analyzer outputs and produces narrative + prioritized remediation backlog. Generate Word document via Phase 8 document pipeline. Store to S3. Write `org_health_reports` record. |
+| **Depends On** | Task 21 |
+| **Complexity** | L |
+
+**Acceptance:**
+- [ ] Synthesis produces narrative and remediation backlog.
+- [ ] Word document generated and stored.
+- [ ] `org_health_reports` row persisted with summary, findings, backlog, cost, duration.
+
+---
+
+### Task 23: Trigger, cost ceiling, and status UI
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Architect trigger action (SA only). Cost ceiling ($25 default, architect-override). Hard-stop on overrun, persist partial results. Progress UI page. Completion notification. `pipeline_runs` entry. |
+| **Depends On** | Task 22 |
 | **Complexity** | M |
-| **Status** | Not Started |
-| **Completed** | -- |
-| **Linear ID** | -- |
 
-**Acceptance Criteria:**
-- [ ] `smart-retrieval.ts` embeds the assembled task context and computes cosine similarity against KnowledgeArticle embeddings
-- [ ] Top-N articles (default 5) are selected by semantic relevance instead of recency/useCount
-- [ ] Effectiveness score boost is applied: `adjusted_rank = cosine * (1 + effectivenessScore * 0.2)` for articles with `useCount >= 5`
-- [ ] Only articles with `embeddingStatus = 'GENERATED'` participate in semantic ranking
-- [ ] If no articles have embeddings, falls back to existing recency/useCount ordering
-- [ ] `useCount` is incremented on each article included in a context package
-- [ ] Full content of only the selected top-N articles is loaded (Pass 3)
+**Acceptance:**
+- [ ] Architect can trigger run + override ceiling.
+- [ ] Overrun hard-stops with partial report (`status=partial`).
+- [ ] Progress UI shows step-by-step status.
+- [ ] Notification emitted on completion.
+- [ ] Cost tracked in `pipeline_runs`.
 
-**Implementation Notes:**
-File: `src/lib/agent-harness/context/smart-retrieval.ts`
+---
 
-After loading article summaries (Pass 1), add Pass 2:
-```ts
-// Pass 2: Semantic ranking
-const queryText = assembleQueryText(taskType, contextSoFar); // Combine task description + key context
-const queryEmbedding = await generateEmbedding(queryText);
+## NLP Query + Context + Observability
 
-const rankedArticles = await prisma.$queryRaw<{ id: string; rank: number }[]>`
-  SELECT id,
-    (1 - (embedding <=> ${queryEmbedding}::vector))
-      * (1 + CASE WHEN "useCount" >= 5 THEN COALESCE("effectivenessScore", 0) * 0.2 ELSE 0 END)
-      AS rank
-  FROM "KnowledgeArticle"
-  WHERE "projectId" = ${projectId}::uuid
-    AND embedding IS NOT NULL
-    AND "embeddingStatus" = 'GENERATED'
-    AND "isConfirmed" = true
-  ORDER BY rank DESC
-  LIMIT ${topN}
-`;
+### Task 24: Rewrite NLP org query to call `search_org_kb`
 
-// Pass 3: Load full content of top-N
-const topArticles = await prisma.knowledgeArticle.findMany({
-  where: { id: { in: rankedArticles.map(a => a.id) } },
-});
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Rewrite `src/lib/salesforce/org-query.ts` three-tier fallback (regex → full-text → semantic) to invoke `search_org_kb` with appropriate filter/mode args. Response shape unchanged. |
+| **Depends On** | Task 17 |
+| **Complexity** | M |
 
-// Increment useCount
-await prisma.knowledgeArticle.updateMany({
-  where: { id: { in: rankedArticles.map(a => a.id) } },
-  data: { useCount: { increment: 1 } },
-});
-```
+**Acceptance:**
+- [ ] All regex patterns supported (fields on X, triggers on X, flows on X, components in Y domain).
+- [ ] Full-text fallback routes through `search_org_kb` BM25-only.
+- [ ] Semantic fallback routes through `search_org_kb` vector-only.
+- [ ] Response includes correct `queryType` indicator.
+- [ ] Auth, rate limit unchanged.
 
-If `generateEmbedding` fails (API error), catch the error and fall back to the existing ordering. Log the failure but do not break the task.
+---
 
-File: `src/lib/agent-harness/context/article-summaries.ts`
-- Ensure the summary loading in Pass 1 is compatible with the Pass 2 filtering (both should respect `isConfirmed` consistently).
+### Task 25: Context package loader — include annotations (polymorphic) + 1-hop edges
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Update `loadOrgComponentContext` to include polymorphic annotations (entity_type=component) and 1-hop edges via `component_edges`. Format for context string builder. |
+| **Depends On** | Task 14, Task 7 |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Annotations appear in context strings per spec format.
+- [ ] 1-hop neighbors surfaced in context when relevant.
+- [ ] Phase 5 Context Package Assembly receives the richer context.
+
+---
+
+### Task 26: Cost tracking for Managed Agent invocations
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Ensure domain proposal (Task 12) and health synthesis (Task 22) write `pipeline_runs` + `pipeline_stage_runs` entries with token usage, dollar cost, and duration. |
+| **Depends On** | Tasks 12, 22 |
+| **Complexity** | S |
+
+**Acceptance:**
+- [ ] Every Managed Agent run produces observability rows.
+- [ ] Cost tallies visible in Phase 7 Usage & Costs tab.
+
+---
+
+## Preserved Features (pre-addendum, parallelizable)
+
+### Task 27: PKCE on OAuth Web Server Flow (REQ-ORG-001)
+
+Unchanged from pre-addendum. See `TASKS.pre-addendum.md` Task 1 for implementation notes. Complexity S.
+
+### Task 28: Automated incremental sync cron (REQ-ORG-002, base behavior)
+
+Base cron + `needsAssignment` + soft-delete behavior. Reconciliation enhancement is Task 6. See `TASKS.pre-addendum.md` Task 2. Complexity M.
+
+### Task 29: Sync schedule configuration UI (REQ-ORG-003)
+
+Unchanged. See `TASKS.pre-addendum.md` Task 3. Complexity S.
+
+### Task 30: KnowledgeArticle confirmation model + UI (REQ-ORG-007)
+
+Unchanged. Depends on Task 18 (articles must exist). See `TASKS.pre-addendum.md` Task 7. Complexity M.
+
+### Task 31: Planned component creation from story execution (REQ-ORG-009)
+
+Unchanged. See `TASKS.pre-addendum.md` Task 9. Complexity M.
+
+### Task 32: PLANNED → EXISTING upgrade during sync (REQ-ORG-013)
+
+Unchanged; integrates with Task 6 reconciliation (a PLANNED row is simply a specific `status` value that the reconciliation can flip to EXISTING when matched). See `TASKS.pre-addendum.md` Task 10. Complexity S.
+
+---
+
+## Agent Harness Cross-Cutting (carried forward)
+
+### Task 33: Agent staleness flagging at end of loop (REQ-ORG-011)
+
+Unchanged. Depends on Phase 2 Task 4 (entity tracking). See `TASKS.pre-addendum.md` Task 12. Complexity M.
+
+### Task 34: Two-pass semantic retrieval for article selection (REQ-ORG-012)
+
+Unchanged. Depends on Task 18 + Task 4 decision (KnowledgeArticle embedding fate). See `TASKS.pre-addendum.md` Task 13. Complexity M.
 
 ---
 
 ## Summary
 
-| Task | Title | Depends On | Complexity | Status |
-|------|-------|-----------|------------|--------|
-| 1 | Add PKCE to Salesforce OAuth flow | -- | S | Not Started |
-| 2 | Automated incremental sync cron + needsAssignment + soft-delete | -- | L | Not Started |
-| 3 | Sync schedule configuration UI | 2 | S | Not Started |
-| 4 | Phase 4 Articulate - KnowledgeArticle creation in ingestion | -- | L | Not Started |
-| 5 | Persist BusinessProcessDependency records | -- | S | Not Started |
-| 6 | Full knowledge refresh Inngest function + UI trigger | 4 | L | Not Started |
-| 7 | KnowledgeArticle confirmation model + UI | 6 | M | Not Started |
-| 8 | BusinessContextAnnotation CRUD + context package inclusion | -- | M | Not Started |
-| 9 | Planned component creation from story execution | -- | M | Not Started |
-| 10 | PLANNED-to-EXISTING upgrade during metadata sync | 9 | S | Not Started |
-| 11 | NLP org query API endpoint | -- | M | Not Started |
-| 12 | Agent staleness flagging at end of loop | Phase 2 Task 4 | M | Not Started |
-| 13 | Two-pass semantic retrieval for article selection | 4 | M | Not Started |
+| # | Title | Depends On | Complexity |
+|---|-------|------------|------------|
+| 1 | Migrate DomainGrouping → domains + domain_memberships | deep-dive | M |
+| 2 | Migrate BusinessContextAnnotation → polymorphic annotations | — | M |
+| 3 | Extract OrgComponent.embedding → component_embeddings | Phase 11 | L |
+| 4 | Resolve KnowledgeArticle.embedding fate | deep-dive | S–M |
+| 5 | Create component_history, annotation_embeddings, org_health_reports | — | S |
+| 6 | Sync reconciliation + rename detection | 5 | L |
+| 7 | Layer 1 graph-builder | 6 | L |
+| 8 | Unresolved reference handling | 7 | S |
+| 9 | Deterministic embedded-text pipeline | 3 | M |
+| 10 | Sync integration + HNSW verification | 9 | M |
+| 11 | Domain CRUD + review UI | 1 | M |
+| 12 | Brownfield domain proposal (Managed Agent) | 7, 10, 11 | L |
+| 13 | Domain review nudge notification | 6, 11 | S |
+| 14 | Polymorphic annotation CRUD | 2 | M |
+| 15 | Annotation embedding pipeline | 5, 14 | S |
+| 16 | Answer Logging → AI-derived annotation proposals | 14, Phase 2 | M |
+| 17 | `search_org_kb` SQL + wrapper | 7, 10, 15 | L |
+| 18 | Phase 4 Articulate in ingestion | 12 | L |
+| 19 | Full knowledge refresh (Layer 3/4 aware) | 18 | L |
+| 20 | BusinessProcessDependency persistence | — | S |
+| 21 | Deterministic health analyzers (6) | 6 | XL |
+| 22 | Managed Agent synthesis + Word output | 21 | L |
+| 23 | Health trigger + cost ceiling + status UI | 22 | M |
+| 24 | NLP query → `search_org_kb` | 17 | M |
+| 25 | Context loader: annotations + 1-hop edges | 14, 7 | M |
+| 26 | Cost tracking for Managed Agent runs | 12, 22 | S |
+| 27 | PKCE OAuth (preserved) | — | S |
+| 28 | Sync cron base behavior (preserved) | — | M |
+| 29 | Sync schedule UI (preserved) | 28 | S |
+| 30 | KnowledgeArticle confirmation model (preserved) | 18 | M |
+| 31 | Planned component creation (preserved) | — | M |
+| 32 | PLANNED → EXISTING upgrade (preserved) | 31, 6 | S |
+| 33 | Agent staleness flagging (preserved) | Phase 2 T4 | M |
+| 34 | Two-pass semantic retrieval (preserved) | 18, 4 | M |
+| 35 | Domain review nudge: new-fields-on-domain-object detection (integration plan §244) | 6, 11, 13 | S |
+| 36 | Rename-collision edge-case fixture authorship (Addendum §8.F, integration plan §425) | 6 | S |
+
+---
+
+### Task 35: Domain review nudge — new-fields-on-domain-object detection (integration plan §244)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Extend the sync reconciliation path so that when incremental sync adds new fields to an object whose existing fields are already members of one or more domains, the architect is notified to reassess domain membership for the new fields. Uses the `DOMAIN_REVIEW_NEEDED` notification introduced in Task 13 but adds the new-field-specific detection logic. |
+| **Depends On** | Task 6 (reconciliation), Task 11 (domains), Task 13 (notification plumbing) |
+| **Complexity** | S |
+
+**Acceptance:**
+- [ ] After sync, for every newly added field whose parent object has at least one existing field in a confirmed domain, a `DOMAIN_REVIEW_NEEDED` notification is emitted listing the new field(s) and the affected domain(s).
+- [ ] Notification deep-links to the domain review UI scoped to the affected object.
+- [ ] No notification emitted when no affected object has existing domain members.
+- [ ] Unit test with fixture covering: (a) new field on object with existing domain members, (b) new field on object with no domain members, (c) multiple new fields on same object.
+
+---
+
+### Task 36: Rename-collision edge-case fixture (Addendum §8.F, integration plan §425)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Author a labeled edge-case fixture validating the "salesforce_metadata_id reuse after deletion" behavior. Current rule: match by ID first; if ID mismatch, treat as new component. Fixture physically lives in Phase 11 eval infrastructure (`/evals/org_knowledge/rename_collision/`) but ownership (authorship, gold labels, updates) belongs to Phase 6. Corrects the Addendum §8.F draft assignment to Phase 3. |
+| **Depends On** | Phase 11 eval harness |
+| **Complexity** | S |
+
+**Acceptance:**
+- [ ] Fixture committed under `/evals/org_knowledge/rename_collision/` with README documenting the scenario.
+- [ ] Fixture exercises: (a) legitimate rename (same ID, different api_name) → rename path, (b) ID reuse after deletion (archived row has same ID, new component) → match-by-ID-first behavior documented, (c) ID mismatch (same api_name, different ID) → treated as new component.
+- [ ] Gold labels captured for each scenario per the current reconciliation rule.
+- [ ] Fixture registered as an eval suite under the Phase 11 harness, tagged `org-knowledge/rename-collision`.
+- [ ] Ownership note recorded in PHASE_SPEC §2.2 so maintenance responsibility is unambiguous.

@@ -318,3 +318,4 @@ Task 8 (Test case stubs)       ─── independent L task
 | 7 | Org Knowledge Cross-Reference | — | M | Not Started |
 | 8 | Test Case Stub Generation Pipeline | — | L | Not Started |
 | 9 | DRAFT-to-READY Validation Gate | 8 | M | Not Started |
+| 10 | Wire story generation UI to Story Generation Pipeline + enqueue story embeddings (Addendum v1; references Phase 2 + Phase 11) | — | S | Not Started |

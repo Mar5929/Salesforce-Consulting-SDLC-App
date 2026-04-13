@@ -2,7 +2,7 @@
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
 > Gap Report: [04-work-management-gaps.md](./04-work-management-gaps.md)
-> Depends On: Phase 1 (RBAC, Security), Phase 3 (Discovery, Questions)
+> Depends On: Phase 2 (Story Generation Pipeline), Phase 3 (Discovery, Questions)
 > Status: Draft
 > Last Updated: 2026-04-10
 
@@ -14,6 +14,18 @@ Implement the story quality gate (DRAFT-to-READY mandatory field validation), wi
 
 **In scope:** 9 of 11 domain gaps -> 9 tasks
 **Resolved upstream:** GAP-WORK-007 (BA transitions) resolved by Phase 1 REQ-RBAC-009. GAP-WORK-009 (acceptanceCriteria nullable) absorbed into GAP-WORK-001 DRAFT->READY validation.
+
+---
+
+## Addendum v1 Amendments (April 13, 2026)
+
+These amendments integrate PRD Addendum v1 into Phase 4. They are additive — existing requirements below are unchanged.
+
+- **Story Generation routing:** Story generation now runs as the deterministic pipeline (Addendum §5.2.3) owned by Phase 2. Phase 4 wires the story generation UI trigger to call the pipeline instead of the generic harness task type.
+- **Story embeddings:** Enqueue via Phase 11 infrastructure on `story.create` and `story.update`.
+- **Mandatory field validation:** Now a deterministic stage inside the Story Generation Pipeline. Phase 4 does not re-implement mandatory-field validation separately; it verifies the UI reflects pipeline validation errors correctly.
+- **Eval harness:** The eval harness for Story Generation is owned in Phase 2. Phase 4 may add integration-level tests if needed.
+- **What does not change:** Epic/Feature/Story CRUD, Kanban views, status machines, dual-mode component selector, test case stub generation, enrichment dedup.
 
 ---
 

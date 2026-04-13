@@ -348,3 +348,4 @@ Add a light background tint for URGENT: `bg-red-50` on the entire notification r
 | 7 | Wire epic-scoped document generation | — | M | Not Started |
 | 8 | Document generation quality + UX fixes | 4, 6 | S | Not Started |
 | 9 | Notification UX improvements | 1 | M | Not Started |
+| 10 | Wire pending_review + conflicts_flagged notification events (Addendum v1; Phase 2 pipelines) | 1 | S | Not Started |

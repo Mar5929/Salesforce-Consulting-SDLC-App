@@ -17,6 +17,18 @@ Fix the question ID scheme to match the PRD's `Q-{SCOPE}-{NUMBER}` format, corre
 
 ---
 
+## Addendum v1 Amendments (April 13, 2026)
+
+These amendments integrate PRD Addendum v1 into Phase 3. They are additive — existing requirements below are unchanged.
+
+- **Question embeddings:** Enqueue via Phase 11 infrastructure on `question.create` and `question.update` (hash-based re-embed — only re-embed when the semantic content hash changes). Questions become searchable via `search_project_kb`.
+- **Answer submission routing:** The Answer Logging Pipeline (Phase 2) is the implementation path for answering a question. Phase 3 wires the UI answer submission form to call the pipeline, not a direct server action.
+- **Transcript-driven discovery:** The Transcript Processing Pipeline (Phase 2) is the implementation path for transcript-driven discovery. Phase 3 verifies the UI trigger path is correct.
+- **Search coverage:** `search_project_kb` covers questions by the end of Phase 3 — verify in retrieval tests.
+- **What does not change:** Question lifecycle states, gap detection, readiness assessment, discovery workflow, blocking prioritization, pagination. All unchanged externally.
+
+---
+
 ## 2. Functional Requirements
 
 ### 2.1 Schema Migration — Enum Fixes + Source Field (REQ-DISC-001)
