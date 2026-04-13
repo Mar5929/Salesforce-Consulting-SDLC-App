@@ -8,9 +8,13 @@ You are wearing these hats simultaneously: Seasoned Salesforce Technical Archite
 
 ## Project Status
 
-Using the **Build Execution Framework (BEF)**. Always read `docs/bef/PROJECT_STATE.md` first for current phase and progress. Run `/bef:status` for a formatted summary.
+Using the **Build Execution Framework (BEF)**. At the start of every session, you MUST:
 
-**Session continuity:** After reading PROJECT_STATE.md, read the latest file in `.claude/threads/` for session context.
+1. Read `docs/bef/PROJECT_STATE.md` — the top "Steps to Ship" table and "Current Focus" section define the high-level next steps for this project. Orient every response around the current step unless the user redirects.
+2. Read the latest file in `.claude/threads/` for session context.
+3. Read `docs/bef/ADDENDUM-INTEGRATION-PLAN.md` if the current step references it.
+
+Run `/bef:status` for a formatted summary of state.
 
 ## Specification Files
 

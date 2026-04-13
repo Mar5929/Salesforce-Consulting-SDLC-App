@@ -1,13 +1,30 @@
 # Project State: Salesforce Consulting AI Framework — Gap Closure
 
-> Close the 153 V1 gaps identified in the PRD-to-codebase gap analysis across 9 domains.
+> Close the 153 V1 gaps identified in the PRD-to-codebase gap analysis across 9 domains, incorporating PRD Addendum v1 (Intelligence Layer Architecture, April 12, 2026).
+
+## Steps to Ship
+
+| Step | Description | Status |
+|------|-------------|--------|
+| 1 | Write addendum integration/phase refactor plan | **Complete** |
+| 2 | Execute integration plan + agent team verification | Not Started |
+| 3 | Deep-dive sessions for affected phases (Phase 11 new, Phase 2 re-dive, Phase 6 re-dive) | Not Started |
+| 4 | Agent team verification of all deep-dive specs against PRD + addendum | Not Started |
+| 5 | Execute phase code with agent teams (wave-based, per phase) | Not Started |
+| 6 | Iterate until shipped | Not Started |
+
+**Current focus:** Step 2 — Apply spec updates to Phases 3, 4, 5, 7, 8. Then spawn reviewer agents to verify the integration plan against PRD + addendum.
+**Session thread:** `.claude/threads/2026-04-13-addendum-integration-plan.md`
+**Integration plan:** `docs/bef/ADDENDUM-INTEGRATION-PLAN.md`
+
+---
 
 ## Pipeline Progress
 
-- [x] Stage 1: PRD — Complete (existing: `docs/bef/00-prd/PRD.md`)
+- [x] Stage 1: PRD — Complete (existing: `docs/bef/00-prd/PRD.md` + addendum `docs/bef/00-prd/PRD-ADDENDUM-v1-Intelligence-Layer.md`)
 - [x] Stage 2: Architecture — Complete (consolidated in `docs/bef/01-architecture/TECHNICAL_SPEC.md`; tech stack in `CLAUDE.md`; see `01-architecture/README.md` for file map)
 - [x] Stage 3: Phase Plan — Complete (`docs/bef/02-phase-plan/PHASE_PLAN.md`)
-- [x] Stage 4: Phase Deep Dive — Complete (9/9 phases refined)
+- [ ] Stage 4: Phase Deep Dive — Incomplete (9 of 11 phases have specs; Phase 11 needs initial deep-dive; Phase 2 and Phase 6 need re-dives due to addendum)
 - [ ] Stage 5: Execute — In Progress (Phase 1 complete)
 
 ## Phase Overview
@@ -15,15 +32,16 @@
 | # | Phase | Depends On | Gaps | Spec | Tasks | Execution |
 |---|-------|-----------|------|------|-------|-----------|
 | 1 | RBAC, Security, Governance | None | 16 | Done | Done (14 tasks) | 14/14 done |
-| 2 | Agent Harness, Transcripts | Phase 1 | 10 | Done | Done (10 tasks) | Not Started |
-| 3 | Discovery, Questions | Phase 2 | 14 | Done | Done (13 tasks) | Not Started |
-| 4 | Work Management | Phase 1, 3 | 11 | Done | Done (9 tasks) | Not Started |
-| 5 | Sprint, Developer API | Phase 4 | 14 | Done | Done (12 tasks) | Not Started |
-| 6 | Org, Knowledge | Phase 2 | 16 | Done | Done (13 tasks) | Not Started |
-| 7 | Dashboards, Search | Phase 3, 4, 5, 6 | 26+3 | Done | Done (15 tasks) | Not Started |
-| 8 | Documents, Notifications | Phase 1 | 21 | Done | Done (9 tasks) | Not Started |
-| 9 | QA, Jira, Archival, Lifecycle | Phase 1, 4, 8 | 22 | Done | Done (11 tasks) | Not Started |
+| 11 | AI Infrastructure Foundation | Phase 1 | New | Needs deep-dive | Needs deep-dive | Not Started |
 | 10 | Work Tab UI Overhaul | Phase 1 | — | Done | Done (12 tasks) | Not Started |
+| 2 | Harness Hardening + Core Pipelines | Phase 11 | 10+ | Needs re-dive | Needs re-dive | Not Started |
+| 3 | Discovery, Questions | Phase 2 | 14 | Needs spec update | Done (13 tasks) | Not Started |
+| 4 | Work Management | Phase 2, 3 | 11 | Needs spec update | Done (9 tasks) | Not Started |
+| 6 | Org, Knowledge (Five-Layer Model) | Phase 11, 2 | 16+ | Needs re-dive | Needs re-dive | Not Started |
+| 5 | Sprint, Developer API | Phase 4, 6 | 14 | Needs spec update | Done (12 tasks) | Not Started |
+| 7 | Dashboards, Search | Phase 5, 6 | 26+3 | Needs spec update | Done (15 tasks) | Not Started |
+| 8 | Documents, Notifications | Phase 2, 7 | 21 | Needs spec update | Done (9 tasks) | Not Started |
+| 9 | QA, Jira, Archival, Lifecycle | Phase 4, 8 | 22 | Done | Done (11 tasks) | Not Started |
 
 ## Bug Tracking
 
@@ -52,9 +70,18 @@
 
 ## Current Focus
 
-**All 10 phases fully specced and tasked** (118 total tasks). Phase 10 deep-dive complete (12 tasks).
+**Step 1 complete.** Addendum integration plan written, phase plan updated, session continuity in place.
 
-**Phase 1 complete (14/14 tasks).** Next action: `/bef:execute 10` for Phase 10 (Work Tab UI Overhaul), or `/bef:execute 2` for Phase 2 (Agent Harness, Transcripts).
+**Next: Step 2** — Two parts:
+1. Apply targeted spec updates (no re-dive) to Phases 3, 4, 5, 7, 8 per `ADDENDUM-INTEGRATION-PLAN.md`
+2. Spawn reviewer agents to verify the integration plan is accurate and complete against PRD + addendum
+
+**Then: Step 3** — Deep-dives:
+- Phase 11: initial deep-dive (new phase — AI infrastructure foundation)
+- Phase 2: full re-dive (pipeline-first architecture replaces generic harness)
+- Phase 6: full re-dive (five-layer org knowledge model)
+
+**Key reference:** `docs/bef/ADDENDUM-INTEGRATION-PLAN.md` — full phase-by-phase impact analysis.
 
 ## Replan Log
 
@@ -70,3 +97,4 @@
 | 2026-04-10 | Phase 6 deep-dive complete. 13 tasks from 15 gaps (1 deferred, 4 consolidated). GAP-ORG-009 (Org Health Assessment, XL) deferred to V2 — no downstream blockers. NLP org query uses 3-tier approach (regex → full-text → semantic). Agent staleness as DB-only post-loop scan. Article confirmation: confirmed-only for Claude Code, unconfirmed-with-disclaimer for internal AI. |
 | 2026-04-10 | Phase 7 deep-dive complete. 15 tasks from 29 gaps (25 addressed, 4 deferred to V2). Deferred: GAP-DASH-008 (AI milestone summaries), GAP-DASH-018 (Inngest event volume), GAP-DASH-020 (semantic search expansion), GAP-DASH-023 (dependency chain visualization). Health score fully rewritten from weighted percentage to PRD signal counter. Search expanded with tsvector for 3 new entity types. Absorbed Phase 1 deferred gaps: RBAC-010 (Usage & Costs), RBAC-014 (audit logging), RBAC-016 (cost caps). Stage 4 complete — all 9 phases specced. |
 | 2026-04-10 | Phase 10 added: Work Tab UI Overhaul. Scope: shared component library (PageHeader, DetailPageLayout, FilterBar, StatusBadge, ProgressBar, EditableField, MetadataSidebar, StatCard), Work overview redesign with "All Stories" view, Epic/Feature/Story detail page overhauls to two-column layout, kanban enhancements (swimlanes, richer cards, quick actions). Depends on Phase 1. Recommended to run second (after Phase 1, before Phases 2-9) so new features get built into correct patterns. XL complexity. |
+| 2026-04-13 | PRD Addendum v1 (Intelligence Layer Architecture) incorporated. Addendum supersedes PRD §6 (AI Agent Harness) and §13 (Org Knowledge Base). Pipeline-first architecture replaces generic agent harness. Five-layer org knowledge model replaces flat structure. Cross-cutting additions: model router module, hybrid retrieval primitive (BM25+vector RRF), formal eval harness (V1 requirement), per-entity embedding tables, component_edges schema. Phase 11 added (AI Infrastructure Foundation). Phase 2 renamed to "Harness Hardening + Core Pipelines" and requires full re-dive. Phase 6 requires full re-dive for five-layer model. Phases 3, 4, 5, 7, 8 require spec updates only. Phase 5 now depends on Phase 6 (search_org_kb needed for Context Package Assembly). Execution order revised accordingly. See ADDENDUM-INTEGRATION-PLAN.md. |
