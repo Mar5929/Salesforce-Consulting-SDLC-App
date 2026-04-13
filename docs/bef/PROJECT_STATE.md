@@ -2,6 +2,22 @@
 
 > Close the 153 V1 gaps identified in the PRD-to-codebase gap analysis across 9 domains, incorporating PRD Addendum v1 (Intelligence Layer Architecture, April 12, 2026).
 
+## Current Focus
+
+**Step 2 phase-docs pass complete (2026-04-13).** All 11 phases now reflect addendum scope: Phase 11 scaffolded, Phase 2 + 6 populated from integration plan, Phases 3, 4, 5, 7, 8 amended, Phase 9 reviewed.
+
+**Remaining for Step 2:**
+1. Integrate addendum into `docs/bef/01-architecture/` (TECHNICAL_SPEC.md) — still references pre-addendum harness and flat org KB.
+2. Reviewer agent verification: PRD+addendum coverage, cross-phase dependency consistency, outstanding-decision capture.
+3. **Verify step 2** Have verifier agents check the PRD and addendum PRD and ensure that all the phase descriptions, details, overviews, specs, tasks, etc. match to PRD + addendum requirements. There should be zero gaps or discrepancies between what the PRD + addendum outline and the planned phases + their specs and tasks. 
+
+**Then: Step 3 — deep-dives.** Each populated/scaffolded spec carries an "Outstanding for deep-dive" section listing items that need interactive confirmation:
+- Phase 11: embedding provider (Voyage vs. OpenAI), RRF k tuning, embedding migration window
+- Phase 2: orphan TaskType enum re-mapping, per-pipeline error/escalation, confidence thresholds, freeform agent tool set
+- Phase 6: embedding migration window, rename-collision fixture, managed-package override UX, `KnowledgeArticle.embedding` fate, Org Health cost ceiling UX
+
+**Key reference:** `docs/bef/ADDENDUM-INTEGRATION-PLAN.md` — full phase-by-phase impact analysis.
+
 ## Steps to Ship (similar to the pipeline. Another wayt to think about the steps to ship the product)
 
 | Step | Description | Status |
@@ -12,9 +28,6 @@
 | 4 | Agent team verification of all deep-dive specs against PRD + addendum | Not Started |
 | 5 | Execute phase code with agent teams (wave-based, per phase) | Not Started |
 | 6 | Iterate until shipped | Not Started |
-
-**Current focus:** Step 2 — partially complete. Phase specs in `bef/03-phases/` are now addendum-aligned (Phase 11 scaffolded; Phase 2, 6 rewritten; Phases 3, 4, 5, 7, 8, 9 amended). 02-phase-plan and PROJECT_STATE updated. **Remaining:** integrate addendum into `01-architecture/` docs (TECHNICAL_SPEC.md + architecture README) and run reviewer-agent verification sweep.
-**Session thread:** `.claude/threads/2026-04-13-addendum-integration-plan.md`
 
 ---
 
@@ -67,21 +80,6 @@
 > Run `/bef:bug-detail` to investigate bugs, `/bef:bug-triage` to plan fixes,
 > `/bef:bug-execute` to dispatch parallel fix agents.
 
-## Current Focus
-
-**Step 2 phase-docs pass complete (2026-04-13).** All 11 phases now reflect addendum scope: Phase 11 scaffolded, Phase 2 + 6 populated from integration plan, Phases 3, 4, 5, 7, 8 amended, Phase 9 reviewed.
-
-**Remaining for Step 2:**
-1. Integrate addendum into `docs/bef/01-architecture/` (TECHNICAL_SPEC.md) — still references pre-addendum harness and flat org KB.
-2. Reviewer agent verification: PRD+addendum coverage, cross-phase dependency consistency, outstanding-decision capture.
-
-**Then: Step 3 — deep-dives.** Each populated/scaffolded spec carries an "Outstanding for deep-dive" section listing items that need interactive confirmation:
-- Phase 11: embedding provider (Voyage vs. OpenAI), RRF k tuning, embedding migration window
-- Phase 2: orphan TaskType enum re-mapping, per-pipeline error/escalation, confidence thresholds, freeform agent tool set
-- Phase 6: embedding migration window, rename-collision fixture, managed-package override UX, `KnowledgeArticle.embedding` fate, Org Health cost ceiling UX
-
-**Key reference:** `docs/bef/ADDENDUM-INTEGRATION-PLAN.md` — full phase-by-phase impact analysis.
-
 ## Replan Log
 
 | Date | Summary |
@@ -97,4 +95,5 @@
 | 2026-04-10 | Phase 7 deep-dive complete. 15 tasks from 29 gaps (25 addressed, 4 deferred to V2). Deferred: GAP-DASH-008 (AI milestone summaries), GAP-DASH-018 (Inngest event volume), GAP-DASH-020 (semantic search expansion), GAP-DASH-023 (dependency chain visualization). Health score fully rewritten from weighted percentage to PRD signal counter. Search expanded with tsvector for 3 new entity types. Absorbed Phase 1 deferred gaps: RBAC-010 (Usage & Costs), RBAC-014 (audit logging), RBAC-016 (cost caps). Stage 4 complete — all 9 phases specced. |
 | 2026-04-10 | Phase 10 added: Work Tab UI Overhaul. Scope: shared component library (PageHeader, DetailPageLayout, FilterBar, StatusBadge, ProgressBar, EditableField, MetadataSidebar, StatCard), Work overview redesign with "All Stories" view, Epic/Feature/Story detail page overhauls to two-column layout, kanban enhancements (swimlanes, richer cards, quick actions). Depends on Phase 1. Recommended to run second (after Phase 1, before Phases 2-9) so new features get built into correct patterns. XL complexity. |
 | 2026-04-13 | PRD Addendum v1 (Intelligence Layer Architecture) incorporated. Addendum supersedes PRD §6 (AI Agent Harness) and §13 (Org Knowledge Base). Pipeline-first architecture replaces generic agent harness. Five-layer org knowledge model replaces flat structure. Cross-cutting additions: model router module, hybrid retrieval primitive (BM25+vector RRF), formal eval harness (V1 requirement), per-entity embedding tables, component_edges schema. Phase 11 added (AI Infrastructure Foundation). Phase 2 renamed to "Harness Hardening + Core Pipelines" and requires full re-dive. Phase 6 requires full re-dive for five-layer model. Phases 3, 4, 5, 7, 8 require spec updates only. Phase 5 now depends on Phase 6 (search_org_kb needed for Context Package Assembly). Execution order revised accordingly. See ADDENDUM-INTEGRATION-PLAN.md. |
+| 2026-04-13 | Layer 5 identity reconciled. TECHNICAL_SPEC.md §6.1 was wrong (listed Layer 5 as Org Health Assessment); PRD Addendum v1 §4.1 and §4.6 lock Layer 5 as Query & Retrieval Interface (`search_org_kb`). Org Health Assessment reclassified as a parallel Managed Agents workload per Addendum §4.8. Phase 6 PHASE_SPEC.md was already correct; TECHNICAL_SPEC.md §6.1 table and the "locked points" bullet in §1 updated to match. |
 | 2026-04-13 | Step 2 phase-docs pass complete. Phase 11 scaffolded (10 tasks). Phase 2 spec rewritten — 10 harness tasks preserved + 4 pipelines + freeform agent + model router retrofit + eval extension (17 tasks total; pre-addendum spec retained as PHASE_SPEC.pre-addendum.md). Phase 6 spec rewritten — five layers, sync reconciliation, Org Health Assessment restored from V2, schema migrations for DomainGrouping/BusinessContextAnnotation/OrgComponent.embedding (34 tasks total; pre-addendum spec retained). Phases 3, 4, 5, 7, 8 received targeted "Addendum v1 Amendments" sections with new tasks wiring UI to pipelines and embedding enqueue. Phase 9 received review-only note on test-case-gen alignment with Story Generation Pipeline output. Phase 5 dependencies header now includes Phase 6. All outstanding decisions flagged in per-phase "Outstanding for deep-dive" sections for Step 3 agenda. Architecture docs (01-architecture) still need addendum integration. |
