@@ -26,11 +26,11 @@ Task 1 (schema migration)
 
 ## Tasks
 
-### Task 1: Schema migration — 11 tables, materialized view, HNSW indexes
+### Task 1: Schema migration — pgvector, 13 tables, materialized view, HNSW indexes
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Add `component_edges`, `question_embeddings`, `decision_embeddings`, `requirement_embeddings`, `risk_embeddings`, `story_embeddings`, `component_embeddings`, `annotation_embeddings`, `pipeline_runs`, `pipeline_stage_runs`, `pending_review`, `conflicts_flagged` to `prisma/schema.prisma`. Create `unresolved_references` materialized view and HNSW indexes via raw SQL in the migration. |
+| **Scope** | Enable pgvector extension. Add `component_edges`, `question_embeddings`, `decision_embeddings`, `requirement_embeddings`, `risk_embeddings`, `story_embeddings`, `component_embeddings`, `annotation_embeddings`, `pipeline_runs`, `pipeline_stage_runs`, `pending_review`, `conflicts_flagged`, `agent_conversations`, `agent_messages` to `prisma/schema.prisma`. Create `unresolved_references` materialized view and HNSW indexes via raw SQL in the migration. `OrgComponent` already exists (`prisma/schema.prisma:815`); Layer 1 completed by adding `component_edges` only. |
 | **Depends On** | None |
 | **Complexity** | L |
 | **Requirement** | REQ-AIINFRA-001 (NEW) |
@@ -38,11 +38,13 @@ Task 1 (schema migration)
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] All 11 tables exist in `prisma/schema.prisma` with correct fields per PHASE_SPEC §2.1
-- [ ] Every embedding table has: `entity_id`, `embedded_text`, `embedded_text_hash`, `embedding_model`, `embedding vector(1536)`, `created_at`, `updated_at`
-- [ ] `component_edges` supports nullable `target_component_id` for unresolved references
+- [ ] Migration begins with `CREATE EXTENSION IF NOT EXISTS vector;`
+- [ ] All 13 tables exist in `prisma/schema.prisma` with correct fields per PHASE_SPEC §2.1
+- [ ] Every embedding table has: `entity_id`, `embedded_text`, `embedded_text_hash`, `embedding_model`, `embedding vector(512)`, `created_at`, `updated_at`
+- [ ] `component_edges` supports nullable `target_component_id` for unresolved references; includes `source_component_id`, `edge_type`, `edge_metadata` (jsonb), `unresolved_reference_text`
+- [ ] `agent_conversations` and `agent_messages` scaffolded (forward-reference for Phase 2 freeform agent)
 - [ ] Materialized view `unresolved_references` selects from `component_edges WHERE target_component_id IS NULL`
-- [ ] HNSW index created via raw SQL on every embedding table: `CREATE INDEX ... USING hnsw (embedding vector_cosine_ops)`
+- [ ] HNSW index created via raw SQL on every embedding table: `CREATE INDEX ... USING hnsw (embedding vector_cosine_ops) WITH (m=16, ef_construction=64)`; inline SQL comment documents the values
 - [ ] `prisma migrate deploy` runs cleanly against a fresh DB
 - [ ] Prisma client regenerates without errors
 
@@ -56,7 +58,7 @@ Task 1 (schema migration)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `src/lib/ai/model-router.ts` exporting `resolve_model(intent, override)` with the `Intent` type and the default mapping (extract → Haiku 4.5, synthesize/generate_structured → Sonnet 4.6, reason_deeply → Opus 4.6, embed → selected provider). |
+| **Scope** | Create `src/lib/ai/model-router.ts` exporting `resolve_model(intent, override)` with the `Intent` type and the default mapping (extract → Haiku 4.5, synthesize/generate_structured → Sonnet 4.6, reason_deeply → Opus 4.6, embed → Voyage `voyage-3-lite`). Confirm Voyage data handling contract (no retention, no training); summarize in `TECHNICAL_SPEC.md`. |
 | **Depends On** | None (can run parallel to Task 1) |
 | **Complexity** | S |
 | **Requirement** | REQ-AIINFRA-002 (NEW) |
@@ -70,6 +72,7 @@ Task 1 (schema migration)
 - [ ] Unknown override model throws at resolution (no silent default fall-through)
 - [ ] Unit tests cover each intent + the override path + the unknown-model error
 - [ ] Grep CI check added: no file outside `src/lib/ai/` contains a hardcoded Claude model string
+- [ ] Voyage data handling agreement (no retention, no training) confirmed and summarized in `TECHNICAL_SPEC.md` under "Data Handling Posture — Embeddings"
 
 **Files touched:**
 - `src/lib/ai/model-router.ts` (create)
@@ -113,12 +116,14 @@ Task 1 (schema migration)
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
+- [ ] Golden-corpus snapshot captured BEFORE refactor: 10–20 representative queries run against current `globalSearch()`, results written to `docs/bef/03-phases/phase-11-ai-infrastructure/GOLDEN_CORPUS.json`
 - [ ] `src/lib/ai/search.ts` exports `search_project_kb(project_id, query, options)` and `search_org_kb(project_id, query, options)`
 - [ ] RRF scoring implemented with `k = 60` per the formula in PHASE_SPEC §2.3
 - [ ] `search_project_kb` handles entity_types filter for questions, decisions, requirements, risks, stories
 - [ ] `search_org_kb` returns empty array with `not_implemented` flag (no silent noop)
 - [ ] `src/lib/search/global-search.ts` refactored to call the new primitive; all current call sites work unchanged
 - [ ] `src/lib/agent-harness/context/smart-retrieval.ts` refactored to call the new primitive; all current call sites work unchanged
+- [ ] Post-refactor golden-corpus diff is zero (within documented RRF tolerance)
 - [ ] Parity test: seeded corpus produces identical ranking from old `globalSearch()` and new `search_project_kb` (within RRF tolerance)
 - [ ] Phase 1 regression suite passes
 
@@ -184,11 +189,11 @@ Task 1 (schema migration)
 
 ---
 
-### Task 7: Transcript Processing eval fixtures
+### Task 7: Transcript Processing eval fixtures (inputs + stubs)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Author 10 labeled fixtures for the Transcript Processing pipeline at `/evals/transcript-processing/fixtures/`. Each fixture is a JSON file with input transcript + expected extraction outputs. Create `expectations.ts` with per-fixture assertion predicates. Create pipeline-specific `runner.ts`. |
+| **Scope** | Author 10 labeled **input** fixtures for the Transcript Processing pipeline at `/evals/transcript-processing/fixtures/`. Each fixture is a JSON file with input transcript only. Create `expectations.ts` with per-fixture **stub** predicates that assert only "pipeline returns a non-error response" — real structural and semantic expectations are completed in Phase 2 by the pipeline implementer. Create pipeline-specific `runner.ts`. |
 | **Depends On** | Task 6 |
 | **Complexity** | M |
 | **Requirement** | REQ-AIINFRA-005 (NEW) |
@@ -196,11 +201,12 @@ Task 1 (schema migration)
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] 10 fixture JSON files in `/evals/transcript-processing/fixtures/`
+- [ ] 10 input-only fixture JSON files in `/evals/transcript-processing/fixtures/`
 - [ ] Fixtures cover: questions, decisions, requirements, risks, action items, mixed content, prompt-injection attempt, ambiguous confidence, merge-candidate with existing entity, standalone new entity
-- [ ] `expectations.ts` defines expected extractions per fixture (exact match where deterministic, predicate where fuzzy)
+- [ ] `expectations.ts` has 10 stub predicates, each with a `TODO(phase-2)` comment and a minimal non-error assertion
 - [ ] `runner.ts` imports the pipeline (stub until Phase 2), runs each fixture, reports pass/fail
-- [ ] `pnpm eval transcript-processing` runs against all 10 fixtures
+- [ ] `pnpm eval transcript-processing` runs against all 10 fixtures and passes (stubs trivially pass)
+- [ ] Phase 2 hand-off note added to `evals/transcript-processing/README.md` listing which fixtures each Phase 2 pipeline task must complete
 
 **Files touched:**
 - `evals/transcript-processing/fixtures/01-*.json` through `10-*.json` (create)
@@ -209,11 +215,11 @@ Task 1 (schema migration)
 
 ---
 
-### Task 8: Answer Logging eval fixtures
+### Task 8: Answer Logging eval fixtures (inputs + stubs)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Author 10 labeled fixtures for the Answer Logging pipeline at `/evals/answer-logging/fixtures/`. Each fixture is a JSON file with input answer text + candidate questions + expected match output. Create `expectations.ts` and pipeline-specific `runner.ts`. |
+| **Scope** | Author 10 labeled **input** fixtures for the Answer Logging pipeline at `/evals/answer-logging/fixtures/`. Each fixture is a JSON file with input answer text + candidate questions only. Create `expectations.ts` with per-fixture **stub** predicates; real match targets and confidence bands are completed in Phase 2 by the pipeline implementer. Create pipeline-specific `runner.ts`. |
 | **Depends On** | Task 6 |
 | **Complexity** | M |
 | **Requirement** | REQ-AIINFRA-005 (NEW) |
@@ -221,11 +227,12 @@ Task 1 (schema migration)
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] 10 fixture JSON files in `/evals/answer-logging/fixtures/`
+- [ ] 10 input-only fixture JSON files in `/evals/answer-logging/fixtures/`
 - [ ] Fixtures cover: exact question match, semantic match, no-match standalone decision, ambiguous match (two candidates close), contradiction with existing decision, impact assessment trigger, low-confidence needs-review, multi-question answer, empty answer, malformed input
-- [ ] `expectations.ts` defines expected match target + confidence band per fixture
+- [ ] `expectations.ts` has 10 stub predicates, each with a `TODO(phase-2)` comment and a minimal non-error assertion
 - [ ] `runner.ts` imports the pipeline (stub until Phase 2), runs each fixture, reports pass/fail
-- [ ] `pnpm eval answer-logging` runs against all 10 fixtures
+- [ ] `pnpm eval answer-logging` runs against all 10 fixtures and passes (stubs trivially pass)
+- [ ] Phase 2 hand-off note added to `evals/answer-logging/README.md` listing which fixtures each Phase 2 pipeline task must complete
 
 **Files touched:**
 - `evals/answer-logging/fixtures/01-*.json` through `10-*.json` (create)
@@ -272,6 +279,7 @@ Task 1 (schema migration)
 - [ ] `.github/workflows/evals.yml` exists
 - [ ] Workflow triggered by `pull_request` with path filter on `src/ai/**`, `src/pipelines/**`, `prompts/**`, `evals/**`
 - [ ] Workflow installs deps, runs `pnpm eval all`, uploads JSON report artifact
+- [ ] Workflow fails if aggregate cost of a single eval run exceeds **$0.50** (hard budget)
 - [ ] PR check is required for merge to main (branch protection rule documented in the PR description)
 - [ ] Test PR touching a watched path verifies the gate fires
 
@@ -284,7 +292,7 @@ Task 1 (schema migration)
 
 | Task | Title | Depends On | Complexity | Status |
 |------|-------|-----------|------------|--------|
-| 1 | Schema migration — 11 tables, materialized view, HNSW indexes | — | L | Not started |
+| 1 | Schema migration — pgvector, 13 tables, materialized view, HNSW indexes | — | L | Not started |
 | 2 | Model router module | — | S | Not started |
 | 3 | Audit existing hybrid search implementation | 1 | M | Not started |
 | 4 | Extract search primitive and refactor call sites | 3 | L | Not started |
