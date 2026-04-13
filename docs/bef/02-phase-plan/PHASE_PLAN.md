@@ -4,7 +4,6 @@
 > Total Phases: 11 (Phase 11 added; Addendum v1 incorporated April 13, 2026)
 > Total Gaps: 153 (22 Critical, 77 Significant, 54 Minor) + Phase 10 UI overhaul + Phase 11 AI infrastructure
 > Reference: [GAP-ANALYSIS-INDEX.md](./GAP-ANALYSIS-INDEX.md)
-> Addendum: [ADDENDUM-INTEGRATION-PLAN.md](../ADDENDUM-INTEGRATION-PLAN.md)
 
 ---
 
@@ -38,7 +37,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | Phase 2 |
 | **Parallel With** | Phase 10 (UI Overhaul) |
 | **Complexity** | M |
-| **Tasks** | TBD (needs initial deep-dive) |
+| **Tasks** | 10 (scaffolded; deep-dive pending) |
 
 **Key Deliverables:**
 - Model router module: `src/lib/ai/model-router.ts`
@@ -80,7 +79,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | Phase 3, Phase 4, Phase 6 |
 | **Parallel With** | Phase 10 (partially) |
 | **Complexity** | XL |
-| **Tasks** | TBD (needs re-dive; original 10 harness tasks remain, plus pipeline implementation) |
+| **Tasks** | 17 (populated; re-dive pending — 10 harness + 4 pipelines + freeform agent + model router + eval extension) |
 
 **Key Deliverables:**
 - Tool bug fix, output validation re-prompt loop, firm typographic rules
@@ -106,7 +105,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | Phase 4, Phase 7 |
 | **Parallel With** | Phase 6 |
 | **Complexity** | XL |
-| **Tasks** | TBD (14 gaps, includes 2 Critical AI features) |
+| **Tasks** | 14 |
 
 **Key Deliverables:**
 - Gap detection analysis (AI-driven)
@@ -125,7 +124,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | Phase 5 |
 | **Parallel With** | None |
 | **Complexity** | L |
-| **Tasks** | TBD (11 gaps, includes 2 Critical) |
+| **Tasks** | 10 |
 
 **Key Deliverables:**
 - Story quality gate (DRAFT→READY validation)
@@ -143,7 +142,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | Phase 7 |
 | **Parallel With** | None |
 | **Complexity** | L |
-| **Tasks** | TBD (14 gaps; spec update needed for context package pipeline spec and Phase 6 dependency) |
+| **Tasks** | 14 |
 
 **Key Deliverables:**
 - Context Package Assembly: deterministic pipeline, <3s p95 latency, single Sonnet call at end
@@ -165,7 +164,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | Phase 5, Phase 7 |
 | **Parallel With** | Phase 3 (partially) |
 | **Complexity** | XL |
-| **Tasks** | TBD (needs re-dive; five-layer model significantly expands scope) |
+| **Tasks** | 34 (populated; re-dive pending) |
 
 **Key Deliverables:**
 - Layer 1: `component_edges` population, sync reconciliation algorithm, rename tracking
@@ -189,7 +188,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | None |
 | **Parallel With** | Phase 9 |
 | **Complexity** | XL |
-| **Tasks** | TBD (26 gaps + 3 deferred from Phase 1) |
+| **Tasks** | 16 |
 
 **Key Deliverables:**
 - Correct health score model
@@ -209,7 +208,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | Phase 9 |
 | **Parallel With** | Phase 2 (partially) |
 | **Complexity** | L |
-| **Tasks** | 9 (21 gaps consolidated; GAP-DOCS-007→V2, HEALTH_SCORE_CHANGED→Phase 7; received status report + rate limit notifs from Phase 2) |
+| **Tasks** | 10 |
 
 **Key Deliverables:**
 - 4 new document templates
@@ -228,7 +227,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | None |
 | **Parallel With** | Phase 7 |
 | **Complexity** | XL |
-| **Tasks** | TBD (22 gaps, includes 4 Critical) |
+| **Tasks** | 11 |
 
 **Key Deliverables:**
 - AI test case generation
@@ -248,7 +247,7 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 | **Unlocks** | All subsequent phases benefit from shared layout patterns |
 | **Parallel With** | Should run before Phases 2-9 so new features get built into correct patterns |
 | **Complexity** | XL |
-| **Tasks** | TBD (awaiting deep-dive) |
+| **Tasks** | 12 |
 
 **Key Deliverables:**
 - Shared component library: PageHeader, DetailPageLayout, FilterBar, StatusBadge, ProgressBar, EditableField, MetadataSidebar, StatCard
