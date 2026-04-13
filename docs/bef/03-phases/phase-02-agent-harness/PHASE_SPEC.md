@@ -7,7 +7,7 @@
 > Depends On: Phase 1 (RBAC, Security, Governance), Phase 11 (Model Router, Eval Harness, Observability)
 > Unlocks: Phase 3 (Discovery), Phase 4 (Work Management), Phase 6 (Org/Knowledge)
 > Complexity: XL
-> Status: Draft (populated from integration plan — Step 3 deep-dive still required before execution)
+> Status: Deep-dived — ready for execution (2a/2b split rejected; unified)
 > Last Updated: 2026-04-13
 
 ---
@@ -21,7 +21,9 @@ PRD Addendum v1 replaced the generic agent-harness task-type model with four det
 
 The original harness stays as infrastructure (context assembly, tool framework, SessionLog, rate limiting). The pipelines sit on top of it. The freeform agent uses the tool layer but does not use the task-type dispatcher.
 
-Step 3 deep-dive is required before execution to resolve the outstanding items in §8.
+Step 3 deep-dive completed 2026-04-13. All 9 outstanding items (formerly §8) are resolved in §8 "Resolved Decisions (Deep-Dive)". Phase is ready for execution.
+
+**Requirement trace:** REQ-HARNESS-001..012 → PRD §6 (AI Harness, superseded in substance by Addendum §5). REQ-PIPELINE-001..004 → Addendum §5.2.1..5.2.4. REQ-AGENT-FREEFORM-001 → Addendum §5.3. Observability tables → Addendum §7. Eval harness extension → Addendum §5.6.
 
 ---
 
@@ -142,12 +144,25 @@ Harden the existing harness engine (10 harness requirements) AND replace the gen
 
 ## 3. Functional Requirements — Four Deterministic Pipelines
 
-Each pipeline replaces a specific generic harness task type. Pipeline stages are explicit steps in an Inngest step function. Stages are idempotent and retry-safe. Stage-failure policy (default):
+Each pipeline replaces a specific generic harness task type. Pipeline stages are explicit steps in an Inngest step function. Stages are idempotent and retry-safe. Stage-failure policy:
 
-- Up to 3 retries per stage (Inngest step-level retry).
-- On final failure: partial pipeline state is preserved, the run is marked `failed`, and the item is escalated to a human-review queue with a link back to the raw input and all completed stage outputs.
-- Raw transcript / raw input is always retained, even on total failure.
-- Per-stage error behavior detail is outstanding — see §8.
+- **Default:** up to 3 retries per stage (Inngest step-level retry). On final failure: partial pipeline state preserved, run marked `failed`, escalated to a human-review queue with a link back to the raw input and all completed stage outputs.
+- **Raw input retention:** raw transcript / raw answer / raw briefing input is always retained on `pipeline_runs.inputJson`, even on total failure.
+- **Non-blocking stages** (locked 2026-04-13): the following stages finalize the pipeline with a flag rather than fail the run when they exhaust retries. The run is marked `completed_with_warnings`, downstream work proceeds, and a `pending_review` entry is created for manual follow-up:
+  - Transcript Processing stage 6 (Impact assessment) — runs after Apply; impact failure does not roll back applied entities.
+  - Answer Logging stage 4 (Impact assessment) — same rationale.
+  - Story Generation stage 5 (Resolve conflicts) — draft persists with a `needs_component_review` flag.
+- **Blocking stages:** all other stages fail the run on retry exhaustion.
+- **Briefing failures:** any Briefing/Status Pipeline stage failure returns a "briefing unavailable, retry" response to the caller and does NOT cache the failure.
+
+**Orchestration mode per pipeline (locked 2026-04-13):**
+
+| Pipeline | Execution | Rationale |
+|----------|-----------|-----------|
+| Transcript Processing | **Async** (Inngest fire-and-forget) | 7-stage run with 2 Sonnet calls routinely exceeds 30s; Needs Review UX already designed for async session-end. |
+| Answer Logging | **Sync-capable** (API route awaits; Inngest still used for durability/retries) | Single-sentence inputs; users expect immediate match/create response. |
+| Story Generation | **Async** | Always background; drafts appear in the work board when ready. |
+| Briefing/Status | **Sync with 5-min cache** | First call synthesizes; subsequent calls within TTL return cached result. |
 
 ### 3.1 Transcript Processing Pipeline (REQ-PIPELINE-001)
 
@@ -167,7 +182,7 @@ Replaces the generic `TRANSCRIPT_PROCESSING` harness task. Seven stages:
 - **Outputs:** created/updated entity IDs, pending_review queue entries, impact summary, pipeline_run record
 - **Model routing:** stages 1, 2 → Haiku; stages 4, 6 → Sonnet; all via `model_router.resolve_model(intent)`
 - **Idempotency:** stage `(pipeline_run_id, stage_name)` unique. Re-running a stage produces the same outputs given the same inputs.
-- **Confidence cutoff:** 0.85 for auto-apply (V1 default, see §8 outstanding calibration).
+- **Confidence cutoff (locked 2026-04-13):** strict `> 0.85` for auto-apply. Values `≤ 0.85` (including exactly 0.85) route to `pending_review`. Recalibrate after first 100 real transcripts.
 - **File structure:** `src/lib/pipelines/transcript-processing/` with one file per stage + `index.ts` Inngest step function.
 
 ### 3.2 Answer Logging Pipeline (REQ-PIPELINE-002) — NEW
@@ -186,6 +201,11 @@ Handles free-text answers from users (not a replacement — net-new scope from a
 - **Inputs:** free-text answer, projectId, userId, optional targetQuestionId (if user pre-linked)
 - **Outputs:** updated question or new decision, conflict records, proposed org-KB annotations (queued for review per Phase 6 rules)
 - **Model routing:** stages 2, 4, 6 → Sonnet via router
+- **Match-confidence cutoffs (locked 2026-04-13):**
+  - `≥ 0.85` — auto-apply: mark the matched question answered and persist the answer.
+  - `0.70 ≤ confidence < 0.85` — enqueue to `pending_review` with the top-K candidate questions surfaced to the user for confirm/correct.
+  - `< 0.70` — treat as standalone: stage 3 creates a new Decision; no existing question is updated.
+  - `targetQuestionId` pre-linked by user bypasses stage 2 (no confidence gate).
 - **File structure:** `src/lib/pipelines/answer-logging/` with one file per stage + Inngest step function.
 
 ### 3.3 Story Generation Pipeline (REQ-PIPELINE-003)
@@ -202,10 +222,11 @@ Replaces the generic `STORY_GENERATION` harness task. Seven stages:
 | 6 | Typography/branding validator | Deterministic | Invokes `firm-rules.postProcessOutput` (REQ-HARNESS-003) |
 | 7 | Return draft | Deterministic | Persist with `draft` status |
 
-- **Inputs:** epicId, projectId, userId, optional explicit requirement set
+- **Inputs:** `{ epicId, projectId, userId, mode: 'generate' | 'enrich', existingStoryId?, explicitRequirementIds? }`
+- **`mode: 'enrich'` variant (locked 2026-04-13):** replaces the legacy `STORY_ENRICHMENT` TaskType. Seeded input = existing story + new context. All 7 stages run; stage 2 prompts Claude to preserve fields the user has modified and only update fields affected by new context. Output = amended draft on the same story (new version row).
 - **Outputs:** draft Story record(s), conflict notes, component-reference report
 - **Model routing:** stages 2, 5 → Sonnet via router
-- **Eval coverage:** REQ-HARNESS-012 adds 15 labeled fixtures against this pipeline.
+- **Eval coverage:** REQ-HARNESS-012 adds 15 labeled fixtures against this pipeline. Semantic similarity threshold locked at **cosine ≥ 0.80** for AC-to-gold; recalibrate after first eval run.
 - **File structure:** `src/lib/pipelines/story-generation/` with one file per stage + Inngest step function.
 
 ### 3.4 Briefing/Status Pipeline (REQ-PIPELINE-004)
@@ -224,6 +245,12 @@ Replaces the generic `BRIEFING` harness task. Five stages:
 - **Inputs:** projectId, briefingType, optional recipientRole
 - **Outputs:** briefing text, cache metadata, inputs_hash
 - **Model routing:** stage 3 → Sonnet via router
+- **Cache strategy (locked 2026-04-13):**
+  - **Key:** `(projectId, briefingType, inputs_hash)`
+  - **TTL:** 5 minutes, passive (no active invalidation in V1)
+  - **`inputs_hash`** = sha256 of sorted metric query result from stage 1. If metrics change within the TTL (rare outside active sprint ceremonies), the hash differs and stages 1-4 re-run.
+  - **Failure caching:** never cache a failed stage. Failure returns "briefing unavailable, retry" to caller.
+  - **Cache store:** Postgres row in a new `briefing_cache` table (or an existing cache infra if already present) keyed by `(projectId, briefingType)` with latest `inputs_hash` + generated text + `generated_at`. Reuse of existing cache infra preferred over new table; confirm during Task 14 implementation.
 - **File structure:** `src/lib/pipelines/briefing/` with one file per stage + Inngest step function. Briefing-type templates in `src/lib/pipelines/briefing/templates/`.
 
 ---
@@ -236,13 +263,19 @@ The project-brain chat. One agent loop in the system. Built at the end of Phase 
 - **"Think harder" mode:** routes to Opus 4.6 (intent: `freeform_chat_deep`). UI toggle.
 - **System prompt:** includes Layer 3 context + chat history window (REQ-HARNESS-009) + firm rules (REQ-HARNESS-003).
 
-**Read tools (no confirmation):**
+**Read tools (no confirmation) — locked 2026-04-13:**
 - `search_project_kb` — hybrid search over project knowledge (questions, decisions, requirements, risks, articles)
 - `search_org_kb` — hybrid search over org component knowledge
 - `get_sprint_state` — current sprint, in-flight stories, blockers
 - `get_project_summary` — Layer 3 project summary
 - `get_blocked_items` — currently blocked stories/features and reasons
 - `get_discovery_gaps` — open questions, unanswered requirements, coverage gaps
+- `get_recent_sessions` — recent AI session summaries (wraps REQ-HARNESS-006 function)
+- `get_milestone_progress` — milestones with computed completion percentage (wraps REQ-HARNESS-006 function)
+
+**Rejected as agent tools (use alternatives):**
+- `get_org_component_detail` → covered by `search_org_kb` with entity_types filter
+- `get_question_thread` → covered by `search_project_kb` with entity_types=['questions']
 
 **Write tools (UI confirmation required before apply):**
 - `create_question`
@@ -256,7 +289,7 @@ The project-brain chat. One agent loop in the system. Built at the end of Phase 
 - Document generation (Phase 8)
 - Sprint modification (Phase 5)
 
-**Principle:** the freeform agent suggests and captures intent; pipelines execute deterministic work. Additional read tools under consideration — see §8.
+**Principle:** the freeform agent suggests and captures intent; pipelines execute deterministic work. The agent does NOT invoke pipelines — write tools go through the standard tool layer directly (no pipeline entry).
 
 **Persistence (per integration plan §399):** reuse the existing `Conversation` / `ChatMessage` / `ConversationType` models from `prisma/schema.prisma`. Add a new `ConversationType` enum value (e.g., `FREEFORM_AGENT`) or reuse `GENERAL_CHAT`. No new top-level `agent_conversations` or `agent_messages` table is introduced unless agent-specific metadata demands it during deep-dive. Any agent-specific metadata that does not fit the existing columns goes into a JSON column on `ChatMessage` rather than a new table.
 
@@ -358,27 +391,65 @@ aiDailyLimit     Int?
 aiMonthlyCostCap Decimal?
 ```
 
-**New tables (per addendum §5.2):**
+**New tables:** all owned by Phase 11 (already in Phase 11 Task 1 schema). Phase 2 consumes them:
 - `pipeline_runs` — one row per pipeline invocation: `{id, projectId, userId, pipelineType, status, inputsHash, startedAt, completedAt, errorJson}`
 - `pipeline_stage_runs` — one row per stage execution: `{id, pipelineRunId, stageName, status, inputJson, outputJson, modelUsed, tokensIn, tokensOut, attempt, error}`
 - `pending_review` — low-confidence candidates held for human review: `{id, projectId, pipelineRunId, entityType, candidateJson, confidence, reason, createdAt, resolvedAt, resolution}`
+- `conflicts_flagged` — written by Transcript stage 6 + Answer stage 4; Phase 11 schema.
 
-Exact column details to finalize in deep-dive.
+**Optional Phase 2 addition (decide during Task 14):** `briefing_cache` table — only if an existing cache infra is not reusable. Shape: `{projectId, briefingType, inputsHash, briefingText, generatedAt}` with unique `(projectId, briefingType)`.
+
+Pipeline status enum (Phase 11 owned, consumed here): `queued`, `running`, `completed`, `completed_with_warnings`, `failed`.
 
 ---
 
-## 8. Outstanding Items (Resolve in Step 3 Deep-Dive)
+## 8. Resolved Decisions (Deep-Dive 2026-04-13)
 
-The following are explicit open items flagged by the integration plan. Deep-dive must resolve each before execution starts.
+All outstanding items from the integration plan are resolved below. The pre-deep-dive list is archived in this file's revision history.
 
-| # | Item | Context |
-|---|------|---------|
-| 1 | **Orphan TaskType enum re-mapping** | Values not covered by the four pipelines: `QUESTION_ANSWERING`, `STORY_ENRICHMENT`, `STATUS_REPORT_GENERATION`, `DOCUMENT_GENERATION`, `SPRINT_ANALYSIS`, `CONTEXT_PACKAGE_ASSEMBLY`, `ORG_QUERY`, `DASHBOARD_SYNTHESIS`, `ARTICLE_SYNTHESIS`. Each must be explicitly folded into a pipeline, routed to a different phase, or deprecated. Per integration plan §152-153. No generic task-type execution remains after Phase 2. |
-| 2 | **Per-pipeline error/escalation behavior** | Default is 3 retries then human-review queue. Each pipeline may need custom escalation rules (e.g., does an impact-assessment failure block the whole transcript run, or finalize with a partial-impact note?). Specify per stage. |
-| 3 | **Confidence threshold calibration** | V1 default is 0.85 for auto-apply vs `pending_review`. Calibrate against labeled data. May differ per pipeline and per entity type (questions vs decisions vs requirements). |
-| 4 | **Additional freeform agent read tools** | Confirm the six read tools listed in §4 are sufficient. Candidates under consideration: `get_recent_sessions`, `get_milestone_progress`, `get_org_component_detail`, `get_question_thread`. |
-| 5 | **Semantic similarity threshold for Story Gen eval** | REQ-HARNESS-012 assertion #2 needs a numeric threshold (e.g., cosine ≥ 0.80). Calibrate against gold fixtures. |
-| 6 | **Pipeline table schema finalization** | `pipeline_runs`, `pipeline_stage_runs`, `pending_review` column definitions and indices. |
+| # | Item | Decision |
+|---|------|----------|
+| 1 | **2a/2b split** | **Rejected.** Phase 2 stays unified (18 tasks). Rationale: every downstream phase (3, 4, 6) depends on both harness hardening AND ≥ 1 pipeline, so a split does not unblock anyone earlier. Splitting adds Linear milestone overhead without a calendar win. |
+| 2 | **Orphan TaskType enum re-mapping** | 9 values dispositioned. See §8.1 table below. Enum values removed in Phase 2 (new Task 18) with a grep CI check ensuring no caller references them. |
+| 3 | **Per-pipeline error/escalation behavior** | Specified per-stage in §3 preamble: default 3 retries + human-review queue; **non-blocking stages** are Transcript stage 6, Answer stage 4, Story stage 5. Briefing failures never cache; return "briefing unavailable." |
+| 4 | **Confidence thresholds** | Transcript strict `> 0.85` auto-apply (§3.1). Answer Logging tiered: `≥ 0.85` auto-update, `0.70–0.85` `pending_review` with candidates, `< 0.70` standalone decision (§3.2). Story Gen has no confidence gate (mandatory-field validation is deterministic). |
+| 5 | **Freeform agent read tools** | 8 total (6 original + `get_recent_sessions` + `get_milestone_progress`). `get_org_component_detail` and `get_question_thread` rejected — covered by `search_org_kb` / `search_project_kb` with entity filters (§4). |
+| 6 | **Semantic similarity threshold** | Cosine ≥ **0.80** for Story Gen AC-to-gold comparison. Recalibrate after first eval-run data. |
+| 7 | **Pipeline schema ownership** | `pipeline_runs`, `pipeline_stage_runs`, `pending_review`, `conflicts_flagged` are **Phase 11 owned** (already in Phase 11 Task 1 schema). Phase 2 only adds `Project.aiDailyLimit` + `Project.aiMonthlyCostCap`. Briefing cache may reuse existing cache infra or add a `briefing_cache` table (decide during Task 14). |
+| 8 | **Transcript sync vs. async** | Async (Inngest). Answer=sync-capable, Story=async, Briefing=sync+cache (§3 preamble table). |
+| 9 | **Cost cap** | Hybrid: 80% soft alert emits `COST_APPROACHING_CAP` notification event to PM role (Phase 8 wires template); 100% hard 429 block; `null` cap = unlimited. Daily limit = hard block at 100%, no soft threshold. Default daily = 100 invocations/user/project. Default monthly cap = `null`. |
+| 10 | **Fixture expectations (20 Phase 11 stubs)** | Task 11 AC replaces 10 `transcript-processing` stubs with extraction F1 + entity-resolution top-1 + reconciliation accuracy assertions (Addendum §5.2.1). Task 12 AC replaces 10 `answer-logging` stubs with match accuracy + impact detection + annotation proposal assertions. |
+
+### 8.1 TaskType Orphan Disposition Matrix
+
+| TaskType | Disposition | Destination | Notes |
+|----------|------------|-------------|-------|
+| `QUESTION_ANSWERING` | **Deprecate** | Replaced by REQ-PIPELINE-002 (Answer Logging) | Delete in Task 18 |
+| `STORY_ENRICHMENT` | **Fold** | Story Generation Pipeline, `mode: 'enrich'` | Pipeline accepts `mode` input (§3.3) |
+| `STATUS_REPORT_GENERATION` | **Move** | Phase 8 (document rendering) | Briefing Pipeline produces text; Phase 8 renders document |
+| `DOCUMENT_GENERATION` | **Move** | Phase 8 | Document rendering is Phase 8 domain |
+| `SPRINT_ANALYSIS` | **Move** | Phase 5 | Sprint + Developer API owns sprint logic |
+| `CONTEXT_PACKAGE_ASSEMBLY` | **Move** | Phase 5 (deterministic function) | Addendum §4.6 |
+| `ORG_QUERY` | **Move** | Phase 6 | Org KB ownership; uses `search_org_kb` |
+| `DASHBOARD_SYNTHESIS` | **Move** | Phase 7 | Dashboards own their synthesis |
+| `ARTICLE_SYNTHESIS` | **Move** | Phase 6 | Articles live in org KB |
+
+Enum values removed in Phase 2 (Task 18). Grep CI check: any reference to these TaskType values in `src/` fails the build. Downstream phases introduce their own explicit entry points (pipelines, deterministic functions, phase-specific Inngest jobs) — **not** new generic TaskType values.
+
+### 8.2 Cross-Pipeline Integration Matrix
+
+| Producer | Event / Output | Consumer | Notes |
+|----------|---------------|----------|-------|
+| Transcript stage 5 (Apply) | `pending_review` entries (confidence ≤ 0.85) | Task 10 Needs Review UX | ChatMessage.toolCalls surfaces in session-end message |
+| Transcript stage 6 (Impact) | `conflicts_flagged` rows | Phase 3 (Discovery Dashboard), Phase 7 (Conflicts view) | Shared schema with Answer Logging stage 4 |
+| Answer Logging stage 4 (Impact) | `conflicts_flagged` rows | Same as above | |
+| Answer Logging stage 6 (Annotate) | Proposed Layer 4 annotations | Phase 6 (annotation queue) | Write to `pending_review` with `entity_type='annotation'` in V1 until Phase 6 ships dedicated queue |
+| Story Gen stage 1 (Assemble) | Calls `search_project_kb` + `search_org_kb` | Phase 11 (primitives) | `search_org_kb` returns `{ results: [], not_implemented: true }` until Phase 6 |
+| Story Gen stage 4 (Cross-ref) | Component-reference report | Task 10 Needs Review UX (flagged drafts) | Same pattern: `needs_component_review` flag surfaces in work board |
+| Story Gen (all stages) | `pipeline_runs` / `pipeline_stage_runs` | Phase 7 (Observability) | Phase 11 schema |
+| Briefing Pipeline | Rendered briefing + `inputs_hash` | Phase 8 (Status Report rendering) | Phase 8 calls Briefing Pipeline; caches result |
+| Freeform agent write tool (`create_question` / `create_risk` / `create_requirement`) | Standard tool layer (direct persistence) | — | Agent never invokes pipelines. Entity tracking flows through REQ-HARNESS-004. |
+| Rate limiter 80% threshold | `COST_APPROACHING_CAP` event | Phase 8 (notification templates) | Phase 2 emits; Phase 8 renders/routes |
 
 ---
 
@@ -396,7 +467,13 @@ The following are explicit open items flagged by the integration plan. Deep-dive
 | Briefing cache hit with matching inputs_hash | Skip stages 1-4, return cached result | N/A |
 | Freeform agent invokes write tool | UI prompts user to confirm before pipeline-side persistence occurs | N/A — interactive |
 | Freeform agent tries to call a non-registered tool (e.g., story creation) | Tool call fails with "tool not available" error surfaced to the user | N/A |
-| Orphan TaskType invoked before deep-dive resolves mapping | Engine logs warning and rejects the call | HTTP 400 with message pointing to deep-dive resolution |
+| Orphan TaskType referenced in code | Grep CI check fails the build (Task 18). At runtime: engine rejects the call with a compile-time impossible path (enum removed). | N/A — caught at build |
+| Answer Logging match confidence exactly 0.85 | Routes to `pending_review` with candidates (tiered cutoff, strict `≥ 0.85` = auto-apply) | N/A |
+| Answer Logging match confidence in `0.70..0.85` range | `pending_review` with top-K candidate questions surfaced for user confirm/correct | N/A — interactive |
+| Story Gen invoked with `mode: 'enrich'` but no `existingStoryId` | Stage 1 throws validation error before any Claude call | HTTP 400 |
+| Non-blocking stage (Transcript 6, Answer 4, Story 5) fails after 3 retries | Pipeline marked `completed_with_warnings`; `pending_review` created for manual follow-up; downstream work proceeds | N/A — async |
+| Briefing Pipeline stage failure | Return "briefing unavailable, retry"; do NOT cache the failure | HTTP 503 |
+| 80% monthly cost threshold crossed | Emit `COST_APPROACHING_CAP` notification event to PM; pipeline continues | N/A — soft alert |
 | Model router returns no model for an intent | Engine falls back to Sonnet default and logs a warning | N/A — Phase 11 behavior |
 | Tool returns no entity tracking data | Engine treats as empty tracking. SessionLog still created | N/A — backwards compatible |
 
@@ -441,22 +518,26 @@ The following are explicit open items flagged by the integration plan. Deep-dive
 - [ ] Transcript pipeline completion surfaces confidence tiers and Needs Review items in UX
 
 **Pipelines + agent + router + eval (new):**
-- [ ] Transcript Processing Pipeline executes all 7 stages, idempotent, stage-level retry, escalates to human-review on 3 failures
-- [ ] Answer Logging Pipeline executes all 6 stages with same durability guarantees
-- [ ] Story Generation Pipeline executes all 7 stages; mandatory field schema enforced; typography validator runs
-- [ ] Briefing/Status Pipeline supports all 6 briefing types with 5-minute cache
-- [ ] Freeform agent loads 6 read tools without confirmation and 3 write tools with UI confirmation. Story creation / transcript processing / answer logging / document generation / sprint modification are unavailable
+- [ ] Transcript Processing Pipeline executes all 7 stages **async via Inngest**, idempotent, stage-level 3-retry; non-blocking behavior on stage 6 (impact)
+- [ ] Auto-apply uses strict `confidence > 0.85`; everything else routes to `pending_review`
+- [ ] Answer Logging Pipeline executes all 6 stages **sync-capable**; tiered match confidence (≥ 0.85 auto, 0.70-0.85 `pending_review`, < 0.70 standalone decision); non-blocking on stage 4 (impact)
+- [ ] Story Generation Pipeline executes all 7 stages **async**; supports `mode: 'generate'` and `mode: 'enrich'`; mandatory field schema enforced; typography validator runs; non-blocking on stage 5 (conflict resolve)
+- [ ] Briefing/Status Pipeline supports all 6 briefing types with 5-minute passive cache keyed on `(projectId, briefingType, inputs_hash)`; failures are never cached
+- [ ] Freeform agent loads **8** read tools without confirmation and 3 write tools with UI confirmation. Story creation / transcript processing / answer logging / document generation / sprint modification are unavailable. Agent never invokes pipelines.
 - [ ] "Think harder" mode routes freeform agent to Opus
 - [ ] Zero literal model strings in `src/lib/agent-harness/` or `src/lib/pipelines/` outside the router module
-- [ ] Phase 11 eval harness runs 15 Story Generation fixtures with mandatory field, semantic similarity, and component cross-reference assertions
-- [ ] Orphan TaskType enum values all explicitly re-mapped per deep-dive resolution
-- [ ] pipeline_runs, pipeline_stage_runs, and pending_review tables present and populated
+- [ ] Phase 11 eval harness runs 15 Story Generation fixtures with mandatory field presence, semantic similarity (cosine ≥ 0.80), and component cross-reference assertions
+- [ ] All 9 orphan TaskType enum values removed; grep CI check passes (no caller references remain)
+- [ ] Cost cap: 80% threshold emits `COST_APPROACHING_CAP` event; 100% hard 429; daily limit hard 429 at default 100/user/project/day; `null` cap = unlimited
+- [ ] pipeline_runs, pipeline_stage_runs, pending_review, conflicts_flagged tables (from Phase 11) populated correctly by Phase 2 pipelines
+- [ ] All 20 Phase 11 fixture stubs replaced with real Phase 2 expectations (10 transcript-processing + 10 answer-logging)
+- [ ] Briefing/Status Pipeline eval fixtures committed (10 labeled fixtures covering all 6 briefing types) — authored by Phase 2, hosted in Phase 11 eval harness
 
 ---
 
 ## 12. Open Questions
 
-All open items are consolidated in §8 "Outstanding Items (Resolve in Step 3 Deep-Dive)".
+All items previously open in §8 are resolved (see §8 "Resolved Decisions"). No open questions at execution gate.
 
 ---
 
@@ -465,4 +546,5 @@ All open items are consolidated in §8 "Outstanding Items (Resolve in Step 3 Dee
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Created via `/bef:deep-dive 2`. GAP-001 → Phase 8. GAP-002 → Phase 5. GAP-005 duplicate of Phase 1. GAP-008 notifications deferred to Phase 8. |
-| 2026-04-13 | Addendum integration (populated from integration plan) | Phase renamed to "Harness Hardening + Core Pipelines". Added four deterministic pipelines, freeform agent, model router retrofit, Story Generation eval fixtures. Preserved all 10 REQ-HARNESS items. Step 3 deep-dive still required before execution — see §8 for outstanding items. Pre-addendum spec archived as PHASE_SPEC.pre-addendum.md. |
+| 2026-04-13 | Addendum integration (populated from integration plan) | Phase renamed to "Harness Hardening + Core Pipelines". Added four deterministic pipelines, freeform agent, model router retrofit, Story Generation eval fixtures. Preserved all 10 REQ-HARNESS items. Pre-addendum spec archived as PHASE_SPEC.pre-addendum.md. |
+| 2026-04-13 | Step 3 deep-dive complete | 10 outstanding decisions resolved: (1) unified (no 2a/2b split); (2) 9 orphan TaskTypes dispositioned + Task 18 removes enum values with grep CI check; (3) per-stage error behavior — non-blocking: Transcript stage 6, Answer stage 4, Story stage 5; (4) Transcript confidence strict > 0.85, Answer Logging tiered 0.70/0.85; (5) Freeform agent gets 8 read tools (added get_recent_sessions + get_milestone_progress); (6) Story Gen eval similarity cosine ≥ 0.80; (7) Pipeline schema owned by Phase 11; Phase 2 adds only aiDailyLimit/aiMonthlyCostCap; (8) Transcript=async, Answer=sync, Story=async, Briefing=sync+cache; (9) Cost cap hybrid — 80% soft alert event + 100% hard 429; (10) Task 11/12 ACs extended to replace Phase 11 fixture stubs with real expectations. Added §8.1 TaskType disposition matrix and §8.2 Cross-Pipeline Integration Matrix. |

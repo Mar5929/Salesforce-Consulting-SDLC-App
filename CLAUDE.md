@@ -23,9 +23,23 @@ These are the source of truth. Read them before making architecture or implement
 |------|----------|
 | `docs/bef/PROJECT_STATE.md` | BEF state tracker: current phase, progress, replan log. Read first. |
 | `docs/bef/00-prd/PRD.md` | Full product requirements (27 sections). The "what and why." |
+| `docs/bef/00-prd/PRD-ADDENDUM-v1-Intelligence-Layer.md` | Intelligence Layer Addendum (April 12, 2026). Supersedes PRD §6 (AI Harness) and §13 (Org KB) in substance. Pipeline-first architecture, five-layer org KB, model router, hybrid retrieval, eval harness. |
 | `docs/bef/01-architecture/TECHNICAL_SPEC.md` | Database schema, AI agent harness architecture, context window budget, dashboard implementation. The "how." |
 | `docs/bef/02-phase-plan/PHASE_PLAN.md` | Master phase plan with dependencies. |
 | `docs/bef/03-phases/phase-NN-*/` | Per-phase PHASE_SPEC.md and TASKS.md. |
+
+## PRD + Addendum as Source of Truth (Global)
+
+Every phase — its requirements, spec, tasks, architecture choices, and execution — must be architected to solve the requirements in `docs/bef/00-prd/PRD.md` AND `docs/bef/00-prd/PRD-ADDENDUM-v1-Intelligence-Layer.md`.
+
+**Hard rules:**
+- Before producing or modifying any PHASE_SPEC.md, TASKS.md, or architecture doc, confirm the change traces back to at least one PRD or Addendum requirement. If it doesn't, stop and justify the scope addition.
+- Where the Addendum supersedes the base PRD (AI harness → pipelines; flat org KB → five-layer model), the Addendum wins. Never write scope that contradicts a locked Addendum decision (`§2 Newly Locked Decisions`).
+- When a phase decision would violate a PRD or Addendum requirement, push back and raise it explicitly rather than silently reshaping scope.
+- Deep-dive outputs must include an explicit trace line for each requirement block (e.g., "REQ-PIPELINE-001 → Addendum §5.2.1").
+- Verification and replan passes must cross-check every phase artifact against both documents.
+
+This rule applies to all `/bef:*` commands, direct edits, and any agent or subagent working on this project.
 
 ## Project
 

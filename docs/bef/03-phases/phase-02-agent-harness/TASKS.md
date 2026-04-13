@@ -1,10 +1,10 @@
 # Phase 2 Tasks: Harness Hardening + Core Pipelines
 
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
-> Total Tasks: 17
-> Status: 0/17 complete
+> Total Tasks: 18
+> Status: 0/18 complete
 > Last Updated: 2026-04-13
-> Note: Tasks 11-17 were added by the addendum integration. They are populated from the integration plan and require Step 3 deep-dive confirmation before execution.
+> Note: Step 3 deep-dive complete (2026-04-13). All tasks ready for execution. See PHASE_SPEC.md §8 for resolved decisions.
 
 ---
 
@@ -15,7 +15,7 @@ Task 1 (create_question fix) ─────────────────
   ├── Task 2 (firm typographic rules)    ─┐                     │
   ├── Task 3 (re-prompt loop)             │                     │
   ├── Task 4 (entity tracking)            ├── parallel          │
-  ├── Task 5 (rate limiting)              │                     │
+  ├── Task 5 (rate limiting + cost cap)   │                     │
   └── Task 6 (Layer 3 context functions) ─┘                     │
        ├── Task 7 (transcript context)   ─┐                     │
        ├── Task 8 (story gen context)     ├── parallel          │
@@ -24,9 +24,10 @@ Task 1 (create_question fix) ─────────────────
                  └── Task 16 (model router retrofit) ── depends on Phase 11
                       ├── Task 11 (Transcript Processing Pipeline)
                       │    ├── Task 12 (Answer Logging Pipeline)
-                      │    ├── Task 13 (Story Generation Pipeline) ──┬── Task 17 (Story Gen eval fixtures)
+                      │    ├── Task 13 (Story Generation Pipeline) ──┬── Task 17 (Story Gen + Briefing eval fixtures)
                       │    └── Task 14 (Briefing/Status Pipeline)    │
                       └── Task 15 (Freeform Agent) ─── depends on 11-14
+Task 18 (orphan TaskType enum removal + grep CI check) ── depends on 11, 12, 13, 14 (once their replacements are live)
 ```
 
 ---
@@ -160,11 +161,11 @@ Each tool's execute function returns `{ result: ..., tracking?: EntityTrack }`. 
 
 ---
 
-### Task 5: Build rate limiting enforcement core
+### Task 5: Build rate limiting enforcement core + cost cap alerting
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `src/lib/agent-harness/rate-limiter.ts` with `checkRateLimits(projectId, userId)`. Add `aiDailyLimit` and `aiMonthlyCostCap` fields to the Project model. Call `checkRateLimits` at the top of `executeTask` in engine.ts AND at every pipeline entry point (added in later tasks). |
+| **Scope** | Create `src/lib/agent-harness/rate-limiter.ts` with `checkRateLimits(projectId, userId)`. Add `aiDailyLimit` and `aiMonthlyCostCap` fields to the Project model (defaults: daily = 100, monthly = null/unlimited). Call `checkRateLimits` at the top of `executeTask` in engine.ts AND at every pipeline entry point (added in later tasks). Emit `COST_APPROACHING_CAP` notification event when monthly cost crosses 80% of cap (Phase 8 wires the notification template). |
 | **Depends On** | None |
 | **Complexity** | M |
 | **Status** | Not Started |
@@ -173,10 +174,14 @@ Each tool's execute function returns `{ result: ..., tracking?: EntityTrack }`. 
 
 **Acceptance Criteria:**
 - [ ] Given a user has made 100 AI invocations today and project's aiDailyLimit is 100, the next call returns 429 with message "Daily AI invocation limit exceeded (100/100). Contact your PM to increase the limit."
-- [ ] Given a project has reached its monthly cost cap, the next call returns 429
+- [ ] Given a project has reached 100% of its monthly cost cap, the next call returns 429 (hard block)
+- [ ] Given monthly cost crosses 80% of cap, a `COST_APPROACHING_CAP` event is emitted ONCE per calendar month to PM role (pipeline still proceeds — soft alert)
 - [ ] Given aiDailyLimit is null, daily limit is not enforced
-- [ ] Given aiMonthlyCostCap is null, monthly limit is not enforced
-- [ ] Schema migration adds nullable aiDailyLimit and aiMonthlyCostCap to Project model
+- [ ] Given aiMonthlyCostCap is null, monthly limit is not enforced (`null` = unlimited)
+- [ ] Daily limit has NO soft threshold — hard block only at 100%
+- [ ] Schema migration adds nullable `aiDailyLimit Int?` (default 100 on new projects) and `aiMonthlyCostCap Decimal?` (default null) to Project model
+- [ ] Cost constants sourced from Phase 11 model router config (not hardcoded)
+- [ ] Soft-alert emit tracked in a `CostAlertLog` (project_id, calendar_month, emitted_at) to prevent duplicate emits
 
 **Implementation Notes:**
 Cost constants sourced from the Phase 11 model router config (per model). Stored as named constants, not hardcoded.
@@ -302,22 +307,29 @@ Create `src/lib/agent-harness/context/recent-sessions.ts` and `src/lib/agent-har
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Replace the generic `TRANSCRIPT_PROCESSING` harness task with a 7-stage Inngest step function in `src/lib/pipelines/transcript-processing/`. Stages: (1) Segment — Haiku, (2) Extract candidates — Haiku, (3) Entity resolution — deterministic + hybrid search, (4) Reconcile — Sonnet, (5) Apply — deterministic with 0.85 confidence threshold, (6) Impact assessment — Sonnet, (7) Log. Each stage idempotent, 3-retry, escalate to human-review queue on failure. Raw transcript always retained. Writes `pipeline_runs`, `pipeline_stage_runs`, `pending_review`. |
-| **Depends On** | Task 5, Task 7, Task 16 |
+| **Scope** | Replace the generic `TRANSCRIPT_PROCESSING` harness task with a 7-stage **async** Inngest step function in `src/lib/pipelines/transcript-processing/`. Stages: (1) Segment — Haiku, (2) Extract candidates — Haiku, (3) Entity resolution — deterministic + hybrid search, (4) Reconcile — Sonnet, (5) Apply — deterministic with strict `> 0.85` confidence threshold, (6) Impact assessment — Sonnet **(non-blocking — failure finalizes run with `completed_with_warnings`)**, (7) Log. Each stage idempotent, 3-retry. Raw transcript always retained. Writes `pipeline_runs`, `pipeline_stage_runs`, `pending_review`, `conflicts_flagged`. Replaces the 10 Phase 11 `transcript-processing` fixture stubs with real expectations. |
+| **Depends On** | Task 5, Task 7, Task 16, Phase 11 (Tasks 1, 2, 4, 5, 7) |
 | **Complexity** | L |
-| **Status** | Not Started — needs deep-dive confirmation (stage error behavior §8 item 2; confidence threshold §8 item 3; pipeline table schemas §8 item 6) |
+| **Status** | Not Started |
 | **Completed** | — |
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] All 7 stages execute in order as an Inngest step function
+- [ ] All 7 stages execute in order as an Inngest step function (async, fire-and-forget)
 - [ ] Re-running any stage with the same inputs produces the same outputs (idempotent)
-- [ ] Stage failure retries up to 3 times, then escalates to human-review with partial state preserved
+- [ ] Blocking stages (1-5, 7) fail the run on 3-retry exhaustion; human-review queue entry created with partial state
+- [ ] Stage 6 (Impact) is non-blocking: failure marks run `completed_with_warnings`, creates a `pending_review` entry for manual impact review, does NOT roll back stage 5 applied entities
 - [ ] Raw transcript text is retained on `pipeline_runs.inputJson` even on total failure
-- [ ] Candidates with confidence > 0.85 auto-apply; ≤ 0.85 enqueue to `pending_review`
+- [ ] Candidates with **strict** `confidence > 0.85` auto-apply; `≤ 0.85` (including exactly 0.85) enqueue to `pending_review`
 - [ ] `pipeline_stage_runs` records per stage with modelUsed, tokens, attempt count
 - [ ] All Claude calls go through `model_router.resolve_model(intent)` (Task 16)
 - [ ] Rate limit pre-check runs before stage 1
+- [ ] Stage 6 writes `conflicts_flagged` rows (shared schema with Answer Logging stage 4)
+- [ ] Replaces all 10 stub expectations in `/evals/transcript-processing/expectations.ts`:
+  - Extraction F1 per candidate type (questions, decisions, requirements, risks, action items)
+  - Entity resolution top-1 accuracy
+  - Reconciliation decision accuracy (`create_new` / `merge_with_existing` / `update_existing`)
+  - Per-fixture `TODO(phase-2)` comments removed
 
 ---
 
@@ -325,21 +337,29 @@ Create `src/lib/agent-harness/context/recent-sessions.ts` and `src/lib/agent-har
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | New pipeline in `src/lib/pipelines/answer-logging/`. 6 stages: (1) Retrieve candidate questions — deterministic + hybrid search, (2) Match — Sonnet, (3) Apply — deterministic, (4) Impact assessment — Sonnet, (5) Propagate — deterministic, (6) Annotate org KB — Sonnet. Same durability guarantees as Task 11. |
-| **Depends On** | Task 5, Task 11, Task 16 |
+| **Scope** | New pipeline in `src/lib/pipelines/answer-logging/`. **Sync-capable** — API route awaits completion; Inngest used for durability/retries. 6 stages: (1) Retrieve candidate questions — deterministic + hybrid search, (2) Match — Sonnet with tiered confidence, (3) Apply — deterministic, (4) Impact assessment — Sonnet **(non-blocking)**, (5) Propagate — deterministic, (6) Annotate org KB — Sonnet. Same durability guarantees as Task 11. Replaces the 10 Phase 11 `answer-logging` fixture stubs with real expectations. |
+| **Depends On** | Task 5, Task 11, Task 16, Phase 11 (Tasks 1, 2, 4, 5, 7) |
 | **Complexity** | L |
-| **Status** | Not Started — needs deep-dive confirmation (stage error behavior §8 item 2) |
+| **Status** | Not Started |
 | **Completed** | — |
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] All 6 stages execute in order as an Inngest step function
-- [ ] Stage 2 correctly routes to either "update existing question" or "create standalone decision"
-- [ ] Stage 5 creates conflict records when impact assessment flags contradictions
-- [ ] Stage 6 produces Layer 4 annotation proposals (consumed by Phase 6)
+- [ ] All 6 stages execute in order as an Inngest step function (sync-capable — API route awaits)
+- [ ] Stage 2 tiered routing: `≥ 0.85` auto-update existing question, `0.70–0.85` enqueue to `pending_review` with top-K candidates surfaced to user, `< 0.70` create standalone decision
+- [ ] `targetQuestionId` pre-linked by user bypasses stage 2 confidence gate
+- [ ] Stage 4 (Impact) is non-blocking: failure marks run `completed_with_warnings`, does NOT roll back stage 3 applied changes
+- [ ] Stage 5 creates `conflicts_flagged` records when impact assessment flags contradictions
+- [ ] Stage 6 produces Layer 4 annotation proposals written to `pending_review` with `entity_type='annotation'` (Phase 6 consumes)
 - [ ] Idempotent stages, 3-retry, human-review escalation on failure
 - [ ] All Claude calls through the router
 - [ ] Rate limit pre-check runs before stage 1
+- [ ] Replaces all 10 stub expectations in `/evals/answer-logging/expectations.ts`:
+  - Match accuracy per tier (exact, semantic, standalone)
+  - Confidence bucket precision (≥ 0.85 / 0.70–0.85 / < 0.70)
+  - Impact detection accuracy (contradictions flagged correctly)
+  - Annotation proposal accuracy (Salesforce components correctly identified)
+  - Per-fixture `TODO(phase-2)` comments removed
 
 ---
 
@@ -347,20 +367,25 @@ Create `src/lib/agent-harness/context/recent-sessions.ts` and `src/lib/agent-har
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Replace the generic `STORY_GENERATION` harness task with a 7-stage Inngest step function in `src/lib/pipelines/story-generation/`. Stages: (1) Assemble context — deterministic (consumes Task 8), (2) Draft — Sonnet, (3) Validate mandatory fields — deterministic, (4) Component cross-reference — deterministic + hybrid search, (5) Resolve conflicts — Sonnet (conditional), (6) Typography validator — invokes firm-rules.postProcessOutput, (7) Return draft — persist with `draft` status. |
-| **Depends On** | Task 2, Task 5, Task 8, Task 16 |
+| **Scope** | Replace the generic `STORY_GENERATION` harness task with a 7-stage **async** Inngest step function in `src/lib/pipelines/story-generation/`. Supports `mode: 'generate'` and `mode: 'enrich'` (replaces legacy `STORY_ENRICHMENT`). Stages: (1) Assemble context — deterministic (consumes Task 8), (2) Draft — Sonnet (in enrich mode, preserves user-modified fields), (3) Validate mandatory fields — deterministic, (4) Component cross-reference — deterministic + hybrid search (via `search_org_kb` — returns `not_implemented` until Phase 6), (5) Resolve conflicts — Sonnet (conditional, **non-blocking**), (6) Typography validator — invokes firm-rules.postProcessOutput, (7) Return draft — persist with `draft` status (or amended version row in enrich mode). |
+| **Depends On** | Task 2, Task 5, Task 8, Task 16, Phase 11 (Tasks 1, 2, 4, 5) |
 | **Complexity** | L |
-| **Status** | Not Started — needs deep-dive confirmation (stage error behavior §8 item 2) |
+| **Status** | Not Started |
 | **Completed** | — |
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] All 7 stages execute as an Inngest step function
+- [ ] All 7 stages execute as an Inngest step function (async)
+- [ ] `mode: 'generate'` creates a new draft Story
+- [ ] `mode: 'enrich'` accepts `existingStoryId`, runs all 7 stages, preserves user-modified fields in stage 2, persists as a new version row on the existing Story
+- [ ] Invoking `mode: 'enrich'` without `existingStoryId` returns HTTP 400 before any Claude call
 - [ ] Stage 3 rejects drafts missing any mandatory field
+- [ ] Stage 4 calls `search_org_kb`; gracefully handles `not_implemented: true` response (treats component universe as empty, flags all references as unknowns for Phase 6 follow-up)
 - [ ] Stage 5 only runs when stage 4 flagged unknowns/mismatches
+- [ ] Stage 5 is non-blocking: if it fails on 3 retries, draft persists with `needs_component_review` flag, run marked `completed_with_warnings`
 - [ ] Stage 6 applies firm typographic rules before persistence
 - [ ] Drafts persist with `draft` status; no auto-promotion
-- [ ] Idempotent stages, 3-retry, human-review escalation
+- [ ] Idempotent stages, 3-retry, human-review escalation on blocking-stage failure
 - [ ] All Claude calls through the router
 - [ ] Rate limit pre-check runs before stage 1
 
@@ -370,21 +395,26 @@ Create `src/lib/agent-harness/context/recent-sessions.ts` and `src/lib/agent-har
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Replace the generic `BRIEFING` harness task with a 5-stage Inngest step function in `src/lib/pipelines/briefing/`. Stages: (1) Fetch metrics — deterministic SQL with 5-minute cache, (2) Assemble narrative context — deterministic, (3) Synthesize — Sonnet per briefing-type template, (4) Validate — typography/branding/AI-phrase strip, (5) Cache and return with `inputs_hash`. Support all 6 briefing types: daily_standup, weekly_status, executive_summary, blocker_report, discovery_gap_report, sprint_health. |
-| **Depends On** | Task 2, Task 5, Task 16 |
+| **Scope** | Replace the generic `BRIEFING` harness task with a 5-stage **sync-with-cache** Inngest step function in `src/lib/pipelines/briefing/`. Stages: (1) Fetch metrics — deterministic SQL with 5-minute cache, (2) Assemble narrative context — deterministic, (3) Synthesize — Sonnet per briefing-type template, (4) Validate — typography/branding/AI-phrase strip, (5) Cache and return with `inputs_hash`. Support all 6 briefing types: daily_standup, weekly_status, executive_summary, blocker_report, discovery_gap_report, sprint_health. Cache via reused infra if present; else add `briefing_cache` table. |
+| **Depends On** | Task 2, Task 5, Task 16, Phase 11 (Tasks 1, 2, 4, 5) |
 | **Complexity** | L |
-| **Status** | Not Started — needs deep-dive confirmation (stage error behavior §8 item 2) |
+| **Status** | Not Started |
 | **Completed** | — |
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] All 5 stages execute as an Inngest step function
-- [ ] All 6 briefing types have dedicated templates and produce correctly-shaped output
-- [ ] Stage 1 cache hits (matching inputs_hash within 5 minutes) short-circuit stages 1-4 and return cached result
-- [ ] Stage 4 strips AI-characteristic phrases via firm-rules.postProcessOutput
-- [ ] Idempotent stages, 3-retry, human-review escalation
+- [ ] All 5 stages execute as an Inngest step function (sync-capable — API route awaits)
+- [ ] All 6 briefing types have dedicated templates in `src/lib/pipelines/briefing/templates/`
+- [ ] Cache key: `(projectId, briefingType, inputs_hash)` with 5-min TTL (passive, no active invalidation in V1)
+- [ ] `inputs_hash` = sha256 of sorted metric query result from stage 1
+- [ ] Cache HIT (matching `inputs_hash` within TTL) short-circuits stages 2-4 and returns cached result
+- [ ] Cache MISS (new `inputs_hash` OR TTL expired) runs stages 2-5 and overwrites cache row
+- [ ] Stage 4 strips AI-characteristic phrases via `firm-rules.postProcessOutput`
+- [ ] **Failures are never cached** — any stage failure returns "briefing unavailable, retry" (HTTP 503) and leaves existing cache untouched
+- [ ] Idempotent stages, 3-retry, human-review escalation on blocking-stage failure
 - [ ] All Claude calls through the router
 - [ ] Rate limit pre-check runs before stage 1
+- [ ] Cache storage decision documented: reuse of existing infra OR new `briefing_cache` table with schema `{projectId, briefingType, inputsHash, briefingText, generatedAt}`, unique `(projectId, briefingType)`
 
 ---
 
@@ -392,16 +422,19 @@ Create `src/lib/agent-harness/context/recent-sessions.ts` and `src/lib/agent-har
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Build the "project brain chat" agent loop in `src/lib/agent-freeform/`. Single agent loop. Default model Sonnet 4.6 via router (intent `freeform_chat`); "think harder" mode routes to Opus 4.6 (intent `freeform_chat_deep`). Register 6 read tools (no confirmation) and 3 write tools (UI confirmation). System prompt builds from Layer 3 context + chat history window (Task 9) + firm rules (Task 2). Wire `src/app/api/chat/route.ts` to this agent. |
-| **Depends On** | Task 2, Task 9, Task 11, Task 12, Task 13, Task 14, Task 16 |
+| **Scope** | Build the "project brain chat" agent loop in `src/lib/agent-freeform/`. Single agent loop. Default model Sonnet 4.6 via router (intent `freeform_chat`); "think harder" mode routes to Opus 4.6 (intent `freeform_chat_deep`). Register **8 read tools** (no confirmation) and 3 write tools (UI confirmation). Agent never invokes pipelines — write tools route through the standard tool layer. System prompt builds from Layer 3 context + chat history window (Task 9) + firm rules (Task 2). Wire `src/app/api/chat/route.ts` to this agent. |
+| **Depends On** | Task 2, Task 6, Task 9, Task 11, Task 12, Task 13, Task 14, Task 16 |
 | **Complexity** | L |
-| **Status** | Not Started — needs deep-dive confirmation (additional read tools §8 item 4) |
+| **Status** | Not Started |
 | **Completed** | — |
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] Read tools registered: `search_project_kb`, `search_org_kb`, `get_sprint_state`, `get_project_summary`, `get_blocked_items`, `get_discovery_gaps` — invocable without user confirmation
+- [ ] Read tools registered: `search_project_kb`, `search_org_kb`, `get_sprint_state`, `get_project_summary`, `get_blocked_items`, `get_discovery_gaps`, `get_recent_sessions`, `get_milestone_progress` — invocable without user confirmation (8 tools total)
+- [ ] `get_recent_sessions` and `get_milestone_progress` wrap the REQ-HARNESS-006 context functions from Task 6
+- [ ] Rejected tools NOT registered: `get_org_component_detail`, `get_question_thread` (covered by search primitives)
 - [ ] Write tools registered: `create_question`, `create_risk`, `create_requirement` — require UI confirmation before persistence
+- [ ] Write tools route through the standard agent-harness tool layer — agent does NOT invoke Transcript/Answer/Story/Briefing pipelines
 - [ ] Story creation, transcript processing, answer logging, document generation, and sprint modification tools are NOT registered and attempts to invoke them fail with "tool not available"
 - [ ] UI toggle routes agent between Sonnet (default) and Opus ("think harder")
 - [ ] System prompt includes Layer 3 context, 50-message / 7-day chat history window, and firm rules addendum
@@ -428,26 +461,61 @@ Create `src/lib/agent-harness/context/recent-sessions.ts` and `src/lib/agent-har
 
 ---
 
-### Task 17: Story Generation eval fixtures + assertions (REQ-HARNESS-012)
+### Task 17: Story Generation + Briefing eval fixtures + assertions (REQ-HARNESS-012)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Add 15 labeled fixtures for the Story Generation Pipeline to the Phase 11 eval harness. Register three assertions per fixture: (1) mandatory field presence, (2) semantic similarity of acceptance criteria to gold, (3) component cross-reference accuracy. |
-| **Depends On** | Phase 11 (eval harness delivered), Task 13 |
+| **Scope** | Add 15 labeled fixtures for the Story Generation Pipeline AND 10 labeled fixtures for the Briefing/Status Pipeline to the Phase 11 eval harness. Register per-pipeline assertions. Semantic similarity threshold locked at cosine ≥ 0.80. |
+| **Depends On** | Phase 11 (eval harness delivered), Task 13, Task 14 |
 | **Complexity** | M |
-| **Status** | Not Started — needs deep-dive confirmation (similarity threshold §8 item 5) |
+| **Status** | Not Started |
 | **Completed** | — |
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] 15 fixtures committed under the Phase 11 eval fixtures directory, tagged `story-generation`
-- [ ] Each fixture has an input `{epicId, projectFixtureId}` and a gold Story with title, description, acceptance criteria, components
+
+**Story Generation fixtures (15):**
+- [ ] 15 fixtures committed under `/evals/story-generation/fixtures/`, tagged `story-generation`
+- [ ] Each fixture has an input `{epicId, projectFixtureId, mode: 'generate' | 'enrich', existingStoryId?}` and a gold Story with title, description, acceptance criteria, components
+- [ ] Coverage: ≥ 12 `mode: 'generate'` fixtures and ≥ 3 `mode: 'enrich'` fixtures
 - [ ] Mandatory field presence assertion: all required Story fields non-empty
-- [ ] Semantic similarity assertion: acceptance-criteria embedding similarity ≥ calibrated threshold (see §8 item 5)
-- [ ] Component cross-reference assertion: referenced components match gold's set within tolerance
+- [ ] Semantic similarity assertion: acceptance-criteria embedding similarity **cosine ≥ 0.80** (recalibrate after first run)
+- [ ] Component cross-reference assertion: referenced components match gold's set within tolerance (F1 ≥ 0.85)
 - [ ] Eval suite runs in CI against the Story Generation Pipeline
-- [ ] **Briefing/Status Pipeline fixtures (added):** 10 labeled fixtures committed under `/evals/briefing/`, tagged `briefing-status`, covering all 6 briefing types (`daily_standup`, `weekly_status`, `executive_summary`, `blocker_report`, `discovery_gap_report`, `sprint_health`). Authored and maintained by Phase 2; Phase 11 harness hosts them.
-- [ ] Briefing fixture assertions: (1) all template-required sections present, (2) firm-rules post-processing applied, (3) cache key `inputs_hash` stable across re-runs with identical inputs.
+
+**Briefing/Status fixtures (10):**
+- [ ] 10 labeled fixtures committed under `/evals/briefing/fixtures/`, tagged `briefing-status`
+- [ ] Coverage: at least 1 fixture per briefing type (`daily_standup`, `weekly_status`, `executive_summary`, `blocker_report`, `discovery_gap_report`, `sprint_health`) with 4 additional fixtures distributed across high-traffic types
+- [ ] Briefing fixture assertions:
+  - All template-required sections present for the briefing type
+  - Firm-rules post-processing applied (no em dashes, no AI-characteristic phrases)
+  - Cache key `inputs_hash` stable across re-runs with identical inputs (same sha256)
+  - Numeric accuracy: metrics referenced in narrative match metrics from stage 1
+- [ ] Authored and maintained by Phase 2; Phase 11 harness hosts them
+
+---
+
+### Task 18: Orphan TaskType enum removal + grep CI check
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Remove the 9 orphan TaskType enum values per the disposition matrix in PHASE_SPEC.md §8.1. Each value's replacement must be live before removal. Add a grep CI check to `.github/workflows/` that fails any PR reintroducing the removed values. |
+| **Depends On** | Task 11, Task 12, Task 13, Task 14 (Phase 2 replacements live); downstream phases handle their own moved values (Phase 5, 6, 7, 8) |
+| **Complexity** | S |
+| **Status** | Not Started |
+| **Completed** | — |
+| **Linear ID** | — |
+
+**Acceptance Criteria:**
+- [ ] `QUESTION_ANSWERING`, `STORY_ENRICHMENT`, `STATUS_REPORT_GENERATION`, `DOCUMENT_GENERATION`, `SPRINT_ANALYSIS`, `CONTEXT_PACKAGE_ASSEMBLY`, `ORG_QUERY`, `DASHBOARD_SYNTHESIS`, `ARTICLE_SYNTHESIS` removed from the TaskType enum in `prisma/schema.prisma`
+- [ ] Prisma migration generated and applied cleanly
+- [ ] Any code paths referencing these values deleted (no dead switch cases, no dead task definitions)
+- [ ] New CI workflow `orphan-tasktype-check.yml` greps the codebase for any of the 9 removed identifiers as string literals and fails the PR on match
+- [ ] Build and typecheck pass end-to-end after removal
+- [ ] Downstream phase dependency note: Phase 5 (SPRINT_ANALYSIS, CONTEXT_PACKAGE_ASSEMBLY), Phase 6 (ORG_QUERY, ARTICLE_SYNTHESIS), Phase 7 (DASHBOARD_SYNTHESIS), Phase 8 (STATUS_REPORT_GENERATION, DOCUMENT_GENERATION) must introduce their own explicit entry points BEFORE their phase execution — NOT by adding new generic TaskType values
+
+**Implementation Notes:**
+Sequence matters: run Task 18 **after** Tasks 11-14 are merged so the in-Phase-2 replacements (`QUESTION_ANSWERING` → Answer Logging Pipeline, `STORY_ENRICHMENT` → Story Gen Pipeline enrich mode) are live. The cross-phase values (moved to Phases 5, 6, 7, 8) require those phases to stand up their entry points as part of their phase execution. Phase 2 removes the enum values; downstream phases are responsible for ensuring their dependencies on the removed values are satisfied via their own phase-specific code paths.
 
 ---
 
@@ -459,16 +527,17 @@ Create `src/lib/agent-harness/context/recent-sessions.ts` and `src/lib/agent-har
 | 2 | Create firm typographic rules module | — | M | Not Started |
 | 3 | Implement output validation re-prompt loop | — | M | Not Started |
 | 4 | Populate SessionLog entity tracking fields | — | M | Not Started |
-| 5 | Build rate limiting enforcement core | — | M | Not Started |
+| 5 | Build rate limiting enforcement core + cost cap alerting | — | M | Not Started |
 | 6 | Implement getRecentSessions + getMilestoneProgress | — | S | Not Started |
 | 7 | Wire transcript context enrichment | 6 | S | Not Started |
 | 8 | Expand story generation context loader | — | S | Not Started |
 | 9 | Add general chat history window | — | M | Not Started |
 | 10 | Build Needs Review session-end UX | 1, 11 | M | Not Started |
-| 11 | Build Transcript Processing Pipeline | 5, 7, 16 | L | Needs deep-dive |
-| 12 | Build Answer Logging Pipeline | 5, 11, 16 | L | Needs deep-dive |
-| 13 | Build Story Generation Pipeline | 2, 5, 8, 16 | L | Needs deep-dive |
-| 14 | Build Briefing/Status Pipeline | 2, 5, 16 | L | Needs deep-dive |
-| 15 | Build Freeform Agent | 2, 9, 11, 12, 13, 14, 16 | L | Needs deep-dive |
+| 11 | Build Transcript Processing Pipeline | 5, 7, 16, Phase 11 | L | Not Started |
+| 12 | Build Answer Logging Pipeline | 5, 11, 16, Phase 11 | L | Not Started |
+| 13 | Build Story Generation Pipeline | 2, 5, 8, 16, Phase 11 | L | Not Started |
+| 14 | Build Briefing/Status Pipeline | 2, 5, 16, Phase 11 | L | Not Started |
+| 15 | Build Freeform Agent | 2, 6, 9, 11, 12, 13, 14, 16 | L | Not Started |
 | 16 | Model router retrofit | Phase 11 | S | Not Started |
-| 17 | Story Generation eval fixtures + assertions | Phase 11, 13 | M | Needs deep-dive |
+| 17 | Story Gen + Briefing eval fixtures + assertions | Phase 11, 13, 14 | M | Not Started |
+| 18 | Orphan TaskType enum removal + grep CI check | 11, 12, 13, 14 | S | Not Started |
