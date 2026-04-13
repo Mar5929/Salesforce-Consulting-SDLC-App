@@ -25,6 +25,31 @@
 | 9 | QA, Jira, Archival, Lifecycle | Phase 1, 4, 8 | 22 | Done | Done (11 tasks) | Not Started |
 | 10 | Work Tab UI Overhaul | Phase 1 | — | Done | Done (12 tasks) | Not Started |
 
+## Bug Tracking
+
+| Metric | Value |
+|--------|-------|
+| **Total Bugs** | 0 |
+| **Open** | 0 (Critical: 0, High: 0, Medium: 0, Low: 0) |
+| **Fixed** | 0 |
+| **Bug Index** | docs/bef/04-bugs/BUGS.md |
+| **Execution Plan** | docs/bef/04-bugs/BUG-EXECUTION-PLAN.md |
+| **Active Bug Phase** | None |
+| **Next Bug ID** | BUG-001 |
+
+### Bug Detailer Config
+
+| Setting | Value |
+|---------|-------|
+| **Dev Server** | _not configured_ |
+| **App URL** | _not configured_ |
+| **Auth Required** | _not configured_ |
+| **Auth Credentials** | _stored in .env.local_ |
+
+> Bug config is populated on first run of `/bef:bug-detail`.
+> Run `/bef:bug-detail` to investigate bugs, `/bef:bug-triage` to plan fixes,
+> `/bef:bug-execute` to dispatch parallel fix agents.
+
 ## Current Focus
 
 **All 10 phases fully specced and tasked** (118 total tasks). Phase 10 deep-dive complete (12 tasks).

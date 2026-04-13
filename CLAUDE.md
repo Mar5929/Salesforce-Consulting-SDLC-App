@@ -252,17 +252,3 @@ For small fixes, doc updates, and bug fixes, direct edits are fine — BEF gates
 > This section is managed by `generate-claude-profile` -- do not edit manually.
 <!-- GSD:profile-end -->
 
-## Bug Detailer Config
-
-- **Dev server command:** `npm run dev`
-- **Dev server port:** 3000
-- **App URL:** http://localhost:3000
-- **Auth required:** Yes (Clerk, Google OAuth — click michael@rihm.com)
-- **Login URL:** http://localhost:3000/sign-in
-- **Bug output:** `.planning/bugs/` (individual detail files are source of truth for status)
-- **Next bug ID:** BUG-048
-- **Context files:** `.planning/` folder (PRD, tech spec, requirements, roadmap)
-
-## Bug Triage Output
-
-- **Execution plan:** `.planning/BUG-EXECUTION-PLAN.md`
