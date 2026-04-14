@@ -4,7 +4,7 @@
 > Gap Report: [09-qa-jira-archival-gaps.md](./09-qa-jira-archival-gaps.md)
 > Depends On: Phase 1 (RBAC, Security, Governance), Phase 4 (Work Management), Phase 8 (Documents, Notifications)
 > Status: Draft
-> Last Updated: 2026-04-10
+> Last Updated: 2026-04-14
 
 ---
 
@@ -43,19 +43,34 @@ These amendments integrate PRD Addendum v1 into Phase 9. Review-only; no new tas
 ### 2.2 Defect Edit Sheet + Attachments (REQ-QA-002)
 
 - **What it does:** Two additions to the defect subsystem:
-  1. **Edit sheet:** Create a `DefectEditSheet` component that calls the existing `updateDefect` action. Replace the `handleEdit` toast stub in `defects-page-client.tsx` with a sheet open. Fields: title, severity, status, assignee, steps to reproduce, expected/actual behavior, environment. Status transitions follow the existing `defect-status-machine.ts` rules.
-  2. **Attachments:** Add a `Defect` → `Attachment` relation in the schema (reusing the existing `Attachment` model pattern). Add file upload to both `DefectCreateSheet` and `DefectEditSheet`. Store to S3/R2, save URL to Attachment record. Display attachments (images inline, others as download links) in the defect detail view.
-- **Schema change:** Add `defectId String?` to `Attachment` model. Add `attachments Attachment[]` relation to `Defect` model.
-- **Business rules:** Attachments are limited to 10MB per file, max 5 per defect. Supported types: PNG, JPEG, GIF, PDF, DOCX. Image attachments render inline thumbnails. The `updateDefect` action already exists and is fully implemented — only the UI surface is missing.
-- **Files:** `prisma/schema.prisma`, new `defect-edit-sheet.tsx`, `defect-create-sheet.tsx` (add upload), `defects-page-client.tsx` (wire edit), `defects.ts` (add attachment handling), S3 upload utility (reuse from Phase 8 branding if available)
+  1. **Edit sheet:** Create a `DefectEditSheet` component that calls the existing `updateDefect` action. Replace the `handleEdit` toast stub in `defects-page-client.tsx` with a sheet open. Fields: title, severity, status, assignee, steps to reproduce, expected/actual behavior, environment. Status transitions follow the existing `defect-status-machine.ts` rules AND the role-gated defect lifecycle matrix below (PRD-5-17, PRD-18-04).
+  2. **Attachments (polymorphic):** Defect attachments reuse the EXISTING polymorphic `Attachment` table defined in TECHNICAL_SPEC §Attachment (`entityType: string`, `entityId: string`). Phase 9 does NOT add a typed `defectId` FK. Attachments are written with `entityType = "Defect"` and `entityId = defect.id`, and read via `Attachment.findMany({ where: { entityType: "Defect", entityId } })`. Cites PRD-5-25 and DECISION-08 (orphan owner for PRD-5-25 defect half).
+- **Schema change:** NONE on `Attachment`. The existing polymorphic `entityType + entityId` columns from Phase 2 are reused. No `defectId` FK is introduced. No `attachments` relation is added to `Defect`.
+- **Defect lifecycle role matrix (PRD-5-17, PRD-18-04):**
+
+  | From status | To status | Allowed roles |
+  |-------------|-----------|---------------|
+  | (new) | OPEN | QA |
+  | OPEN | ASSIGNED | QA (sets assignee) |
+  | ASSIGNED | FIXED | Developer (assigned) |
+  | FIXED | VERIFIED | QA |
+  | FIXED | OPEN (reopen) | QA |
+  | VERIFIED | CLOSED | SA, PM |
+
+  Transitions outside this matrix are rejected by both the edit sheet UI (hide disallowed options) and the `updateDefect` server action (reject with role-specific error).
+- **Business rules:** Attachments are limited to 10MB per file, max 5 per defect, enforced server-side (not client). Supported types: PNG, JPEG, GIF, PDF, DOCX, verified by content sniffing on the server (client-declared MIME is not trusted). Image attachments render inline thumbnails. The `updateDefect` action already exists and is fully implemented; Phase 9 adds the UI surface plus role-gated transition enforcement. Attachments use polymorphic entityType/entityId per TECHNICAL_SPEC §Attachment (PRD-5-25).
+- **Files:** new `defect-edit-sheet.tsx`, `defect-create-sheet.tsx` (add upload), `defects-page-client.tsx` (wire edit), `defects.ts` (add polymorphic attachment handling + role-gated transitions), S3 upload utility (reuse from Phase 8 branding if available)
 
 ### 2.3 Archive Completion (REQ-QA-003)
 
-- **What it does:** Implements the 3 missing archive steps from PRD Section 21.1:
-  1. **Step 5 — Delete SF credentials:** Clear `sfOrgAccessToken`, `sfOrgRefreshToken`, and `sfOrgInstanceUrl` on the Project record. Set all three to `null`. If the org has an active refresh token, attempt to revoke it via the Salesforce revoke endpoint first (best-effort, don't block archive on failure).
-  2. **Step 6 — Disconnect Jira:** Set `JiraConfig.enabled = false` and clear `JiraConfig.apiToken` for the project. This prevents any in-flight retry events from pushing to the client's Jira.
-  3. **Step 7 — Log retention policy:** Add `auditLogRetentionDays Int @default(730)` to Project model (730 = 2 years). Set this value during archive. Create an Inngest cron function that runs weekly, queries archived projects past their retention date, and deletes audit logs older than the retention window.
-- **Business rules:** Credential deletion is a security requirement, not optional. SF token revocation is best-effort (the Salesforce instance may be unreachable). Jira disconnect preserves the JiraConfig record (for reference) but disables sync and clears the secret. Log retention is a compliance requirement — the cron runs independently and doesn't block the archive action.
+- **What it does:** Implements ALL steps of PRD Section 21.1, including step 1 (read-only enforcement) via the published `assertProjectWritable(projectId)` helper:
+  0. **Step 1 — Read-only gate (PRD-21-01, DECISION-10):** Phase 9 OWNS and publishes `assertProjectWritable(projectId)` (see §8 Published Interfaces). The helper loads the project, throws a 409 `ProjectArchivedError` with message `"This project is archived and read-only."` when `project.status === ARCHIVED`. Every mutating server action in the system calls this helper as the first step. AI chat requests on archived projects return a canned read-only response instead of invoking the model. Document regeneration is blocked on archived projects except for the `PROJECT_SUMMARY` template, which the archive pipeline itself emits after status flip.
+  1. **Step 5 — Delete SF credentials:** Clear `sfOrgAccessToken`, `sfOrgRefreshToken`, and `sfOrgInstanceUrl` on the Project record. Set all three to `null`. If the org has an active refresh token, attempt to revoke it via the Salesforce revoke endpoint first (best-effort, 5s timeout ceiling, do not block archive on failure or timeout). Credentials continue to use the Phase 1 encryption-at-rest wrapper (PRD-22-04).
+  2. **Step 6 — Disconnect Jira:** Set `JiraConfig.enabled = false` and clear `JiraConfig.apiToken` for the project. This prevents any in-flight retry events from pushing to the client's Jira. `apiToken` continues to use the Phase 1 encryption-at-rest wrapper (PRD-22-04, PRD-22-05).
+  3. **Step 7 — Log retention policy (PRD-21-06):** Add `auditLogRetentionDays Int @default(730)` to Project model (730 = 2 years). Set this value during archive. Create an Inngest cron function (concurrency = 1 per function id) that runs weekly, queries archived projects past their retention date, and deletes log rows older than the retention window.
+- **Log scope note (PRD-21-06):** "access logs" in PRD-21-06 refers to BOTH (a) the Phase 1 `AuditLog` table AND (b) any Phase 1 `AccessLog` table if one exists separately. The retention cron enumerates ALL log tables tagged with `projectId` and deletes rows past retention per project. If Phase 1 implements only `AuditLog`, access logs and audit logs are the same table and the cron targets it alone. Phase 9 binds to the Phase 1 log table names at execution time.
+- **Business rules:** Credential deletion is a security requirement, not optional. SF token revocation is best-effort with a 5s timeout. Jira disconnect preserves the JiraConfig record (for reference) but disables sync and clears the secret. Log retention is a compliance requirement; the cron runs independently and does not block the archive action. The read-only gate is additive to Phase 1 RBAC and does not replace role checks.
+- **Mutating action files that must call `assertProjectWritable`:** `src/actions/stories.ts`, `src/actions/defects.ts`, `src/actions/test-executions.ts`, `src/actions/questions.ts`, `src/actions/decisions.ts`, `src/actions/documents.ts`, `src/actions/chat.ts` (AI chat submit), `src/actions/jira-sync.ts` (sync trigger + config save), `src/actions/projects.ts` (phase advancement), and any other mutation entry point added in later phases.
 - **Files:** `src/actions/project-archive.ts`, `prisma/schema.prisma` (Project.auditLogRetentionDays), new `src/lib/inngest/functions/audit-log-retention.ts`, `src/app/api/inngest/route.ts` (register)
 
 ### 2.4 Jira Configurable Sync (REQ-QA-004)
@@ -64,8 +79,24 @@ These amendments integrate PRD Addendum v1 into Phase 9. Review-only; no new tas
   1. **Field mapping config:** Add `fieldMapping Json?` to `JiraConfig` model. Schema: `{ storyPoints?: string, acceptanceCriteria?: string, priority?: string, ...customFields }`. Each key maps an app field to a Jira field ID. The field mapping UI shows a table with app fields on the left and Jira custom field ID inputs on the right.
   2. **Trigger status config:** Add `triggerStatuses String[]` to `JiraConfig` model. Default: `["IN_PROGRESS", "IN_REVIEW", "QA", "DONE"]`. Only these statuses trigger a Jira push. The Jira settings page shows checkboxes for each StoryStatus value.
   3. **Story points + AC sync:** Update `mapStoryToJiraFields` to read the project's field mapping config. When `storyPoints` field ID is configured, include story points in the push. When `acceptanceCriteria` field ID is configured, include AC in ADF format.
-- **Business rules:** If no field mapping is configured, fall back to current behavior (title + description only). Trigger statuses default to execution states — internal management states (DRAFT, READY, SPRINT_PLANNED) are excluded by default. The Jira sync Inngest function checks `triggerStatuses.includes(newStatus)` before proceeding. Field IDs are free-text inputs (e.g., `customfield_10016`) because they vary per Jira instance.
-- **Files:** `prisma/schema.prisma` (JiraConfig), `src/lib/jira/field-mapping.ts`, `src/lib/inngest/functions/jira-sync.ts` (status filter), `src/actions/jira-sync.ts` (save config), Jira settings UI component
+- **Business rules:** If no field mapping is configured, fall back to current behavior (title + description only). Trigger statuses default to execution states; internal management states (DRAFT, READY, SPRINT_PLANNED) are excluded by default. The Jira sync Inngest function checks `triggerStatuses.includes(newStatus)` before proceeding. Field IDs are free-text inputs (e.g., `customfield_10016`) because they vary per Jira instance.
+- **Push-only guarantee (PRD-20-02):** Jira integration is one-directional (app → Jira). Phase 9 introduces no read-path from Jira. Any future reverse-sync requires an explicit PRD amendment.
+- **Single-project scope (PRD-20-03):** Jira sync pushes ONLY to the `JiraConfig.projectKey` configured at setup. The `jiraPush` helper validates `payload.projectKey === jiraConfig.projectKey` before every HTTP call. Cross-project writes are rejected with a logged error. If the JiraConfig projectKey is updated, in-flight retries for the old projectKey are rejected by this validation.
+- **Field mapping schema (PRD-20-04):** `JiraConfig.fieldMapping` is persisted as `Json?` and validated by the following Zod schema at write and read time:
+
+  ```ts
+  const JiraFieldMapping = z.object({
+    storyPoints: z.string().optional(),
+    acceptanceCriteria: z.string().optional(),
+    priority: z.string().optional(),
+    customFields: z.record(z.string(), z.string()).optional(),
+  });
+  ```
+
+  `saveJiraConfig` rejects mappings where two keys point to the same Jira field ID ("Duplicate Jira field ID in mapping").
+- **Trigger statuses typing (PRD-20-04):** `triggerStatuses` is declared `String[]` in Prisma (native enum arrays are not universally supported) but is validated server-side against the `StoryStatus` enum at write time. Any unknown status is rejected.
+- **Credential encryption (PRD-22-04, PRD-22-05):** `apiToken` continues to use the Phase 1 encryption-at-rest wrapper (same wrapper as `sfOrgAccessToken`). Phase 9 schema changes do not alter encryption behavior. `fieldMapping` values are free-text field IDs, not credentials; they are not encrypted.
+- **Files:** `prisma/schema.prisma` (JiraConfig), `src/lib/jira/field-mapping.ts`, `src/lib/jira/jira-push.ts` (projectKey guard), `src/lib/inngest/functions/jira-sync.ts` (status filter), `src/actions/jira-sync.ts` (save config with Zod validation), Jira settings UI component
 
 ### 2.5 Phase Advancement (REQ-QA-005)
 
@@ -96,7 +127,25 @@ These amendments integrate PRD Addendum v1 into Phase 9. Review-only; no new tas
   4. **Trigger:** An Inngest function consuming `STORY_STATUS_CHANGED` when the new status is `READY`. Also available as a manual action from the story detail page ("Generate Test Cases" button).
   5. **Storage:** Creates TestCase records with `source: "AI_GENERATED"`.
 - **Business rules:** AI test cases are generated when a story transitions to READY (all required fields are populated). QAs review and can edit/delete AI-generated cases. Manual test cases are never overwritten. If AI test cases already exist for a story, regeneration replaces them (with a confirmation prompt from the UI). The test types (`HAPPY_PATH`, `EDGE_CASE`, `NEGATIVE`, `BULK`) are assigned by the AI based on the test's nature.
-- **Files:** New `src/lib/agent-harness/tasks/test-case-generation.ts` (task definition), new `src/lib/inngest/functions/test-case-generation.ts` (Inngest function), `src/actions/test-executions.ts` (manual trigger action), story detail component (generate button)
+- **STUB vs. AI_GENERATED contract (PRD-10-08, ADD §5.2.3):** Task 7 regeneration deletes ONLY `source = AI_GENERATED` rows. `STUB` (produced by Phase 4 Story Generation Pipeline Stage 7) and `MANUAL` rows are never touched by Task 7. STUB-to-MANUAL flip on explicit user accept is owned by Phase 4. AI_GENERATED generation reads acceptance criteria from the `Story` record populated by the Story Generation Pipeline (Addendum §5.2.3); it does NOT bypass the pipeline or read pre-pipeline inputs.
+- **Regeneration gate:** Test case regeneration is blocked when the story is in a terminal status (QA, DONE). The manual trigger and the status-change consumer both enforce this.
+- **Output schema (pinned):** The AI task output is validated against this schema before persistence:
+
+  ```ts
+  const TestCaseOutput = z.object({
+    title: z.string().min(5).max(200),
+    steps: z.array(z.object({
+      step: z.string().min(1),
+      data: z.string().optional(),
+    })).min(1),
+    expectedResult: z.string().min(5).max(500),
+    testType: z.enum(["HAPPY_PATH", "EDGE_CASE", "NEGATIVE", "BULK"]),
+  });
+  const TestCaseGenerationOutput = z.array(TestCaseOutput);
+  ```
+
+  Rows missing any of the four required fields are rejected by the parser and never written.
+- **Files:** New `src/lib/agent-harness/tasks/test-case-generation.ts` (task definition + `testCaseOutputSchema` + `testCaseGenerationContext` loader), new `src/lib/inngest/functions/test-case-generation.ts` (Inngest function), `src/actions/test-executions.ts` (manual trigger action with terminal-status guard), story detail component (generate button)
 
 ### 2.8 Test Execution UI (REQ-QA-008)
 
@@ -160,7 +209,7 @@ Final summary document. Depends on archive completion (Task 3) and Phase 8 templ
 
 ```
 prisma/
-  schema.prisma                                    — MODIFY (Attachment.defectId, JiraConfig.fieldMapping/triggerStatuses, Project.auditLogRetentionDays)
+  schema.prisma                                    — MODIFY (JiraConfig.fieldMapping/triggerStatuses, Project.auditLogRetentionDays). NOTE: no Attachment change — defect attachments reuse polymorphic entityType/entityId per DECISION-08 and PRD-5-25.
 src/lib/
   story-status-machine.ts                          — MODIFY (add BA to management transitions)
   defect-status-machine.ts                         — NO CHANGE (already correct)
@@ -217,19 +266,8 @@ src/app/
 
 ### 3.3 Data Changes
 
-**Migration 1 — Defect attachments:**
-```prisma
-model Attachment {
-  // ... existing fields ...
-  defectId    String?
-  defect      Defect?  @relation(fields: [defectId], references: [id])
-}
-
-model Defect {
-  // ... existing fields ...
-  attachments Attachment[]
-}
-```
+**Migration 1 — Defect attachments (REMOVED per DECISION-08 / PRD-5-25):**
+No schema change needed. Defect attachments reuse the existing polymorphic `Attachment` table (`entityType`, `entityId`) defined in TECHNICAL_SPEC §Attachment. Phase 9 writes rows with `entityType = "Defect"` and `entityId = defect.id`. No `defectId` FK is introduced; no `attachments` relation is added to `Defect`.
 
 **Migration 2 — JiraConfig extensions:**
 ```prisma
@@ -265,7 +303,14 @@ model Project {
 | Default epic provisioning race condition (duplicate events) | Check if epics already exist, skip if > 0 | Idempotent — no duplicate epics |
 | Project summary for very large project (token overflow) | Truncate per template priority, generate with available context | Warning logged, summary still generates |
 | Audit log retention cron finds 100K+ logs to delete | Batch delete in chunks of 1000 | Inngest step function with pagination |
-| Phase set to ARCHIVE via phase selector | Blocked — archive must go through archive action | "Use the Archive Project action to archive this project" |
+| Phase set to ARCHIVE via phase selector | Blocked; archive must go through archive action | "Use the Archive Project action to archive this project" |
+| Archive with in-flight user mutation (request mid-flight when status flips) | `assertProjectWritable` rejects after status flip; no partial writes | "This project is archived and read-only." (409) |
+| Event arrives for archived project (STORY_STATUS_CHANGED, TEST_EXECUTION_RECORDED, etc.) | Handler checks `project.status`; drops event with debug log | No side effects; no dashboard refresh, no Jira push |
+| Jira field mapping with two app fields mapped to the same Jira field ID | `saveJiraConfig` Zod + uniqueness check rejects at write time | "Duplicate Jira field ID in mapping" |
+| SF token revoke exceeds 5s timeout | Abort revoke, proceed with local credential deletion | Warning logged; archive continues |
+| Audit log retention cron overlap (prior run still running) | Inngest concurrency=1 per function id; second run skipped by runtime | No duplicate deletes |
+| Test case regeneration requested on story in QA or DONE status | Block, return error | "Cannot regenerate test cases for story in terminal status" |
+| Jira push payload projectKey mismatches JiraConfig.projectKey | `jiraPush` rejects before HTTP call | Error logged with both keys; push not attempted |
 
 ---
 
@@ -282,10 +327,21 @@ model Project {
 - **Story status machine** — Phase 9's BA management transition fix (REQ-QA-001) extends the same `story-status-machine.ts` that Phase 4's validation gate wires into. Phase 1 REQ-RBAC-009 adds BA to management transitions; Phase 9 adds QA DRAFT-only enforcement.
 
 ### From Phase 8
-- **Notification types** — Phase 8 adds DEFECT_CREATED, DEFECT_STATUS_CHANGED, TEST_EXECUTION_RECORDED to the enum. Phase 9 wires the Inngest consumers.
+- **Notification types** — Phase 8 adds DEFECT_CREATED, DEFECT_STATUS_CHANGED, TEST_EXECUTION_RECORDED to the enum. Phase 9 wires the Inngest consumers. Phase 9 depends on the following event payload shapes published by Phase 8:
+  - `DEFECT_CREATED { projectId, defectId, createdById, severity }`
+  - `DEFECT_STATUS_CHANGED { projectId, defectId, oldStatus, newStatus, changedById }`
+  - `TEST_EXECUTION_RECORDED { projectId, storyId, testCaseId, result, executedById }`
+- **Test-assignee null fallback (PRD-5-14):** Phase 8's "Story moved to QA" notification handler reads `story.testAssigneeId`. When null, Phase 8 fans out to all `ProjectMember` rows with `role = QA` per PRD-5-14. Phase 9 depends on this behavior and makes no Phase 9 changes. If Phase 8 does not yet implement the null-fallback, Phase 9 raises a cross-phase coordination ticket.
 - **Document template system** — PROJECT_SUMMARY template follows the same pattern as Phase 8's SOW, Test Script, etc.
 - **Document versioning** — The archive summary document uses Phase 8's versioning model (version 1, DRAFT status).
 - **Branding** — Archive summary document uses project branding from Phase 8's BrandingConfig.
+- **Phase 1 encryption-at-rest wrapper** — Phase 9 reuses (does not replace) the wrapper for `apiToken` and SF credential fields (PRD-22-04, PRD-22-05).
+
+### Event Payloads Owned or Extended by Phase 9
+
+- **PROJECT_CREATED (extension owned by Phase 9, GAP-05):** Phase 9 OWNS the extension of `PROJECT_CREATED` payload to `{ projectId, engagementType, createdBy, createdAt }`. If the current upstream emitter (Phase 2 project creation) emits a narrower payload, Task 6 includes the payload extension as in-scope work. No "verify upstream" language remains; Phase 9 treats the emitter extension as its responsibility.
+- **PROJECT_ARCHIVED (owned by Phase 9):** `{ projectId, archivedBy, archivedAt }`. Emitted by `archiveProject` after credential deletion and Jira disconnect complete.
+- **PROJECT_STATE_CHANGED (owned by Phase 9):** `{ projectId, changeType: "phase" | "archive" | "member", oldValue?: string, newValue?: string }`. Emitted by `updateProjectPhase` and `archiveProject`.
 
 ### For Future Phases
 - **Phase 7 (Dashboards):** Phase 9 fixes the QA coverage metric in `pm-dashboard-synthesis.ts`. Phase 7 can build on this for the full PM dashboard. Phase 9's phase emphasis is prompt-level only — Phase 7 adds dashboard-level phase rendering.
@@ -340,7 +396,35 @@ model Project {
 
 ## 7. Open Questions
 
-None — all scoping decisions resolved. GAP-ARCH-004 deferred to V2 per existing Phase Plan risk notes.
+None. All scoping decisions resolved. GAP-ARCH-004 deferred to V2 per existing Phase Plan risk notes.
+
+---
+
+## 8. Published Interfaces
+
+Phase 9 publishes the following interfaces for consumer phases (Phases 2, 4, 8, and any later phase with mutation entry points). Consumer phases import and call these; they are not reimplemented.
+
+### `assertProjectWritable(projectId: string): Promise<void>` (DECISION-10, PRD-21-01)
+
+- **Location:** `src/lib/project-lifecycle/assert-writable.ts`
+- **Contract:** Loads the project by id. Throws `ProjectArchivedError` (HTTP 409) with message `"This project is archived and read-only."` when `project.status === "ARCHIVED"`. Returns void otherwise.
+- **Import pattern:** Every mutating server action calls `await assertProjectWritable(projectId)` as the FIRST step after authentication and before role checks. The gate is additive to Phase 1 RBAC; it does not replace role checks.
+- **AI chat:** `src/actions/chat.ts` calls the helper and, on throw, returns a canned read-only response to the client instead of invoking the model.
+- **Document generation:** Blocked on archived projects, except the `PROJECT_SUMMARY` template, which the archive pipeline emits after the status flip. The template dispatcher whitelists `PROJECT_SUMMARY` on archived projects.
+- **Consumer phases (per DECISION-10):** Phases 2, 4, 8 import this helper at every mutation entry point. Consumer tests must verify archived-project calls throw (HTTP 409). Phase 9 does NOT edit consumer-phase docs.
+
+### `JiraFieldMapping` Zod schema
+
+- **Location:** `src/lib/jira/field-mapping.ts`
+- **Contract:** Exported Zod schema validating `JiraConfig.fieldMapping` on write and read. Consumers (UI form, server action, Inngest sync function) import and parse before use.
+
+### `PROJECT_CREATED` event payload extension (GAP-05)
+
+- **Contract:** `{ projectId, engagementType, createdBy, createdAt }`. Phase 9 owns this extension. If upstream Phase 2 emits a narrower payload, Task 6 extends it.
+
+### `PROJECT_ARCHIVED` and `PROJECT_STATE_CHANGED` event payloads
+
+- **Contracts:** See §5 Integration Points.
 
 ---
 
@@ -349,3 +433,4 @@ None — all scoping decisions resolved. GAP-ARCH-004 deferred to V2 per existin
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Created via `/bef:deep-dive 9`. GAP-ARCH-004 (reactivation fork-and-inherit) deferred to V2. GAP-JIRA-003 and GAP-JIRA-004 confirmed resolved. 19 active gaps consolidated to 11 tasks. |
+| 2026-04-14 | Wave 3 audit-fix (phase-09) | Applied 13 gap fixes from `docs/bef/audits/2026-04-13/phase-09-audit.md`. Cites DECISION-08 (PRD-5-25 polymorphic attachments — defect half) and DECISION-10 (archive read-only gate ownership — Phase 9 owns and publishes `assertProjectWritable`). Added §8 Published Interfaces. Removed Migration 1 (Attachment.defectId). Added Jira single-project scope guard (PRD-20-03), push-only restatement (PRD-20-02), JiraFieldMapping Zod schema, triggerStatuses StoryStatus validation, apiToken encryption note. Pinned TestCase output schema and STUB/AI_GENERATED contract (ADD §5.2.3). Declared PROJECT_CREATED / PROJECT_ARCHIVED / PROJECT_STATE_CHANGED payloads. Traced PRD-5-14 null-assignee fallback to Phase 8. Added log-scope note reconciling access-log vs audit-log naming (PRD-21-06). Added defect role-gated lifecycle matrix (PRD-5-17, PRD-18-04). Added 8 edge cases. |
