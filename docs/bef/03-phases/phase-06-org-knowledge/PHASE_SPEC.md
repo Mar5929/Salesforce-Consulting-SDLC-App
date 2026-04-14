@@ -6,8 +6,8 @@
 > Depends On: Phase 11 (Infrastructure Tables), Phase 2 (Agent Harness, Answer Logging Pipeline)
 > Unlocks: Phase 5 (Context Package Assembly), Phase 7 (Dashboards/Search)
 > Complexity: XL
-> Status: Draft (populated from integration plan — deep-dive still required)
-> Last Updated: 2026-04-13
+> Status: Ready for execute (deep-dive complete 2026-04-14 via audit-fix wave)
+> Last Updated: 2026-04-14
 
 ---
 
@@ -69,6 +69,8 @@ Unchanged from pre-addendum spec. See `PHASE_SPEC.pre-addendum.md` §2.1 for ful
 - Store verifier alongside CSRF state, include in token exchange.
 - Files: `src/lib/salesforce/oauth.ts`, `src/app/api/auth/salesforce/authorize/route.ts`, `src/app/api/auth/salesforce/callback/route.ts`.
 
+**Auth flow scope (PRD-13-02):** OAuth 2.0 Web Server Flow + PKCE is the V1 default for interactive architect connection. JWT Bearer Flow (PRD-13-02) is acknowledged as a future option for CI / service-account use cases and is deferred to V2; not built in Phase 6. Closes GAP-12.
+
 ### 2.2 Automated Incremental Sync with Reconciliation Algorithm (REQ-ORG-002) — PRESERVED, ENHANCED
 
 The existing cron + needsAssignment + soft-delete behavior is preserved. Enhancement: the per-component upsert inside each sync now runs the five-step **sync reconciliation algorithm** from Addendum §4.7 and integration plan §225–230.
@@ -94,6 +96,10 @@ Other REQ-ORG-002 behavior unchanged:
 - `sfOrgLastSyncAt` updated on success.
 - `METADATA_SYNC_COMPLETE` notification emitted.
 
+**Large-org chunking gate (closes GAP-18, ADD-4.7-13):** when SF returns more than **10,000 custom fields OR more than 500 Apex classes** for a project, sync switches to chunked mode: page size 500 metadata items per SF CLI call, processed sequentially with 1-second inter-page sleep to respect API limits.
+
+**Durable-ID quality warning (closes GAP-16, ADD-4.7-02):** on each sync run, count components SF returned without a durable metadata ID. If count > 0, emit a single `sync.durable_id_missing` warning log entry (count + first 5 api_names) and a `SYNC_DATA_QUALITY` notification at most once per run.
+
 Files: `src/lib/inngest/functions/metadata-sync.ts`, `src/lib/salesforce/metadata-sync.ts` (reconciliation + rename detection + managed-pkg flag), `src/lib/salesforce/component-history.ts` (new — write audit rows).
 
 ### 2.3 Sync Schedule Configuration UI (REQ-ORG-003) — PRESERVED
@@ -103,35 +109,54 @@ Unchanged from pre-addendum spec. See `PHASE_SPEC.pre-addendum.md` §2.3.
 ### 2.4 Layer 1 — Component Graph
 
 Populate `component_edges` (schema from Phase 11) during sync. Each edge has:
-- `source_component_id`, `target_component_id` (nullable for unresolved), `edge_type` (references, extends, parents, calls, triggers, child_of, lookup, master_detail, etc.), `unresolved_reference_text` (when target null).
+- `source_component_id`, `target_component_id` (nullable for unresolved), `edge_type` (references, extends, parents, calls, triggers, child_of, lookup, master_detail, grants_access_to, installed_by, etc.), `unresolved_reference_text` (when target null), `edge_metadata jsonb` (extractor-specific context: e.g., for `references` the source line number; for `lookup` the relationship_name and cascade_delete; for `grants_access_to` the access level read/edit/delete). Closes GAP-08(a).
 
-Edge extraction sources:
-- Field metadata → lookup/master-detail relationships.
-- Apex class parse → references (class → class, class → object, class → field).
-- Trigger metadata → `triggers` edge to parent object.
-- Flow metadata → `calls` edge to any invoked Apex / subflow; `references` edge to each accessed field.
-- Validation rules / formulas → `references` edges parsed from formula text.
+**Edge extractors — full SF metadata coverage (PRD-13-04). Closes GAP-01.**
 
-**Unresolved references** (`target_component_id = null` + `unresolved_reference_text`): preserved for dynamic SOQL, runtime Apex callouts, metadata API references that cannot be statically resolved. These surface through the `unresolved_references` materialized view from Phase 11 and feed Org Health findings.
+| Metadata family | Extractor strategy | Edge types written |
+|-----------------|-------------------|-------------------|
+| Custom/Standard fields | Field metadata parse | `lookup`, `master_detail` |
+| Apex classes | Static parse | `references` (class→class/object/field), `extends`, `implements` |
+| Apex triggers | Trigger metadata | `triggers` (to parent object), `references` |
+| Flows / Process Builder / Workflows | Flow XML parse | `calls` (Apex/subflow), `references` (fields) |
+| Validation rules / formulas | Formula text parse | `references` |
+| LWC / Aura bundles | JS + HTML + meta.xml parse | `references` (to fields/objects/Apex via `@wire`, `getRecord`, `imports`) |
+| Permission Sets / Profiles / Permission Set Groups | Metadata parse | `grants_access_to` (component → object/field/Apex), with `edge_metadata.access` = read/edit/delete |
+| Connected Apps | Metadata parse | `references` (to OAuth scopes; tracked as `edge_metadata.scopes`) |
+| Named Credentials | Metadata parse | `references` (to External Services / endpoints; `edge_metadata.endpoint`) |
+| Remote Site Settings | Metadata parse | `references` (to URLs; `edge_metadata.url`) |
+| Installed packages | Package manifest parse | `installed_by` linking each managed component to its package namespace component |
+
+**Unresolved references** (`target_component_id = null` + `unresolved_reference_text`): preserved for dynamic SOQL, runtime Apex callouts, metadata API references that cannot be statically resolved. These surface through the `unresolved_references` materialized view from Phase 11 and feed Org Health findings (see §2.15 unresolved-references analyzer).
 
 Managed-package components: edges involving managed components are recorded but the managed component is excluded from AI domain proposal walks by default.
+
+**Phase 11 schema reconciliation (GAP-01, GAP-08):** Phase 11 `component_type` enum must include LWC, AURA, PERMSET, PROFILE, PERMSET_GROUP, CONNECTED_APP, NAMED_CREDENTIAL, REMOTE_SITE, INSTALLED_PACKAGE. `component_edges.edge_metadata jsonb` column must exist. Reconciliation handled via Phase 11 schema amendment in Task 5.
 
 Files: `src/lib/salesforce/graph-builder.ts` (new — per-component-type edge extractors), `src/lib/salesforce/metadata-sync.ts` (call graph-builder after upsert).
 
 ### 2.5 Layer 2 — Semantic Embeddings
 
-Populate `component_embeddings` (schema from Phase 11). Each row: `component_id`, `embedded_text`, `embedded_text_hash`, `embedding_model`, `embedding vector(1536)`, `generated_at`.
+Populate `component_embeddings` (schema from Phase 11). Each row: `component_id`, `embedded_text`, `embedded_text_hash`, `embedding_model`, `embedding vector(512)`, `generated_at`. **Vector dimension hardcoded to 512 in V1 per DECISION-02 (Voyage 3-lite).**
 
-**Deterministic embedded text** per component type:
-- Default: `api_name + label + description + help_text`.
-- Apex class: `class comments (header doc comment) + first 50 lines of body`.
+**Deterministic embedded text** per component type. Closes GAP-09(a):
+- Default: `api_name + label + description + help_text + inline_help` (ADD-4.3-02 requires `inline_help`).
+- Apex class: `class comments (header doc comment) + first 50 lines of body` (ADD-4.9-03).
 - Flow: `label + description + element names (joined)`.
 - Validation rule: `error message + formula comments`.
 - Trigger: `api_name + trigger events + first 50 lines of body`.
+- LWC / Aura: `name + description + template visible text nodes (deduped, max 200 tokens)`.
+- Permission Set / Profile / Permission Set Group: `name + label + description + count of grants`.
+- Connected App: `name + description + OAuth scopes joined`.
 
 **Re-embed only when `embedded_text_hash` changes** (SHA-256 of `embedded_text`). Bounds cost on large orgs.
 
 HNSW index on `embedding` column with cosine distance (see Phase 11 migration).
+
+**Large-org batching (closes GAP-18):**
+- Embedding batch size = **50 components per provider API call**.
+- Inngest step function fans out with **20 parallel workers max**.
+- Provider 429 → exponential backoff 1s/2s/4s/8s, max 4 retries; final failure recorded as `component_embeddings.status='failed'` and retried on next sync.
 
 Files: `src/lib/salesforce/embedding-pipeline.ts` (new — deterministic text builder + hash + enqueue), Inngest step function `component-embedding-batch` (fan-out over dirty components).
 
@@ -139,15 +164,23 @@ Files: `src/lib/salesforce/embedding-pipeline.ts` (new — deterministic text bu
 
 Replaces `DomainGrouping`. New tables:
 - `domains` — `id`, `project_id`, `name`, `description`, `source` enum (`ai_proposed | human_asserted`), `status` enum (`proposed | confirmed | archived`), `archived_reason`, `rationale` (AI-provided), `created_by`, timestamps.
-- `domain_memberships` — `domain_id`, `component_id`, `source` (same enum), `status` (same enum), `rationale`. Many-to-many (one component can belong to multiple domains).
+- `domain_memberships` — `domain_id`, `component_id`, `source` (same enum), `status` (same enum), `rationale`, **`confidence numeric(3,2) NULL` (AI-set 0.00–1.00 per ADD-4.4-02; NULL when human-asserted)**. Many-to-many (one component can belong to multiple domains). Closes GAP-09(b).
 
 **Brownfield initial domain proposal** (runs once per project at initial ingestion, after Layer 1 and Layer 2 are populated):
 - Invoked via Claude Managed Agents (Opus 4.6, `reason_deeply` intent).
 - Input: Layer 1 edges + Layer 2 embeddings + component metadata.
 - Agent walks the graph, clusters by structural relationships + semantic similarity, proposes a set of domains with memberships and rationales.
-- Writes rows as `source = ai_proposed, status = proposed`.
-- Architect confirms, edits, or rejects in UI (bulk confirm supported for high-confidence proposals).
-- Managed-package components excluded from the walk by default (per-project override available).
+- Writes rows as `source = ai_proposed, status = proposed` with `confidence` populated.
+- Architect confirms, edits, or rejects in UI (bulk confirm supported for high-confidence proposals; auto-confirm threshold deferred — see §7).
+- Managed-package components excluded from the walk by default (per-project override available; settings UX described in §7 item 3).
+
+**Greenfield domain flow (closes GAP-11, ADD-4.4-06):** the architect creates and names domains manually. On each incremental sync, for every newly added component without a domain membership, a lightweight Sonnet-based suggestion (NOT Managed Agents, runs inside the sync pipeline step) proposes 0–N memberships with `rationale` and `confidence`. Writes `source=ai_proposed, status=proposed`. Architect reviews via the same domain UI.
+
+**Biweekly domain review pass (closes GAP-11, ADD-4.4-07):** Inngest cron `{ cron: "0 3 */14 * *" }` runs a Managed Agents session scoped to components whose `metadata_hash` changed in the last 14 days OR were added in the last 14 days. Emits proposal diffs for architect review. Respects rejection-suppression rule below.
+
+**Rejection suppression rule (closes GAP-10, ADD-4.4-04):** when an AI-proposed `domain_membership` is rejected by the architect, set `status='archived', archived_reason='rejected_by_architect', archived_at=now()`. Brownfield re-runs and biweekly review MUST suppress any `(component_id, domain_id)` pair already archived as `rejected_by_architect` UNLESS `org_components.metadata_hash` has changed since `archived_at`. On metadata change the pair becomes eligible for re-proposal.
+
+**Archived-membership exclusion (ADD-4.7-08):** archived memberships are preserved (audit trail) but excluded from active `search_org_kb` filters, Context Package Assembly, and any UI "active membership" listings. See cascade rules in §2.16.
 
 **Domain review nudge:** when incremental sync adds new fields to an object whose existing fields are members of a domain, emit a notification event `DOMAIN_REVIEW_NEEDED` for the architect to classify the new fields.
 
@@ -160,7 +193,13 @@ Files: `src/lib/agent-harness/tasks/propose-domains.ts` (new — Managed Agent t
 Replaces `BusinessContextAnnotation`. Polymorphic `annotations` table:
 - `id`, `project_id`, `entity_type` enum (`component | edge | domain`), `entity_id` (string — matches the ID of whichever entity), `content`, `content_type` (`markdown` default), `source` enum (`human | ai_derived_from_discovery`), `status` enum (`proposed | confirmed | archived`), `created_by`, timestamps.
 
-`annotation_embeddings` table — mirrors `component_embeddings` shape; embedding of `annotation.content`. HNSW cosine index.
+`annotation_embeddings` table — mirrors `component_embeddings` shape; embedding of `annotation.content` as `vector(512)` per DECISION-02. HNSW cosine index.
+
+**Polymorphic consistency enforcement (closes GAP-08(b), ADD-4.5-03):** Postgres CHECK across tables is not directly supported, so consistency between `annotations.entity_type` and `annotations.entity_id` is enforced via a `BEFORE INSERT/UPDATE` trigger on `annotations`:
+- `entity_type='component'` → `entity_id` must exist in `org_components`.
+- `entity_type='edge'` → `entity_id` must exist in `component_edges`.
+- `entity_type='domain'` → `entity_id` must exist in `domains`.
+- Trigger raises an exception (constraint violation) on mismatch. Phase 6 ships the trigger; Task 2 AC verifies it.
 
 **Answer Logging Pipeline integration (Phase 2):** when a discovery decision mentions a Salesforce component or concept, the pipeline proposes an annotation (`source = ai_derived_from_discovery`, `status = proposed`). Architect confirms or rejects. Confirmed AI-derived annotations are indistinguishable from human annotations at retrieval time.
 
@@ -177,15 +216,47 @@ Full implementation of `search_org_kb(project_id, query, { entity_types?, compon
 Retrieval flow:
 1. **BM25** (tsvector) over `org_components.api_name`, `org_components.label`, `org_components.raw_metadata::text`, `annotations.content`. Return top-K with BM25 scores.
 2. **Vector** (pgvector cosine) over `component_embeddings.embedding` + `annotation_embeddings.embedding`. Return top-K with similarity scores.
-3. **RRF merge** (reciprocal rank fusion) across BM25 and vector result sets.
-4. **Filter** by `entity_types` (component | annotation | domain), `component_types` (FIELD, APEX_CLASS, etc.), `domain_ids`.
-5. **Neighbor expansion** (optional, `expand_neighbors = true`): for every hit that is a component, include 1-hop neighbors via `component_edges` and mark them as "related" (not scored).
+3. **RRF merge** (reciprocal rank fusion) across BM25 and vector result sets, **constant `k = 60` per ADD-4.6-02 (closes GAP-06)**. Production default is 60; override only via tuning job.
+4. **Filter** by `entity_types` (component | annotation | domain), `component_types` (FIELD, APEX_CLASS, etc.), `domain_ids`. **Always filters by `project_id`** (ADD-4.9-01 — cross-project read impossible by construction).
+5. **Active-row filter (closes GAP-07, GAP-10):** excludes archived components (`org_components.status='archived'`), archived domain memberships, archived annotations from active result set.
+6. **Neighbor expansion** (`expand_neighbors`): now accepts `{ depth: int (default 1, max 5), direction: 'forward'|'reverse'|'both' }` (boolean accepted for backwards compat → `{depth:1, direction:'both'}`). Multi-hop expansion delegates to `traverse_component_graph` (see below).
 
-Returns: `{ hits: [{ entity_type, entity_id, component?, annotation?, domain?, score, neighbors? }], query_type, total }`.
+**`search_org_kb` is a specialization of the shared hybrid-retrieval primitive** at `src/lib/retrieval/hybrid.ts` (Phase 1/2). Phase 6 must import and compose, not re-implement the BM25+vector+RRF math (closes GAP-06, ADD-2-05).
+
+**Return type — `SearchResponse` (carry-forward decision #2, P11 GAP-13).** `search_org_kb` returns:
+```ts
+type SearchResponse = {
+  hits: SearchHit[];
+  query_type: 'hybrid' | 'fulltext' | 'semantic';
+  total: number;
+  _meta: {
+    not_implemented?: { reason: string; missing_layers: string[] };  // populated when called before required layers exist
+    rrf_k: 60;
+    project_id: string;
+  };
+};
+type SearchHit = { entity_type, entity_id, component?, annotation?, domain?, score, neighbors? };
+```
+Callers MUST branch on `_meta.not_implemented` envelope, NOT on `hits.length`. When envelope is present, `hits` may be empty or contain BM25-only degraded results.
+
+**Multi-hop graph traversal — `traverse_component_graph` (closes GAP-03, ADD-4.2-03).** New SQL function implemented as a recursive CTE over `component_edges`:
+```sql
+traverse_component_graph(
+  project_id        uuid,
+  root_component_id uuid,
+  direction         text DEFAULT 'both',  -- 'forward'|'reverse'|'both'
+  max_depth         int  DEFAULT 3,
+  edge_types        text[] DEFAULT NULL
+) RETURNS TABLE (component_id uuid, depth int, path uuid[])
+```
+- Forward walk: follows edges where `source_component_id = current` (e.g., from object → fields/triggers/flows that reference it).
+- Reverse walk: follows edges where `target_component_id = current` (e.g., from a field → every Apex/flow that reads or writes it).
+- Domain walk: union of forward+reverse over domain peers (use `direction='both'` with a domain-scoped root set).
+- Excludes archived components from traversal.
 
 Phase 5 Context Package Assembly (step 5) depends on this function being production-ready.
 
-Files: `prisma/migrations/xxx-search-org-kb.sql` (function body — from Phase 11 signature), `src/lib/salesforce/search-org-kb.ts` (thin Prisma wrapper invoking the SQL function).
+Files: `prisma/migrations/xxx-search-org-kb.sql` (function body — from Phase 11 signature), `prisma/migrations/xxx-traverse-component-graph.sql` (new function), `src/lib/salesforce/search-org-kb.ts` (thin Prisma wrapper, returns `SearchResponse`).
 
 ### 2.9 Full Knowledge Refresh Pipeline (REQ-ORG-004) — UPDATED
 
@@ -194,15 +265,31 @@ Phases 3–4 refresh pipeline preserved. Updated to use Layer 3/4 structures:
 - AI-derived annotations from refresh synthesis → write `annotations` (not `BusinessContextAnnotation`).
 - KnowledgeArticle creation, confirmation, staleness logic unchanged.
 
+**BusinessProcess + BusinessProcessComponent persistence (closes GAP-04, PRD-13-16/20/23, orphan owner per DECISION-08):** synthesis (whether brownfield Managed Agents session or weekly refresh pipeline) MUST emit:
+- `BusinessProcess` rows with defaults `isAiSuggested=true, isConfirmed=false, status=DISCOVERED, complexity ∈ {LOW, MEDIUM, HIGH, CRITICAL}` (AI-rated).
+- `BusinessProcessComponent` rows linking each process to its constituent components.
+- Architect confirms/edits/rejects via the existing confirmation UI (Task 30 extends to BusinessProcess).
+
+**KnowledgeArticle defaults from AI drafting (closes GAP-04, PRD-13-21):** Phase-4 draft articles default to `authorType=AI_GENERATED, confidence ∈ {LOW, MEDIUM}`. AI never writes `confidence=HIGH`; only architect confirmation can elevate.
+
+#### 2.9.1 Phase 3+4 Single-Context Reconciliation (closes GAP-05, PRD-13-18)
+
+PRD-13-18 requires Phase 3 (BusinessProcess synthesis) and Phase 4 (KnowledgeArticle articulation) to share one AI call/context. The Addendum splits work across pipelines and Managed Agents. Reconciliation:
+- **Brownfield initial ingestion:** Phase 3 + Phase 4 run in a single Managed Agents session (one shared context window). PRD-13-18 satisfied for the highest-stakes path.
+- **Incremental weekly refresh:** Phase 3 + Phase 4 run as two sequential Inngest pipeline steps that share a context bundle assembled at step start. Per-unassigned-component scope fits comfortably in a standard pipeline stage; not a single AI call.
+- **Narrow PRD-13-18 supersession recorded** in Revision History.
+
 Triggers unchanged: `{ event: "org.knowledge-refresh-requested" }` + `{ cron: "0 2 * * 0" }`.
 
 Files: `src/lib/inngest/functions/knowledge-refresh.ts`, `src/lib/inngest/functions/org-ingestion.ts`.
 
 ### 2.10 Ingestion Phase 4 — KnowledgeArticle Creation
 
-Carried forward from pre-addendum spec. Runs after Layer 3 domain proposal. One article per confirmed domain with >5 components (`articleType = DOMAIN_OVERVIEW`) and one per business process (`articleType = BUSINESS_PROCESS`). References stored in `KnowledgeArticleReference`. Embedding enqueued.
+Carried forward from pre-addendum spec. Runs after Layer 3 domain proposal. One article per confirmed domain with >5 components (`articleType = DOMAIN_OVERVIEW`) and one per business process (`articleType = BUSINESS_PROCESS`). References stored in `KnowledgeArticleReference` AND in the new `article_entity_refs` table (see §6.6). Embedding enqueued to `knowledge_article_embeddings` (see §6.4 + DECISION-05).
 
-Note: KnowledgeArticle's inline `embedding` column fate is deferred to deep-dive (see §7).
+AI-drafted defaults (PRD-13-21): `authorType=AI_GENERATED, confidence ∈ {LOW, MEDIUM}` (see §2.9).
+
+**PRD-13-14 — Planned KB placeholder (orphan owner per DECISION-08):** at project initialization, Phase 6 seeds a placeholder KnowledgeArticle with `articleType=PLANNED, authorType=PLACEHOLDER, content=<empty markdown>` so downstream UI never sees an empty KB list. Seeding is idempotent.
 
 ### 2.11 KnowledgeArticle Confirmation Model (REQ-ORG-007) — PRESERVED
 
@@ -224,7 +311,9 @@ Query execution updated: the endpoint now calls `search_org_kb` (Layer 5) rather
 
 `queryType` in the response now reflects which tier matched.
 
-Files: `src/lib/salesforce/org-query.ts` (rewritten to call `search_org_kb`), `src/app/api/v1/org/query/route.ts` (unchanged shape).
+**Optional LLM narrative synthesis (closes GAP-15, ADD-4.6-06):** when the request includes `?synthesize=true` (or body `{ synthesize: true }`), a Haiku-class call receives the `SearchResponse.hits` plus the original query and returns a 100–200-word narrative answer in `response.narrative`. Cost is logged to `pipeline_runs`. Default behavior (no flag) returns raw hits only.
+
+Files: `src/lib/salesforce/org-query.ts` (rewritten to call `search_org_kb`, branches on `_meta.not_implemented`), `src/app/api/v1/org/query/route.ts` (adds `synthesize` flag).
 
 ### 2.14 Planned Component Status Upgrade During Sync (REQ-ORG-013) — PRESERVED
 
@@ -237,20 +326,41 @@ Long-running diagnostic for rescue / takeover engagements, triggered by architec
 - **Trigger:** architect clicks "Run Org Health Assessment" in project settings (SA role only).
 - **Duration:** 30 minutes – 2 hours (async; status surfaced via notifications and a progress page).
 - **Engine:** Claude Managed Agents, Opus 4.6 (`reason_deeply` intent). Deterministic analyses are plain SQL / static analysis; the Managed Agent synthesizes findings into a narrative and prioritized remediation backlog.
-- **Deterministic analyses:**
+- **Deterministic analyses (7 — closes GAP-17):**
   - Test coverage (Apex class level and aggregate).
   - Governor limit risk patterns (SOQL in loops, DML in loops, nested loops, large-data SOQL without LIMIT).
   - Sharing model review (OWD settings, role hierarchy depth, sharing rules).
   - FLS compliance (CRUD/FLS checks on SOQL and DML).
   - Hardcoded ID detection (static strings matching `/^[a-zA-Z0-9]{15,18}$/` in Apex / Flows).
   - Tech debt inventory (deprecated API versions, disabled validation rules, orphan workflows, TODO/FIXME comments in Apex).
-- **Cost ceiling:** $25 default per run, tracked in `pipeline_runs` (Phase 11). Architect can override to a higher ceiling for complex rescue engagements. Overrun triggers a hard stop and surfaces partial findings.
+  - **Unresolved references (ADD-4.7-10):** reads the `unresolved_references` materialized view; flags dynamic SOQL, dynamic Apex method invocations, external callouts, and metadata API references the KB could not statically resolve. Each surfaces as a finding with severity = info|warn based on count.
+- **Cost ceiling (closes GAP-20 §7 item 6):** **$25 default per run**, tracked in `pipeline_runs` (Phase 11). Architect can override the ceiling in the trigger dialog (input field with current default pre-filled). Overrun triggers a hard stop, persists partial findings (`org_health_reports.status='partial'`), and surfaces a notification.
 - **Output:**
   - `org_health_reports` record (summary, per-analysis findings, remediation backlog, cost, duration).
   - Generated Word document via the Phase 8 document pipeline, stored in S3.
   - Notifications to architect on completion.
 
 Files: `src/lib/inngest/functions/org-health-assessment.ts` (new — Inngest step function, one step per analysis), `src/lib/salesforce/health-analyzers/*.ts` (one file per deterministic analysis), `src/lib/agent-harness/tasks/synthesize-health-report.ts` (Managed Agent task), `src/actions/org-health.ts` (trigger + status actions), `src/app/(dashboard)/projects/[projectId]/settings/org/health/page.tsx` (trigger + progress UI).
+
+### 2.16 Soft-Archive Cascade (closes GAP-07, ADD-4.1-02 / 4.5-04 / 4.5-05)
+
+When an `org_components` row transitions to `status='archived'` (via §2.2 step 5 or via project archive), the following cascade applies. Nothing is hard-deleted except on project archive (ADD-4.5-05).
+
+| Target | Action |
+|--------|--------|
+| `component_embeddings` for archived component | Retained; excluded from active queries via `WHERE oc.status != 'archived'` filter inside `search_org_kb`. |
+| `component_edges` where source OR target is archived | Excluded from active traversals (`search_org_kb`, `traverse_component_graph`); rows retained for audit. |
+| `domain_memberships` where `component_id` is archived | `status='archived', archived_reason='component_archived', archived_at=now()`. |
+| `annotations` where `entity_type='component'` AND `entity_id` is archived | `status='archived', archived_reason='entity_archived', archived_at=now()`. Cascade marks corresponding `annotation_embeddings` as excluded from active queries. |
+| `knowledge_article_embeddings` referencing archived components | Retained; staleness flag set on owning KnowledgeArticle (PRD-13-28 hook). |
+
+**Reactivation:** if a future sync re-discovers the component (`status='active'`), cascade is reversed: dependent rows where `archived_reason ∈ {component_archived, entity_archived}` revert to `status='active'`. `rejected_by_architect` archives are NOT reactivated automatically (suppression rule, §2.6).
+
+**Project archive (Phase 9 owner per DECISION-10):** Phase 9 calls `assertProjectWritable` at every mutation entry point. On project archive, Phase 9 invokes a Phase-6-owned `cascadeArchiveProject(projectId)` helper that hard-deletes only on user-confirmed permanent deletion path; standard archive keeps everything for audit.
+
+### 2.17 PRD-13-28 — `isStale` Propagation (orphan owner per DECISION-08)
+
+Phase 6 owns the `isStale` flag consumer surface (Phase 2 owns the emit hook). When a confirmed component, edge, or annotation that an existing KnowledgeArticle references changes its `metadata_hash` or is archived, Phase 2 emits `entity.changed`; Phase 6 reads the event in the knowledge-refresh pipeline and sets `KnowledgeArticle.isStale=true` plus `staleReason`. Surfaced in the article confirmation UI.
 
 ---
 
@@ -325,10 +435,13 @@ search_org_kb(
   entity_types text[] DEFAULT NULL,
   component_types text[] DEFAULT NULL,
   domain_ids uuid[] DEFAULT NULL,
-  expand_neighbors boolean DEFAULT false,
+  expand_neighbors jsonb DEFAULT NULL,  -- { depth: int, direction: text } or boolean (legacy)
   limit_count int DEFAULT 20
 ) RETURNS TABLE (...)
 ```
+Wrapper at `src/lib/salesforce/search-org-kb.ts` adapts the SQL row set into `SearchResponse` (typed in `src/lib/retrieval/types.ts`) and populates `_meta.not_implemented` when prerequisite layers are unavailable. Composes `src/lib/retrieval/hybrid.ts` (shared BM25+vector+RRF primitive owned by Phase 1/2; cites ADD-2-05).
+
+**`traverse_component_graph` (recursive-CTE):** signature in §2.8.
 
 ---
 
@@ -391,7 +504,7 @@ Each existing model requires a migration path. No pure drops without back-fill.
 
 ### 6.3 `OrgComponent.embedding` → `component_embeddings`
 
-Existing inline `embedding vector(1536)` column on `org_components`. Extract into parallel `component_embeddings` table (schema from Phase 11: `component_id`, `embedded_text`, `embedded_text_hash`, `embedding_model`, `embedding vector(1536)`, timestamps).
+Existing inline `embedding vector(1536)` column on `org_components`. Extract into parallel `component_embeddings` table (schema from Phase 11: `component_id`, `embedded_text`, `embedded_text_hash`, `embedding_model`, `embedding vector(512)` per DECISION-02, timestamps).
 
 Migration strategy (deep-dive to confirm dual-write window):
 1. Create `component_embeddings` table (Phase 11 migration).
@@ -400,36 +513,79 @@ Migration strategy (deep-dive to confirm dual-write window):
 4. Cut over readers (`search_org_kb`, smart retrieval) to `component_embeddings`.
 5. Drop `OrgComponent.embedding` column.
 
-### 6.4 `KnowledgeArticle.embedding` — Decision Deferred
+### 6.4 `KnowledgeArticle.embedding` → `knowledge_article_embeddings` (Decision LOCKED)
 
-The existing inline `embedding vector(1536)` column on `KnowledgeArticle` has three possible fates:
-- **Retain inline** (cheapest, but inconsistent with Layer 2 pattern).
-- **Migrate to a parallel `knowledge_article_embeddings` table** (consistent, slightly higher cost).
-- **Deprecate** (if KnowledgeArticle retrieval is replaced entirely by `search_org_kb` over components + annotations).
+**Decision (cites DECISION-05):** migrate the inline `KnowledgeArticle.embedding` column to a parallel `knowledge_article_embeddings` table mirroring `component_embeddings` / `annotation_embeddings`. Layer 3 two-pass retrieval (Addendum §5.4, Task 34) depends on KA embeddings being built in Phase 6 V1. Closes GAP-02.
 
-Deep-dive must choose before schema work begins. See §7.
+Schema (`vector(512)` per DECISION-02):
+```
+knowledge_article_embeddings (
+  id                 uuid PRIMARY KEY,
+  article_id         uuid NOT NULL REFERENCES knowledge_articles(id) ON DELETE CASCADE,
+  embedded_text      text NOT NULL,
+  embedded_text_hash text NOT NULL,
+  embedding_model    text NOT NULL,
+  embedding          vector(512) NOT NULL,
+  generated_at       timestamptz NOT NULL DEFAULT now(),
+  status             text NOT NULL DEFAULT 'active'  -- active | failed
+)
+-- HNSW cosine index on embedding
+```
+
+Migration strategy:
+1. Phase 11 schema migration adds `knowledge_article_embeddings` (or Phase 6 owns the migration if Phase 11 schema is closed).
+2. Back-fill: for every row in `knowledge_articles` with a non-null inline `embedding`, build `embedded_text` from `title + summary + content`, hash it, copy embedding into the new table.
+3. Dual-write window: ≤ 7 days. Inserts and refreshes write both inline column and new table.
+4. Cut over Task 34 (two-pass retrieval) to read from `knowledge_article_embeddings`.
+5. Drop the inline `KnowledgeArticle.embedding` column.
+
+§7 item 4 is RESOLVED by this section.
 
 ### 6.5 New Tables (net additions)
 
 | Table | Purpose |
 |-------|---------|
 | `component_history` | Rename / modification audit trail per component (change_type, old/new values, timestamp, source). |
-| `domain_memberships` | Layer 3 many-to-many. |
-| `annotation_embeddings` | Layer 4 semantic search index. |
+| `domain_memberships` | Layer 3 many-to-many (incl. `confidence numeric(3,2)`). |
+| `annotation_embeddings` | Layer 4 semantic search index (`vector(512)`). |
+| `knowledge_article_embeddings` | KA semantic index (`vector(512)`); see §6.4 (DECISION-05). |
+| `article_entity_refs` | Polymorphic refs from KnowledgeArticles to org entities (component / edge / domain / annotation). See §6.6. |
 | `org_health_reports` | Org Health Assessment output records (summary, findings JSON, remediation backlog, cost, duration, status). |
+
+### 6.6 `article_entity_refs` Table (carry-forward decision #3)
+
+Phase 6 owns this table so Phase 2's staleness hook (Phase 2 Tasks 11/12) has a target to reference.
+
+```
+article_entity_refs (
+  id           uuid PRIMARY KEY,
+  article_id   uuid NOT NULL REFERENCES knowledge_articles(id) ON DELETE CASCADE,
+  entity_type  text NOT NULL,   -- 'component' | 'edge' | 'domain' | 'annotation'
+  entity_id    uuid NOT NULL,
+  ref_kind     text NOT NULL,   -- 'cited' | 'derived_from' | 'related'
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (article_id, entity_type, entity_id, ref_kind)
+)
+-- BEFORE INSERT/UPDATE trigger enforces polymorphic consistency, identical pattern to annotations (§2.7).
+-- Index (entity_type, entity_id) for reverse lookups (Phase 2 staleness hook).
+```
+
+Phase 2 staleness hook (Phase 2 Tasks 11/12) queries `article_entity_refs` by `(entity_type, entity_id)` to find every KnowledgeArticle that references a changed entity, then sets `KnowledgeArticle.isStale=true` (PRD-13-28; §2.17).
 
 ---
 
-## 7. Outstanding for Deep-Dive
+## 7. Outstanding for Deep-Dive — RESOLVED 2026-04-14
 
-Items the integration plan flags as unresolved. Must be answered before implementation kick-off.
+All six items resolved during the audit-fix wave. Status: deep-dive complete.
 
-1. **Embedding migration window** — dual-write strategy for `OrgComponent.embedding` → `component_embeddings`. How long is the dual-write window, and what triggers cut-over?
-2. **Rename-collision edge case** — Addendum §8.F. Current rule is match-by-ID-first, treat-as-new-on-mismatch. Validate with edge-case fixture (reused `salesforce_metadata_id` after deletion) before locking the algorithm.
-3. **Managed-package exclusion override UX** — per-project setting to include managed-pkg components in domain proposals. Where does this setting live, and what is the default UX?
-4. **`KnowledgeArticle.embedding` fate** — retain inline, migrate to parallel, or deprecate. See §6.4.
-5. **Domain proposal confidence threshold** — recommendation: start with manual-review-for-all (no auto-confirm). Revisit after 5 brownfield projects to see if a confidence threshold for auto-confirmation is warranted.
-6. **Org Health Assessment cost ceiling** — $25 default per run, architect-override. Confirm the ceiling and override UX before implementation. Overrun behavior: hard-stop with partial findings.
+1. **Embedding migration window** — RESOLVED. Dual-write window = **7 days max**. Cut-over triggers when (a) all rows reconciled across both stores AND (b) Task 34 readers have switched to the new store. Then drop inline column. Owner: Phase 6 implementer.
+2. **Rename-collision edge case** — RESOLVED. Owned by Task 36; fixture lives under Phase 11 `/evals/org_knowledge/rename_collision/`. Current rule (match-by-ID-first, treat-as-new-on-mismatch) is locked.
+3. **Managed-package exclusion override UX** — RESOLVED. Setting lives in **Project Settings → Salesforce → "Include managed-package components in AI domain proposals"** (single boolean toggle, default OFF). Owner: Phase 6 Task 11 UI scope.
+4. **`KnowledgeArticle.embedding` fate** — RESOLVED. Migrate to parallel `knowledge_article_embeddings` table per §6.4 (cites DECISION-05).
+5. **Domain proposal confidence threshold** — RESOLVED. **Start with manual-review-for-all (no auto-confirm) in V1.** After 5 brownfield projects in production, revisit; introduce auto-confirm at `confidence ≥ 0.90` if data supports it. Owner: Phase 7 metrics review.
+6. **Org Health Assessment cost ceiling** — RESOLVED. **$25 default per run; architect-override input field in trigger dialog (§2.15).** Overrun = hard-stop with partial findings. Owner: Task 23.
+
+**Net new outstanding items:** none. Phase ready for `/bef:execute`.
 
 ---
 
@@ -463,13 +619,30 @@ Five-layer model:
 
 Org Health Assessment:
 - [ ] Architect can trigger Org Health Assessment from project settings (SA only).
-- [ ] All six deterministic analyses run and produce structured findings.
+- [ ] All **seven** deterministic analyses run and produce structured findings (incl. unresolved-references analyzer reading the materialized view — closes GAP-17).
 - [ ] Managed Agent synthesizes findings into narrative and remediation backlog.
-- [ ] Cost ceiling enforced ($25 default); overrun hard-stops with partial results.
+- [ ] Cost ceiling enforced ($25 default; architect-override input in trigger dialog); overrun hard-stops with partial results.
 - [ ] `org_health_reports` record persisted; Word document generated via Phase 8 pipeline.
 
 Observability:
 - [ ] Managed Agent invocations (domain proposal, health synthesis) write `pipeline_runs` entries with cost and duration.
+
+Schema + interfaces (closes GAP-06, GAP-08, GAP-09, GAP-12, GAP-13, GAP-19):
+- [ ] All embedding columns are `vector(512)` (cites DECISION-02).
+- [ ] `component_edges.edge_metadata jsonb` column populated per extractor.
+- [ ] `domain_memberships.confidence numeric(3,2)` populated by AI proposal paths; NULL for human-asserted.
+- [ ] `annotations` polymorphic consistency enforced via BEFORE INSERT/UPDATE trigger.
+- [ ] `article_entity_refs` table created with the same polymorphic trigger (carry-forward decision #3).
+- [ ] `knowledge_article_embeddings` table created and back-filled (cites DECISION-05).
+- [ ] `search_org_kb` returns `SearchResponse` with `_meta.not_implemented` envelope; callers branch on the envelope, not array length (carry-forward decision #2).
+- [ ] `search_org_kb` RRF constant pinned at `k=60` (ADD-4.6-02).
+- [ ] `search_org_kb` composes `src/lib/retrieval/hybrid.ts` shared primitive (no re-implementation).
+- [ ] `traverse_component_graph` recursive-CTE function exists with forward / reverse / both traversal (ADD-4.2-03).
+- [ ] BusinessProcess status enum `{DISCOVERED, DOCUMENTED, CONFIRMED, DEPRECATED}` and complexity `{LOW, MEDIUM, HIGH, CRITICAL}` enforced (PRD-5-27 — closes GAP-13).
+- [ ] No write operations to SF from any Phase 6 code path (PRD-13-03 read-only — closes GAP-12).
+- [ ] Credentials encrypted with per-project HKDF-SHA256; `keyVersion` honored on decrypt (PRD-22-04/11/12 — closes GAP-12).
+- [ ] No Managed Agents invocation runs on a user-facing HTTP request handler — every invocation goes through Inngest (ADD-4.8-03 — closes GAP-19).
+- [ ] Every `search_org_kb` / `traverse_component_graph` call and every pipeline loader filters by `project_id`; cross-project read impossible by construction; verified by query-audit test (ADD-4.9-01 — closes GAP-19).
 
 Non-regression:
 - [ ] No regressions in OAuth, sync, planned components, knowledge refresh, confirmation model, or NLP query endpoint shape.
@@ -482,3 +655,4 @@ Non-regression:
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Pre-addendum — see `PHASE_SPEC.pre-addendum.md`. |
 | 2026-04-13 | Major rewrite for PRD Addendum v1 | Five-layer model, Org Health restored, schema migrations, Managed Agents, `search_org_kb`. Populated from integration plan; deep-dive still required. |
+| 2026-04-14 | Audit-fix wave: closed 20 gaps from `phase-06-audit.md` | Cites DECISION-02 (vector(512)), DECISION-05 (KA embedding in V1), DECISION-08 (orphan owners PRD-5-27, PRD-13-14, PRD-13-16/20/21, PRD-13-28), DECISION-10 (`assertProjectWritable` consumer). Carry-forward #2 (`SearchResponse` + `_meta.not_implemented`), #3 (`article_entity_refs` table). Narrow PRD-13-18 supersession recorded (§2.9.1: brownfield = single Managed Agents session; incremental refresh = two sequential pipeline steps sharing context bundle). All §7 deep-dive items resolved; status flipped to Ready for execute. |
