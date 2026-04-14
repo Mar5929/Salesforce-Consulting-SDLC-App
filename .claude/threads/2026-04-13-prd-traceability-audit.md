@@ -120,19 +120,50 @@ Three parallel fix agents in isolated worktrees; all merged to `main` with `--no
 - [ ] Decide attachment storage backend → `DECISION-12` (flag 4). Optional pre-Wave-3; can defer to Phase 4 execution.
 - [ ] Queue a Phase 6 enum-absorption micro-task for the Wave 3 Phase 6 touch-up (flag 3). Alternative: include as an explicit instruction in the Wave 3 Phase 8 agent prompt since Phase 8 also touches KnowledgeArticle.
 
+## Wave 3 completed (2026-04-14)
+
+Five parallel fix agents; 58 gaps closed. Phase 5 + Phase 8 in isolated worktrees (merged with `--no-ff`); Phase 7 + Phase 9 + Phase 10 agents committed directly on `main` (worktree isolation unexpectedly did not take effect for those three — resulting history is still clean linear on main before the two merge commits).
+
+- `dd6b5de audit-fix(phase-09): apply 13 gap fixes per phase-09-audit.md (cites DECISION-08, DECISION-10)` (direct on main)
+- `a086464 audit-fix(phase-10): apply 11 gap fixes per phase-10-audit.md (cites DECISION-06)` (direct on main)
+- `5351627 audit-fix(phase-07): apply 10 gap fixes per phase-07-audit.md (cites DECISION-05/08/09)` (direct on main)
+- `785e692 docs(audits): mint DECISION-11 + amend DECISION-03 scope (Wave 3 prep)` (pre-dispatch)
+- `7f72017 audit-fix(phase-05): apply 12 gap fixes per phase-05-audit.md (cites DECISION-05/08/10)` → merge `152e611`
+- `09dc21b audit-fix(phase-08): apply 12 gap fixes per phase-08-audit.md + P6 enum absorption (cites DECISION-04/07/08/10)` → merge `9caf710`
+
+Pre-Wave-3 checklist execution:
+- ✅ `DECISION-11` minted (Phase 3 pipeline listener collapse retro-doc).
+- ✅ `DECISION-03` scope amended to cover Phase 3 + 4 + 6 embedding path.
+- Deferred: `DECISION-12` (attachment storage backend) — Phase 4 execution time call.
+- ✅ Phase 6 enum absorption (Wave 2 flag 3) baked into Phase 8 agent prompt and applied: `KnowledgeArticle.source` gained `'PHASE_4_BOOTSTRAP'` in Phase 6 PHASE_SPEC §2.10 and Task 18 AC.
+
+### Wave 3 agent-report flags (carry into Step 4b verifier sweep)
+
+1. **Phase 5 — 3 cross-phase Open Questions flagged (not deferrals):**
+   - Phase 2 `invokeBriefingPipeline` signature + `BriefingType` enum publication (gate for Phase 5 Task 16 / briefings).
+   - Phase 1 ownership of `stripSensitiveFields` shared library (currently authored in Phase 5 §2.16 + Task 1a).
+   - Phase 2 exact `BRIEFING_REQUESTED` event name for Phase 5 consumer.
+2. **Phase 7 — 5 cross-phase Outstanding items** (same Phase 2 / Phase 11 publish gates). Phase 7 handles `_meta.not_implemented = true` envelope gracefully if Phase 11 merges first.
+3. **Phase 7 — `event_audit` table added** for PRD-23-12 Inngest event volume; Phase 7 owns per DECISION-08. No Phase 11 schema reconciliation needed.
+4. **Phase 7 — em-dash policy tension.** Phase 7 agent converted em dashes to `--` double-hyphens "to match existing file style." Other Wave 3 agents did not globally scrub em dashes. Verifier sweep should pick a rule (strip all vs. leave pre-existing) and apply consistently.
+5. **Phase 8 — attachment storage** deferred per thread recommendation to `DECISION-12` / Phase 4 execution.
+6. **Phase 8 — Phase 6 reconciliation** applied minimally (one enum value + one cross-ref). No broader Phase 6 edit.
+7. **Phase 9 — DECISION-10 consumer wiring deferred** per scope split: Phase 9 publishes `assertProjectWritable`; Phase 2 / Phase 4 / Phase 8 imports land in their own fix waves. Phase 8 Wave 3 agent did add import ACs to Tasks 3, 5, 10, 11, 12. Phase 2 and Phase 4 still need verifier cross-check.
+8. **Phase 10 — pre-existing em dashes left in place** by agent. Agent did not introduce new ones. Same policy question as flag 4.
+
+### Worktree process note (Wave 3)
+
+Wave 2 pattern called for all agents in isolated worktrees. In Wave 3, only Phase 5 and Phase 8 agents actually landed on worktree branches; Phase 7, Phase 9, Phase 10 agents committed directly to `main`. Two agents flagged operational recovery (wrote to main first, then reverted and re-applied in worktree). No content is lost, but worktree isolation cannot be relied on in Wave 3 form. For future waves: verify worktree path before agent begins Write calls, or accept direct-on-main commits as the normal pattern and drop worktree isolation.
+
 ## Next session: what to do
 
 1. Read `docs/bef/PROJECT_STATE.md` first.
-2. Read this thread (Waves 1 + 2 completion + 8 Wave 2 flags + recommendations above).
-3. Read `docs/bef/audits/2026-04-13/CROSS_PHASE_SUMMARY.md` (wave plan) and `AUDIT_DECISIONS.md` (10 locked decisions + any newly minted IDs).
-4. **Before dispatching Wave 3:** work through the "Pre-Wave-3 checklist" above. Mint `DECISION-11` and amend `DECISION-03` scope note at minimum.
-5. Dispatch **Wave 3** (Phase 5, 7, 8, 9, 10) fix agents in parallel, isolated worktrees, same pattern as Waves 1 + 2:
-   - Input each agent: its `phase-NN-audit.md` + `AUDIT_DECISIONS.md` + this thread + the phase's `PHASE_SPEC.md` + `TASKS.md`.
-   - **Phase 7 agent** gets briefing-type mapping (carry-forward #4: reuse `daily_standup → Current Focus` and `weekly_status → Recommended Focus`, no new enum values).
-   - **Phase 6 enum absorption** (flag 3): add to either the Phase 8 agent prompt or run a standalone micro-edit.
-   - No Linear sync. One commit per phase. Force-remove worktrees after merge.
-6. Each fix agent must cite `DECISION-nn` when amending a PHASE_SPEC or TASKS file for any Wave 0 decision.
-7. When all waves complete, run a second verification pass (`/bef:replan` or fresh audit round) to confirm gap closure.
+2. Read this thread (Waves 1 + 2 + 3 complete; 8 Wave 3 agent-report flags above).
+3. Read `docs/bef/audits/2026-04-13/AUDIT_DECISIONS.md` — 11 locked decisions (DECISION-01 through DECISION-11; `DECISION-03` scope amended).
+4. **Active step is Step 4b — Post-gap-closure verifier sweep.** Dispatch verifier agents (pattern: Step 2's 4-verifier team) to cross-check all 10 fixed phases against PRD + Addendum. Verdict must be PROCEED before Stage 5 (execution). Watch specifically for the 8 Wave 3 flags above.
+5. After Step 4b verdict, Phase 6 re-dive is the last Stage 4 item before Stage 5 kicks off.
+6. Remaining pre-Wave-0 open items: `DECISION-12` (attachment storage — defer to Phase 4 execution unless verifier escalates).
+7. Ephemeral-file cleanup items from `PROJECT_STATE.md` Status §"Ephemeral files" are still open (move `REQUIREMENT_INDEX.md`, decide on `GAP-ANALYSIS-INDEX.md`).
 
 ### Wave 1 lessons learned (apply to Wave 2/3 dispatch)
 

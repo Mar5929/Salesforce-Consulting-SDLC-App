@@ -2,7 +2,7 @@
 
 ## Status
 
-**Active step:** Step 3 — Gap-closure pass. Waves 1 + 2 merged (Phases 11, 2, 6, 3, 4). Wave 3 (Phase 5, 7, 8, 9, 10) ready to dispatch. See `.claude/threads/2026-04-13-prd-traceability-audit.md` for carry-forward decisions.
+**Active step:** Step 4b — Post-gap-closure verifier sweep. Waves 1 + 2 + 3 merged (all 10 audited phases: 2, 3, 4, 5, 6, 7, 8, 9, 10, 11). 137 audit gaps closed. See `.claude/threads/2026-04-13-prd-traceability-audit.md` for carry-forward decisions and Wave 3 completion notes.
 **Last updated:** 2026-04-14
 **Visual companion:** `docs/bef/PROJECT_STATE_VISUAL.md` — Mermaid diagrams of pipeline, phase graph, and current focus. Keep in sync when editing this file.
 
@@ -40,6 +40,8 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
 
 ## Recently Completed
 
+- **Wave 3 audit fixes** (2026-04-14). Phase 5 (12 gaps), Phase 7 (10 gaps), Phase 8 (12 gaps), Phase 9 (13 gaps), Phase 10 (11 gaps) applied by 5 parallel fix agents, merged to `main`. 58 gaps closed. Commits: `7f72017` (phase-05, cites DECISION-05/08/10), `5351627` (phase-07, cites DECISION-05/08/09), `09dc21b` (phase-08, cites DECISION-04/07/08/10), `dd6b5de` (phase-09, cites DECISION-08/10), `a086464` (phase-10, cites DECISION-06). Merge commits `152e611` + `9caf710` for Phase 5 + Phase 8 (other three were direct-on-main). Phase 8 also absorbed `KnowledgeArticle.source = 'PHASE_4_BOOTSTRAP'` into Phase 6 schema (Wave 2 flag 3 closed). Pre-dispatch: minted `DECISION-11` (Phase 3 pipeline listener collapse retro-doc) + amended `DECISION-03` scope (covers Phase 3/4/6 embedding path). All 137 audit gaps now closed across Waves 1 + 2 + 3. Next: Step 4b post-gap-closure verifier sweep.
+
 - **Wave 2 audit fixes** (2026-04-14). Phase 3 (15 gaps), Phase 4 (13 gaps), Phase 6 (20 gaps) applied by parallel fix agents in isolated worktrees, merged to `main`. Commits: `253c0ed` (phase-03, cites DECISION-01), `51faeb3` (phase-04, cites DECISION-06/08/10), `a9ff4b7` (phase-06, cites DECISION-02/05/08/10), plus merge commits `9651181`/`0de3565`/`e3d2342`. 48 gaps closed total. Phase 6 explicitly locks `article_entity_refs` ownership + `search_org_kb → SearchResponse` envelope. Phase 4 resolves GAP-WORK-006 (6 SF dev guardrails in story-gen prompts). Next: Wave 3 (Phase 5, 7, 8, 9, 10).
 
 - **Wave 1 audit fixes** (2026-04-14). Phase 11 (13 gaps) + Phase 2 (18 gaps) applied by parallel fix agents in isolated worktrees, merged to `main`. Commits: `15ba83e` (phase-11, cites DECISION-01/02/03), `895d58d` (phase-02, cites DECISION-01/08/09/10), `73c3196` (merge). 5 carry-forward decisions logged in the session thread.
@@ -73,9 +75,9 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
     - [x] Wave 0: user-decision queue from cross-phase summary
     - [x] Wave 1: Phase 11 + Phase 2 audit fixes merged (2026-04-14)
     - [x] Wave 2: Phase 3 + 4 + 6 audit fixes merged (2026-04-14, 48 gaps closed)
-    - [ ] Wave 3: Phase 5, 7, 8, 9, 10 audit fixes (ready to dispatch)
+    - [x] Wave 3: Phase 5 + 7 + 8 + 9 + 10 audit fixes merged (2026-04-14, 58 gaps closed)
   - [x] Step 4a: Initial verifier sweep (2026-04-13) — verdict PROCEED with 7 critical findings
-  - [ ] Step 4b: Post-gap-closure verifier sweep (required after Wave 2/3 land)
+  - [ ] Step 4b: Post-gap-closure verifier sweep (active — required before Stage 5)
 - [ ] Stage 5: Execute — Blocked on Stage 4 (Phase 1 previously complete before Addendum replan)
   - [ ] Step 5: Execute phase code with agent teams (wave-based, per phase)
   - [ ] Step 6: Iterate until shipped
