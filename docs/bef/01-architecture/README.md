@@ -17,7 +17,7 @@ New sections introduced by PRD Addendum v1:
 - **Section 10: Model Router** specifies intent-based model selection (extract / synthesize / generate_structured / reason_deeply / embed) at `src/lib/ai/model-router.ts`.
 - **Section 11: Eval Harness** specifies the `/evals/` layout, `pnpm eval [pipeline]` runner, and CI gate on PRs touching `src/ai/`, `src/pipelines/`, `prompts/`, or `evals/`.
 
-The pre-addendum version of `TECHNICAL_SPEC.md` is preserved as `TECHNICAL_SPEC.pre-addendum.md` in this directory for historical reference.
+The pre-addendum version of `TECHNICAL_SPEC.md` is available via git history prior to the 2026-04-13 rewrite.
 
 ## Why Consolidated
 

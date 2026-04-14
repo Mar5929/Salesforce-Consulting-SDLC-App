@@ -1,7 +1,6 @@
 # Phase 4 Spec: Work Management
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
-> Gap Report: [04-work-management-gaps.md](./04-work-management-gaps.md)
 > Depends On: Phase 1 (RBAC + auth), Phase 2 (Story Generation Pipeline, output schema, validation), Phase 3 (Discovery, Questions readiness signals), Phase 6 (`search_org_kb` hybrid retrieval — consumed via pipeline), Phase 9 (`assertProjectWritable` helper, polymorphic `Attachment` infrastructure), Phase 11 (embeddings enqueue API)
 > Status: Draft (Wave 2 audit-fix applied 2026-04-14)
 > Last Updated: 2026-04-14
@@ -83,7 +82,7 @@ These amendments integrate PRD Addendum v1 §5.2.3 (Story Generation Pipeline) i
 **Trace:** PRD §15 (Salesforce Development Guardrails), PRD-26-02 → ADD-5.2.3-02 (Stage 2 prompt assembly).
 
 - **What it does:** Defines the 6 Salesforce dev guardrails as a compact prompt module that Phase 2 Stage 2 (Sonnet draft) and the story enrichment task inject into their system prompts, and that the Tier-1 project summary embeds for ambient context.
-- **Why this is a Phase 4 deliverable:** PROJECT_STATE.md and VERIFICATION-STEP-2.md flag this as a Phase 4 blocker for Phases 5/6 developer context. Even though Phase 2 owns the pipeline, the guardrail content + module + injection points are authored here as a published string artifact Phase 2 imports.
+- **Why this is a Phase 4 deliverable:** PROJECT_STATE.md flags this as a Phase 4 blocker for Phases 5/6 developer context. Even though Phase 2 owns the pipeline, the guardrail content + module + injection points are authored here as a published string artifact Phase 2 imports.
 - **Inputs:** N/A (prompt configuration artifact).
 - **Outputs:** AI-generated stories reference guardrail-aware component impacts and acceptance criteria; Tier-1 project summary surfaces guardrails for all downstream tasks.
 - **Business rules:**

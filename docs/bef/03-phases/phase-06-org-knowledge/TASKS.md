@@ -1,7 +1,6 @@
 # Phase 6 Tasks: Org Knowledge — Five-Layer Intelligence Model
 
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
-> Pre-Addendum Tasks: [TASKS.pre-addendum.md](./TASKS.pre-addendum.md)
 > Last Updated: 2026-04-14
 > Status: Ready for execute (deep-dive complete via 2026-04-14 audit-fix wave)
 
@@ -507,27 +506,27 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 ### Task 27: PKCE on OAuth Web Server Flow (REQ-ORG-001)
 
-Unchanged from pre-addendum. See `TASKS.pre-addendum.md` Task 1 for implementation notes. Complexity S.
+Unchanged from pre-addendum spec (see git history pre-2026-04-14 for original task detail). Complexity S.
 
 ### Task 28: Automated incremental sync cron (REQ-ORG-002, base behavior)
 
-Base cron + `needsAssignment` + soft-delete behavior. Reconciliation enhancement is Task 6. See `TASKS.pre-addendum.md` Task 2. Complexity M.
+Base cron + `needsAssignment` + soft-delete behavior. Reconciliation enhancement is Task 6. Complexity M.
 
 ### Task 29: Sync schedule configuration UI (REQ-ORG-003)
 
-Unchanged. See `TASKS.pre-addendum.md` Task 3. Complexity S.
+Unchanged from pre-addendum spec. Complexity S.
 
 ### Task 30: KnowledgeArticle confirmation model + UI (REQ-ORG-007)
 
-Unchanged. Depends on Task 18 (articles must exist). See `TASKS.pre-addendum.md` Task 7. Complexity M.
+Unchanged. Depends on Task 18 (articles must exist). Complexity M.
 
 ### Task 31: Planned component creation from story execution (REQ-ORG-009)
 
-Unchanged. See `TASKS.pre-addendum.md` Task 9. Complexity M.
+Unchanged from pre-addendum spec. Complexity M.
 
 ### Task 32: PLANNED → EXISTING upgrade during sync (REQ-ORG-013)
 
-Unchanged; integrates with Task 6 reconciliation (a PLANNED row is simply a specific `status` value that the reconciliation can flip to EXISTING when matched). See `TASKS.pre-addendum.md` Task 10. Complexity S.
+Unchanged; integrates with Task 6 reconciliation (a PLANNED row is simply a specific `status` value that the reconciliation can flip to EXISTING when matched). Complexity S.
 
 ---
 
@@ -535,11 +534,11 @@ Unchanged; integrates with Task 6 reconciliation (a PLANNED row is simply a spec
 
 ### Task 33: Agent staleness flagging at end of loop (REQ-ORG-011)
 
-Unchanged. Depends on Phase 2 Task 4 (entity tracking). See `TASKS.pre-addendum.md` Task 12. Complexity M.
+Unchanged. Depends on Phase 2 Task 4 (entity tracking). Complexity M.
 
 ### Task 34: Two-pass semantic retrieval for article selection (REQ-ORG-012)
 
-Unchanged. Depends on Task 18 + Task 4 decision (KnowledgeArticle embedding fate). See `TASKS.pre-addendum.md` Task 13. Complexity M.
+Unchanged. Depends on Task 18 + Task 4 decision (KnowledgeArticle embedding fate). Complexity M.
 
 ---
 

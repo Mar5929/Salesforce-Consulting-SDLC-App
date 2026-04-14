@@ -1,7 +1,6 @@
 # Phase 3 Spec: Discovery, Questions
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
-> Gap Report: [03-discovery-questions-gaps.md](./03-discovery-questions-gaps.md)
 > Depends On: Phase 2 (Agent Harness, Transcripts)
 > Status: Draft
 > Last Updated: 2026-04-10
@@ -510,4 +509,4 @@ None — all scoping decisions resolved during deep dive.
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Created via `/bef:deep-dive 3`. All 14 gaps addressed. REVIEWED replaced with IMPACT_ASSESSED. Two impact assessment functions unified. Four new files created (gap detection, readiness assessment, tag-question-affects tool, blocking priority query). |
-| 2026-04-14 | Wave 2 audit fixes | Applied 15 gap fixes per `docs/bef/audits/2026-04-13/phase-03-audit.md`. Resolves Wave 0 contradiction A: §2.8 collapsed to a status-advancement listener; Phase 2 Answer Logging Pipeline owns Stage 4 (cites AUDIT_DECISIONS DECISION-11 and Addendum v1 §2). Health Score deferred to Phase 7 (PRD-8-25). Blocked Work Items component added (PRD-8-23). PRD-9-10 clarity validation, PRD-9-02 scope-required, PRD-19-13 duplicate-answer 409, embedding hash gate, partial unique indexes for QuestionAffects, and reasoning field on follow-up cards added. New §2.14 wires the Answer Logging Pipeline contract. Trace lines added to all §2.x blocks. |
+| 2026-04-14 | Wave 2 audit fixes | Applied 15 gap fixes during Wave 2. Resolves Wave 0 contradiction A: §2.8 collapsed to a status-advancement listener; Phase 2 Answer Logging Pipeline owns Stage 4 (cites DECISIONS.md DECISION-11 and Addendum v1 §2). Health Score deferred to Phase 7 (PRD-8-25). Blocked Work Items component added (PRD-8-23). PRD-9-10 clarity validation, PRD-9-02 scope-required, PRD-19-13 duplicate-answer 409, embedding hash gate, partial unique indexes for QuestionAffects, and reasoning field on follow-up cards added. New §2.14 wires the Answer Logging Pipeline contract. Trace lines added to all §2.x blocks. |

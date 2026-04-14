@@ -1,7 +1,6 @@
 # Phase 1 Spec: RBAC, Security, Governance
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
-> Gap Report: [01-rbac-security-gaps.md](./01-rbac-security-gaps.md)
 > Depends On: None
 > Status: Approved
 > Last Updated: 2026-04-09

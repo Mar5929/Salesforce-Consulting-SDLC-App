@@ -410,5 +410,5 @@ All mutation tasks call `assertProjectWritable(projectId)` published by Phase 9 
 
 **Cross-references:**
 - PHASE_SPEC §2.14 — Task 10 body.
-- AUDIT_DECISIONS.md — DECISION-06, DECISION-08, DECISION-10.
+- `docs/bef/DECISIONS.md` — DECISION-06, DECISION-08, DECISION-10.
 - `.claude/threads/2026-04-13-prd-traceability-audit.md` — carry-forward decisions (esp. #2 `SearchResponse`, #5 `assertProjectWritable` ordering).

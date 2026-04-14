@@ -1,7 +1,6 @@
 # Phase 8 Spec: Documents, Notifications
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
-> Gap Report: [08-docs-notifications-gaps.md](./08-docs-notifications-gaps.md)
 > Depends On: Phase 1 (RBAC, Security, Governance), Phase 2 (Pipelines: `pending_review` + `conflicts_flagged`; `postProcessOutput`; model router for `MAX_CONTEXT_TOKENS`), Phase 6 (METADATA_SYNC_COMPLETE emit site), Phase 7 (HEALTH_SCORE_CHANGED handoff, SPRINT_CONFLICT_DETECTED origin), Phase 9 (archive `assertProjectWritable` helper per DECISION-10)
 > Status: Draft (Wave 3 audit-fix 2026-04-14)
 > Last Updated: 2026-04-14
@@ -37,7 +36,7 @@ These amendments integrate PRD Addendum v1 into Phase 8. They are additive — e
 
 ## Wave 3 Audit-Fix Amendments (2026-04-14)
 
-Applied per `docs/bef/audits/2026-04-13/phase-08-audit.md`. Cite `DECISION-nn` from `AUDIT_DECISIONS.md`.
+Cite `DECISION-nn` from `docs/bef/DECISIONS.md`.
 
 - **DECISION-04 (PRD-16-06):** PDF in-browser preview added as REQ-DOCS-012 (Task 12). DOCX/PPTX inline preview remains V2; PDF satisfies the PRD preview clause for V1.
 - **DECISION-07 (PRD-16-01):** BRD, SDD, and Client Deck (PPTX) templates added to Task 6. Each traces to PRD-16-01.
@@ -490,7 +489,7 @@ prisma.notification.findMany({
 
 ## 7. Open Questions
 
-None — Wave 3 audit fixes (2026-04-14) closed all gaps documented in `docs/bef/audits/2026-04-13/phase-08-audit.md`. Outstanding items are cross-phase handoffs tracked via DECISIONs (DECISION-04, 07, 08, 10).
+None — Wave 3 audit fixes (2026-04-14) closed all gaps from the 2026-04-13 PRD-traceability audit. Outstanding items are cross-phase handoffs tracked via DECISIONs (DECISION-04, 07, 08, 10).
 
 ---
 
@@ -499,4 +498,4 @@ None — Wave 3 audit fixes (2026-04-14) closed all gaps documented in `docs/bef
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Created via `/bef:deep-dive 8`. GAP-DOCS-007 (inline preview) deferred to V2. HEALTH_SCORE_CHANGED sender deferred to Phase 7. Received GAP-AGENT-001 (status report template) and GAP-AGENT-008 notifications (rate limit alerts) from Phase 2. |
-| 2026-04-14 | Wave 3 audit-fix | Applied 12 gaps from `docs/bef/audits/2026-04-13/phase-08-audit.md`. Added PDF preview (DECISION-04), BRD/SDD/Client Deck templates (DECISION-07), orphan requirements PRD-5-14 + PRD-16-07 (DECISION-08), archive gate imports (DECISION-10), six unwired PRD §17.8 senders, pipeline notification REQ-DOCS-010, regeneration-with-adjustments REQ-DOCS-011, PDF preview REQ-DOCS-012, TECHNICAL_SPEC reconciliation REQ-DOCS-013. BrandingConfig expanded to cover PRD-16-04 in full; validation becomes a hard gate per PRD-16-03. Version race closed via unique constraint + FOR UPDATE transaction. Question aging aligned to PRD §17.8 (owner + PM) with timezone + cadence rules. |
+| 2026-04-14 | Wave 3 audit-fix | Applied 12 gaps from the 2026-04-13 Phase 8 audit. Added PDF preview (DECISION-04), BRD/SDD/Client Deck templates (DECISION-07), orphan requirements PRD-5-14 + PRD-16-07 (DECISION-08), archive gate imports (DECISION-10), six unwired PRD §17.8 senders, pipeline notification REQ-DOCS-010, regeneration-with-adjustments REQ-DOCS-011, PDF preview REQ-DOCS-012, TECHNICAL_SPEC reconciliation REQ-DOCS-013. BrandingConfig expanded to cover PRD-16-04 in full; validation becomes a hard gate per PRD-16-03. Version race closed via unique constraint + FOR UPDATE transaction. Question aging aligned to PRD §17.8 (owner + PM) with timezone + cadence rules. |

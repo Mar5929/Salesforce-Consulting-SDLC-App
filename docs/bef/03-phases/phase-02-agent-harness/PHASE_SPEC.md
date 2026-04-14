@@ -3,7 +3,6 @@
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
 > Addendum Source: [PRD-ADDENDUM-v1-Intelligence-Layer.md §5.2, §5.3](../../00-prd/PRD-ADDENDUM-v1-Intelligence-Layer.md)
 > Integration Plan: [ADDENDUM-INTEGRATION-PLAN.md §Phase 2](../../ADDENDUM-INTEGRATION-PLAN.md)
-> Gap Report: [02-agent-harness-gaps.md](./02-agent-harness-gaps.md)
 > Depends On: Phase 1 (RBAC, Security, Governance), Phase 11 (Model Router, Eval Harness, Observability)
 > Unlocks: Phase 3 (Discovery), Phase 4 (Work Management), Phase 6 (Org/Knowledge)
 > Complexity: XL
@@ -708,5 +707,5 @@ All items previously open in §8 are resolved (see §8 "Resolved Decisions"). No
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Created via `/bef:deep-dive 2`. GAP-001 → Phase 8. GAP-002 → Phase 5. GAP-005 duplicate of Phase 1. GAP-008 notifications deferred to Phase 8. |
-| 2026-04-13 | Addendum integration (populated from integration plan) | Phase renamed to "Harness Hardening + Core Pipelines". Added four deterministic pipelines, freeform agent, model router retrofit, Story Generation eval fixtures. Preserved all 10 REQ-HARNESS items. Pre-addendum spec archived as PHASE_SPEC.pre-addendum.md. |
+| 2026-04-13 | Addendum integration (populated from integration plan) | Phase renamed to "Harness Hardening + Core Pipelines". Added four deterministic pipelines, freeform agent, model router retrofit, Story Generation eval fixtures. Preserved all 10 REQ-HARNESS items. |
 | 2026-04-13 | Step 3 deep-dive complete | 10 outstanding decisions resolved: (1) unified (no 2a/2b split); (2) 9 orphan TaskTypes dispositioned + Task 18 removes enum values with grep CI check; (3) per-stage error behavior — non-blocking: Transcript stage 6, Answer stage 4, Story stage 5; (4) Transcript confidence strict > 0.85, Answer Logging tiered 0.70/0.85; (5) Freeform agent gets 8 read tools (added get_recent_sessions + get_milestone_progress); (6) Story Gen eval similarity cosine ≥ 0.80; (7) Pipeline schema owned by Phase 11; Phase 2 adds only aiDailyLimit/aiMonthlyCostCap; (8) Transcript=async, Answer=sync, Story=async, Briefing=sync+cache; (9) Cost cap hybrid — 80% soft alert event + 100% hard 429; (10) Task 11/12 ACs extended to replace Phase 11 fixture stubs with real expectations. Added §8.1 TaskType disposition matrix and §8.2 Cross-Pipeline Integration Matrix. |

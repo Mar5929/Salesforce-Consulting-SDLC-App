@@ -1,7 +1,6 @@
 # Phase 7 Spec: Dashboards, Search
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
-> Gap Report: [07-dashboards-search-gaps.md](./07-dashboards-search-gaps.md)
 > Depends On: Phase 2 (Briefing/Status Pipeline), Phase 3 (Discovery), Phase 4 (Work Management), Phase 5 (Sprint/Developer), Phase 6 (Org/Knowledge), Phase 11 (Hybrid Retrieval `search_project_kb` + `search_org_kb`)
 > Status: Draft (Wave 3 audit-fix applied 2026-04-14)
 > Last Updated: 2026-04-14

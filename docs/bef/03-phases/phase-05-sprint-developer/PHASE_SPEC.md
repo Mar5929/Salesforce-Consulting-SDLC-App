@@ -1,7 +1,6 @@
 # Phase 5 Spec: Sprint, Developer API
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
-> Gap Report: [05-sprint-developer-gaps.md](./05-sprint-developer-gaps.md)
 > Depends On: Phase 4 (Work Management), Phase 6 (Org/Knowledge — added per Addendum v1 for `search_org_kb`, `search_project_kb`, `component_edges`), Phase 9 (`assertProjectWritable` per DECISION-10)
 > Status: Draft
 > Last Updated: 2026-04-13

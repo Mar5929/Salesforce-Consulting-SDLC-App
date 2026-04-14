@@ -1468,7 +1468,7 @@ There is exactly one agent loop in the system. Scoped to open-ended conversation
 
 **Context window.** Last N turns (N = 20 initial default) plus the project's Tier 1 summary plus any dynamically retrieved context returned by the tools below.
 
-**Persistence.** Freeform agent state persists in the dedicated `agent_conversations` and `agent_messages` tables created in Phase 11 per Addendum §5.3 and §7 (row ADD-7-06). `agent_conversations` holds thread metadata (id, project_id, user_id, title, created_at, updated_at). `agent_messages` holds individual turns (id, conversation_id, role, content, metadata jsonb, created_at). This resolves the prior "reuse existing `Conversation`/`ChatMessage`" wording per AUDIT_DECISIONS.md DECISION-01 (2026-04-13); the Addendum wins per the CLAUDE.md hard rule. Phase 2 builds the freeform agent against these tables. The existing `Conversation`/`ChatMessage` models remain for other chat surfaces and are not extended with a `FREEFORM_AGENT` type.
+**Persistence.** Freeform agent state persists in the dedicated `agent_conversations` and `agent_messages` tables created in Phase 11 per Addendum §5.3 and §7 (row ADD-7-06). `agent_conversations` holds thread metadata (id, project_id, user_id, title, created_at, updated_at). `agent_messages` holds individual turns (id, conversation_id, role, content, metadata jsonb, created_at). This resolves the prior "reuse existing `Conversation`/`ChatMessage`" wording per DECISIONS.md DECISION-01 (2026-04-13); the Addendum wins per the CLAUDE.md hard rule. Phase 2 builds the freeform agent against these tables. The existing `Conversation`/`ChatMessage` models remain for other chat surfaces and are not extended with a `FREEFORM_AGENT` type.
 
 Traces to: PRD-5-10, ADD-7-06.
 
@@ -2829,7 +2829,7 @@ All seven share the same shape:
   unique (entity_id)
 ```
 
-**Embedding dimensions.** V1 hardcodes `vector(512)` on every embedding table. Voyage `voyage-3-lite` (512-dim) is locked per Phase 11 §7.1 and AUDIT_DECISIONS.md DECISION-02 (2026-04-13). A future provider migration to a different-dimension model is a deliberate, documented schema amendment (not a runtime config): the dual-write playbook in Phase 11 §7.3 creates a parallel set of embedding columns at the new dimension, back-fills, and cuts readers over before the old columns are dropped. The `embedding_model` column remains on every table so rows self-describe which provider produced them during any such migration window.
+**Embedding dimensions.** V1 hardcodes `vector(512)` on every embedding table. Voyage `voyage-3-lite` (512-dim) is locked per Phase 11 §7.1 and DECISIONS.md DECISION-02 (2026-04-13). A future provider migration to a different-dimension model is a deliberate, documented schema amendment (not a runtime config): the dual-write playbook in Phase 11 §7.3 creates a parallel set of embedding columns at the new dimension, back-fills, and cuts readers over before the old columns are dropped. The `embedding_model` column remains on every table so rows self-describe which provider produced them during any such migration window.
 
 Traces to: ADD-7-02, ADD-3.1-02, ADD-7-01.
 

@@ -1,7 +1,6 @@
 # Phase 6 Spec: Org Knowledge — Five-Layer Intelligence Model
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
-> Gap Report: [06-org-knowledge-gaps.md](./06-org-knowledge-gaps.md)
 > Addendum Source: [ADDENDUM-INTEGRATION-PLAN.md §Phase 6](../../ADDENDUM-INTEGRATION-PLAN.md), [PRD-ADDENDUM-v1-Intelligence-Layer.md §4](../../00-prd/PRD-ADDENDUM-v1-Intelligence-Layer.md)
 > Depends On: Phase 11 (Infrastructure Tables), Phase 2 (Agent Harness, Answer Logging Pipeline)
 > Unlocks: Phase 5 (Context Package Assembly), Phase 7 (Dashboards/Search)
@@ -13,7 +12,7 @@
 
 ## 0. Change Log vs Pre-Addendum Spec
 
-This spec was rewritten on 2026-04-13 to incorporate PRD Addendum v1. The pre-addendum version is preserved as `PHASE_SPEC.pre-addendum.md`.
+This spec was rewritten on 2026-04-13 to incorporate PRD Addendum v1. The pre-addendum version is available via git history prior to the 2026-04-14 cleanup.
 
 Preserved (unchanged or lightly enhanced):
 - REQ-ORG-001 — PKCE on OAuth Web Server Flow
@@ -62,7 +61,7 @@ Plus: Org Health Assessment (restored from V2), sync reconciliation algorithm wi
 
 ### 2.1 PKCE on OAuth Web Server Flow (REQ-ORG-001) — PRESERVED
 
-Unchanged from pre-addendum spec. See `PHASE_SPEC.pre-addendum.md` §2.1 for full detail.
+Unchanged from pre-addendum spec (see git history pre-2026-04-14 for original §2.1 detail).
 
 - Generate cryptographically random `code_verifier` (43–128 chars, base64url).
 - `code_challenge = BASE64URL(SHA256(code_verifier))`.
@@ -104,7 +103,7 @@ Files: `src/lib/inngest/functions/metadata-sync.ts`, `src/lib/salesforce/metadat
 
 ### 2.3 Sync Schedule Configuration UI (REQ-ORG-003) — PRESERVED
 
-Unchanged from pre-addendum spec. See `PHASE_SPEC.pre-addendum.md` §2.3.
+Unchanged from pre-addendum spec.
 
 ### 2.4 Layer 1 — Component Graph
 
@@ -295,11 +294,11 @@ AI-drafted defaults (PRD-13-21): `authorType=AI_GENERATED, confidence ∈ {LOW, 
 
 ### 2.11 KnowledgeArticle Confirmation Model (REQ-ORG-007) — PRESERVED
 
-Unchanged. `isConfirmed` field, confirm/reject/edit/bulk actions, SA-only role gate, context-assembly filter. See `PHASE_SPEC.pre-addendum.md` §2.7.
+Unchanged. `isConfirmed` field, confirm/reject/edit/bulk actions, SA-only role gate, context-assembly filter.
 
 ### 2.12 Planned Component Creation from Story Execution (REQ-ORG-009) — PRESERVED
 
-Unchanged. See `PHASE_SPEC.pre-addendum.md` §2.9.
+Unchanged from pre-addendum spec.
 
 ### 2.13 NLP Org Query API (REQ-ORG-010) — UPDATED
 
@@ -319,7 +318,7 @@ Files: `src/lib/salesforce/org-query.ts` (rewritten to call `search_org_kb`, bra
 
 ### 2.14 Planned Component Status Upgrade During Sync (REQ-ORG-013) — PRESERVED
 
-Unchanged. See `PHASE_SPEC.pre-addendum.md` §2.13.
+Unchanged from pre-addendum spec.
 
 ### 2.15 Org Health Assessment (RESTORED from V2)
 
@@ -463,7 +462,7 @@ Wrapper at `src/lib/salesforce/search-org-kb.ts` adapts the SQL row set into `Se
 | Health assessment cost ceiling exceeded mid-run | Hard-stop, persist partial findings and remediation items collected so far, mark report status `partial`, notify architect. |
 | Unresolved reference resolves on later sync (dynamic Apex now statically resolvable) | `component_edges.target_component_id` back-filled, `unresolved_reference_text` cleared. |
 
-Existing edge cases from pre-addendum spec (PKCE, cron, planned components, etc.) remain valid — see `PHASE_SPEC.pre-addendum.md` §4.
+Existing edge cases from pre-addendum spec (PKCE, cron, planned components, etc.) remain valid.
 
 ---
 
@@ -655,6 +654,6 @@ Non-regression:
 
 | Date | Change | Reason |
 |------|--------|--------|
-| 2026-04-10 | Initial spec | Pre-addendum — see `PHASE_SPEC.pre-addendum.md`. |
+| 2026-04-10 | Initial spec | Pre-addendum version (see git history pre-2026-04-14). |
 | 2026-04-13 | Major rewrite for PRD Addendum v1 | Five-layer model, Org Health restored, schema migrations, Managed Agents, `search_org_kb`. Populated from integration plan; deep-dive still required. |
-| 2026-04-14 | Audit-fix wave: closed 20 gaps from `phase-06-audit.md` | Cites DECISION-02 (vector(512)), DECISION-05 (KA embedding in V1), DECISION-08 (orphan owners PRD-5-27, PRD-13-14, PRD-13-16/20/21, PRD-13-28), DECISION-10 (`assertProjectWritable` consumer). Carry-forward #2 (`SearchResponse` + `_meta.not_implemented`), #3 (`article_entity_refs` table). Narrow PRD-13-18 supersession recorded (§2.9.1: brownfield = single Managed Agents session; incremental refresh = two sequential pipeline steps sharing context bundle). All §7 deep-dive items resolved; status flipped to Ready for execute. |
+| 2026-04-14 | Audit-fix wave: closed 20 gaps from the 2026-04-13 Phase 6 audit | Cites DECISION-02 (vector(512)), DECISION-05 (KA embedding in V1), DECISION-08 (orphan owners PRD-5-27, PRD-13-14, PRD-13-16/20/21, PRD-13-28), DECISION-10 (`assertProjectWritable` consumer). Carry-forward #2 (`SearchResponse` + `_meta.not_implemented`), #3 (`article_entity_refs` table). Narrow PRD-13-18 supersession recorded (§2.9.1: brownfield = single Managed Agents session; incremental refresh = two sequential pipeline steps sharing context bundle). All §7 deep-dive items resolved; status flipped to Ready for execute. |

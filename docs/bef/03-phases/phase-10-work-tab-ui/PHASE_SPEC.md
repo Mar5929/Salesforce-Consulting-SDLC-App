@@ -490,7 +490,7 @@ Phase 4 adds `missingMandatoryFields: string[]` to the story read payload (fed b
 
 ## 7. Open Questions
 
-Tracked items from the Phase 10 audit (`docs/bef/audits/2026-04-13/phase-10-audit.md`). Items closed by Wave 3 audit-fix are noted in the Revision History; items still requiring cross-phase coordination at execute time:
+Tracked items from the 2026-04-13 Phase 10 audit. Items closed by Wave 3 audit-fix are noted in the Revision History; items still requiring cross-phase coordination at execute time:
 
 - **Phase-4 Tasks-tier server actions (§2.5, Integration Points):** Phase 4 must publish `listStoryTasks`, `createStoryTask`, `updateStoryTask`, `deleteStoryTask` with the signatures pinned in §5. Owner: Phase 4 deep-dive / Mike R. Resolution target: before Phase 10 execute.
 - **Phase-4 `missingMandatoryFields` payload (§2.5.3, §2.6, §2.8):** Phase 4 must include `missingMandatoryFields: string[]` on story reads. Owner: Phase 4. Resolution target: before Task 12 completion (the indicator is a no-op until then).
@@ -504,4 +504,4 @@ Tracked items from the Phase 10 audit (`docs/bef/audits/2026-04-13/phase-10-audi
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Created via `/bef:deep-dive 10` with self-answered interview |
-| 2026-04-14 | Wave 3 audit-fix: applied 11 gap fixes from `phase-10-audit.md`. Added PRD trace lines across §1, §2.1–2.8. Added §2.9 Accessibility (WCAG 2.1 AA). Owned Tasks-tier UI in Story Detail per `DECISION-06`. Added permission gating per field (PRD-19-04, -05, -08), sprint auto-transition to Sprint Planned (PRD-19-06), Draft completeness indicator (PRD-10-03..10), Developer default "My Work" view (PRD-12-01), canonical empty-state table, pinned Phase-1 server-action signatures, invalid-URL-param fallback rules, and expanded §4 edge cases. §7 Open Questions rewritten with real cross-phase items. | Wave 3 audit remediation against `docs/bef/audits/2026-04-13/phase-10-audit.md`. Cites `DECISION-06`. |
+| 2026-04-14 | Wave 3 audit-fix: applied 11 gap fixes from `phase-10-audit.md`. Added PRD trace lines across §1, §2.1–2.8. Added §2.9 Accessibility (WCAG 2.1 AA). Owned Tasks-tier UI in Story Detail per `DECISION-06`. Added permission gating per field (PRD-19-04, -05, -08), sprint auto-transition to Sprint Planned (PRD-19-06), Draft completeness indicator (PRD-10-03..10), Developer default "My Work" view (PRD-12-01), canonical empty-state table, pinned Phase-1 server-action signatures, invalid-URL-param fallback rules, and expanded §4 edge cases. §7 Open Questions rewritten with real cross-phase items. | Wave 3 audit remediation against the 2026-04-13 Phase 10 audit. Cites `DECISION-06`. |

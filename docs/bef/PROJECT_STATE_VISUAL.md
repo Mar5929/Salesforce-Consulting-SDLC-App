@@ -151,7 +151,7 @@ Mirrored from `PROJECT_STATE.md` → "What's next, in order". Update both files 
 
 ### User decisions pending
 
-- See `docs/bef/audits/2026-04-13/CROSS_PHASE_SUMMARY.md` → Wave 0 user-decision queue.
+- Historical audit trail: `.claude/threads/2026-04-13-prd-traceability-audit.md` (Wave 0 user-decision queue).
 
 ---
 

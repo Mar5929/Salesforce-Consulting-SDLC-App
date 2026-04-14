@@ -1,7 +1,6 @@
 # Phase 9 Spec: QA, Jira, Archival, Lifecycle
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
-> Gap Report: [09-qa-jira-archival-gaps.md](./09-qa-jira-archival-gaps.md)
 > Depends On: Phase 1 (RBAC, Security, Governance), Phase 4 (Work Management), Phase 8 (Documents, Notifications)
 > Status: Draft
 > Last Updated: 2026-04-14
@@ -433,4 +432,4 @@ Phase 9 publishes the following interfaces for consumer phases (Phases 2, 4, 8, 
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Created via `/bef:deep-dive 9`. GAP-ARCH-004 (reactivation fork-and-inherit) deferred to V2. GAP-JIRA-003 and GAP-JIRA-004 confirmed resolved. 19 active gaps consolidated to 11 tasks. |
-| 2026-04-14 | Wave 3 audit-fix (phase-09) | Applied 13 gap fixes from `docs/bef/audits/2026-04-13/phase-09-audit.md`. Cites DECISION-08 (PRD-5-25 polymorphic attachments — defect half) and DECISION-10 (archive read-only gate ownership — Phase 9 owns and publishes `assertProjectWritable`). Added §8 Published Interfaces. Removed Migration 1 (Attachment.defectId). Added Jira single-project scope guard (PRD-20-03), push-only restatement (PRD-20-02), JiraFieldMapping Zod schema, triggerStatuses StoryStatus validation, apiToken encryption note. Pinned TestCase output schema and STUB/AI_GENERATED contract (ADD §5.2.3). Declared PROJECT_CREATED / PROJECT_ARCHIVED / PROJECT_STATE_CHANGED payloads. Traced PRD-5-14 null-assignee fallback to Phase 8. Added log-scope note reconciling access-log vs audit-log naming (PRD-21-06). Added defect role-gated lifecycle matrix (PRD-5-17, PRD-18-04). Added 8 edge cases. |
+| 2026-04-14 | Wave 3 audit-fix (phase-09) | Applied 13 gap fixes from the 2026-04-13 Phase 9 audit. Cites DECISION-08 (PRD-5-25 polymorphic attachments — defect half) and DECISION-10 (archive read-only gate ownership — Phase 9 owns and publishes `assertProjectWritable`). Added §8 Published Interfaces. Removed Migration 1 (Attachment.defectId). Added Jira single-project scope guard (PRD-20-03), push-only restatement (PRD-20-02), JiraFieldMapping Zod schema, triggerStatuses StoryStatus validation, apiToken encryption note. Pinned TestCase output schema and STUB/AI_GENERATED contract (ADD §5.2.3). Declared PROJECT_CREATED / PROJECT_ARCHIVED / PROJECT_STATE_CHANGED payloads. Traced PRD-5-14 null-assignee fallback to Phase 8. Added log-scope note reconciling access-log vs audit-log naming (PRD-21-06). Added defect role-gated lifecycle matrix (PRD-5-17, PRD-18-04). Added 8 edge cases. |

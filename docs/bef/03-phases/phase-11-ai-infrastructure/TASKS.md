@@ -1,7 +1,7 @@
 # Phase 11 Tasks: AI Infrastructure Foundation
 
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
-> Total Tasks: 11 (Task 2a added per AUDIT_DECISIONS.md DECISION-03)
+> Total Tasks: 11 (Task 2a added per DECISIONS.md DECISION-03)
 > Status: 0/11 complete
 > Last Updated: 2026-04-13
 
@@ -86,7 +86,7 @@ Task 1 (schema migration)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Execute the Addendum §3.1-02 / §8.A 50-pair quality test before Phase 11 merges. Build 50 labeled component-to-query pairs drawn from `docs/org/` if present, or synthesize from Salesforce-domain vocabulary. Run Voyage `voyage-3-lite` (512-dim) and OpenAI `text-embedding-3-small` on the same corpus. Score nDCG@10 for both. Lock Voyage if within 5% of OpenAI; escalate otherwise. Rescinds the prior waiver per AUDIT_DECISIONS.md DECISION-03. Traces to: ADD-3.1-02. |
+| **Scope** | Execute the Addendum §3.1-02 / §8.A 50-pair quality test before Phase 11 merges. Build 50 labeled component-to-query pairs drawn from `docs/org/` if present, or synthesize from Salesforce-domain vocabulary. Run Voyage `voyage-3-lite` (512-dim) and OpenAI `text-embedding-3-small` on the same corpus. Score nDCG@10 for both. Lock Voyage if within 5% of OpenAI; escalate otherwise. Rescinds the prior waiver per DECISIONS.md DECISION-03. Traces to: ADD-3.1-02. |
 | **Depends On** | Task 2 (model router needed to call both providers) |
 | **Complexity** | M |
 | **Requirement** | REQ-AIINFRA-002 (NEW); Traces to: ADD-3.1-02 |
