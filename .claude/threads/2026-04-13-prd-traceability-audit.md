@@ -157,13 +157,49 @@ Wave 2 pattern called for all agents in isolated worktrees. In Wave 3, only Phas
 
 ## Next session: what to do
 
-1. Read `docs/bef/PROJECT_STATE.md` first.
-2. Read this thread (Waves 1 + 2 + 3 complete; 8 Wave 3 agent-report flags above).
-3. Read `docs/bef/audits/2026-04-13/AUDIT_DECISIONS.md` — 11 locked decisions (DECISION-01 through DECISION-11; `DECISION-03` scope amended).
-4. **Active step is Step 4b — Post-gap-closure verifier sweep.** Dispatch verifier agents (pattern: Step 2's 4-verifier team) to cross-check all 10 fixed phases against PRD + Addendum. Verdict must be PROCEED before Stage 5 (execution). Watch specifically for the 8 Wave 3 flags above.
-5. After Step 4b verdict, Phase 6 re-dive is the last Stage 4 item before Stage 5 kicks off.
-6. Remaining pre-Wave-0 open items: `DECISION-12` (attachment storage — defer to Phase 4 execution unless verifier escalates).
-7. Ephemeral-file cleanup items from `PROJECT_STATE.md` Status §"Ephemeral files" are still open (move `REQUIREMENT_INDEX.md`, decide on `GAP-ANALYSIS-INDEX.md`).
+**User intent when context clears:** "continue with Step 4b."
+
+### Quickstart for Step 4b
+
+1. Read `docs/bef/PROJECT_STATE.md` first (Status line already points at Step 4b).
+2. Read this thread end-to-end, especially the §"Wave 3 agent-report flags" — those are the verifier agents' priority hit list.
+3. Read `docs/bef/audits/2026-04-13/AUDIT_DECISIONS.md` — 11 locked decisions (DECISION-01 through DECISION-11; `DECISION-03` scope amended to cover Phase 3/4/6; `DECISION-12` intentionally deferred).
+4. Reference prior sweep: `docs/bef/03-phases/VERIFICATION-STEP-2.md` and `docs/bef/03-phases/verification/` (four verifier-agent matrices from 2026-04-13). Mirror that pattern.
+
+### Step 4b dispatch plan (proposed — user confirms before execution)
+
+Dispatch 4 verifier agents in parallel, each covering a slice of the 442-row requirement index against the post-fix phase artifacts:
+
+- **Verifier A** — PRD §1-§10 + Addendum §1-§4 → Phases 1, 2, 3, 11.
+- **Verifier B** — PRD §11-§17 + Addendum §5 → Phases 4, 5, 6, 10.
+- **Verifier C** — PRD §18-§23 + Addendum §6-§8 → Phases 7, 8, 9.
+- **Verifier D** — Cross-phase contract + decision compliance (DECISION-01..11 cited correctly; published interfaces consumed; no orphan requirements remain).
+
+Each agent reads: `REQUIREMENT_INDEX.md` (its slice), all relevant `phase-NN-audit.md` fix plans (to confirm gaps are actually closed), the current `PHASE_SPEC.md` + `TASKS.md`, and this thread's Wave 3 flag list. Output: a matrix of verdicts (MATCH / PARTIAL / MISMATCH) per requirement ID plus a consolidated rollup.
+
+Do NOT run verifiers in isolated worktrees (Wave 3 showed isolation unreliable; verifiers are read-only, so no isolation needed).
+
+### Priority hit list for verifiers (Wave 3 flags, condensed)
+
+1. Phase 2 publish gates: `invokeBriefingPipeline` signature, `BriefingType` enum, `BRIEFING_REQUESTED` event name. Phase 5 + 7 consume.
+2. DECISION-10 consumer wiring: Phase 9 publishes `assertProjectWritable`; Phase 2, 4, 8 must import at every mutation. Phase 8 Wave 3 added ACs to Tasks 3/5/10/11/12. Phase 2 and Phase 4 wiring still needs cross-check.
+3. Em-dash policy: Phase 7 stripped to `--`; Phase 10 left pre-existing in place; others mixed. Pick one and fix once.
+4. Phase 11 publish gates: `search_org_kb` / `search_project_kb` signatures + `SearchResponse` envelope. Phase 5 + 7 consume.
+5. Phase 7 owns `event_audit` table (PRD-23-12) — no Phase 11 schema reconciliation needed, but verifier should confirm no duplicate schema authoring.
+6. `stripSensitiveFields` shared-lib ownership: Phase 5 §2.16 + Task 1a currently author it. Decide Phase 1 vs Phase 5 ownership.
+7. Phase 6 enum: `KnowledgeArticle.source = 'PHASE_4_BOOTSTRAP'` absorbed in §2.10 + Task 18 AC. Confirm Phase 4 Task 14 references it correctly.
+8. DECISION-11 (Phase 3 pipeline listener collapse): verify Phase 3 docs still cite derivation — the decision was minted post-fact; no re-edit of Phase 3 docs was performed.
+
+### After Step 4b verdict
+
+- If PROCEED: continue to **Phase 6 re-dive** (Stage 4 Step 3 last item), then Stage 5 execution.
+- If REWORK NEEDED: dispatch a targeted fix micro-wave against specific phase docs. Re-run Step 4b after.
+
+### Still-open items (not blocking Step 4b)
+
+- `DECISION-12` (attachment storage backend — Vercel Blob vs S3). Defer to Phase 4 execution unless verifier escalates.
+- Ephemeral-file cleanup from `PROJECT_STATE.md` §"Ephemeral files": move `REQUIREMENT_INDEX.md` out of audits folder; decide on `GAP-ANALYSIS-INDEX.md`.
+- `docs/superpowers/` is untracked on main — unrelated to this work; leave alone or ask user.
 
 ### Wave 1 lessons learned (apply to Wave 2/3 dispatch)
 

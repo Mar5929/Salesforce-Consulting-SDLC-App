@@ -16,7 +16,8 @@
 
 ### What's next, in order
 
-1. **Phase 6 re-dive** (Five-Layer Org KB). Depends on Phase 11 + Phase 2 (both locked).
+1. **Step 4b — Post-gap-closure verifier sweep (ACTIVE).** Dispatch a verifier-agent team (pattern matches Step 2's 4-verifier sweep from 2026-04-13) to cross-check all 10 fixed phases against PRD + Addendum. Verdict PROCEED is required before Stage 5 execution can begin. Watch the 8 Wave 3 agent-report flags documented in the thread (em-dash policy, Phase 2 publish gates, DECISION-10 consumer wiring, etc.).
+2. **Phase 6 re-dive** (Five-Layer Org KB). Depends on Phase 11 + Phase 2 (both locked) AND Step 4b verdict.
    Resolve `KnowledgeArticle.embedding` migration path before Task 1.
 
 Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for deep-dive" section. Consolidated inventory in `VERIFICATION-STEP-2.md`:
