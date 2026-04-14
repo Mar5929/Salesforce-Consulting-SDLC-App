@@ -469,6 +469,10 @@ Traces to: REQ-PIPELINE-003, Addendum §5.2.3-01 through -08, PRD-10-08, PRD-8-1
 - [ ] **Invalid `briefingType`:** validated at API layer before stage 1; returns HTTP 400.
 - [ ] **Interruption (PRD-8-12):** on cancellation, `pipeline_run.status = 'failed'` and `SessionLog.status = 'FAILED'`; no stale cache row written.
 - [ ] **Archive gate (DECISION-10):** stage 5 (Cache and return) invokes `assertProjectWritable(projectId)` before upserting `BriefingCache`.
+- [ ] `invokeBriefingPipeline` function exported from `src/lib/pipelines/briefing/index.ts` with signature pinned in PHASE_SPEC §3.4 Published Interfaces
+- [ ] `BriefingType` enum exported with all 6 values (daily_standup, weekly_status, executive_summary, blocker_report, discovery_gap_report, sprint_health)
+- [ ] `BRIEFING_REQUESTED` Inngest event handler registered with pinned payload schema
+- [ ] Phase 5 Task 14 and Phase 7 Task 16 can import `BriefingType` and `invokeBriefingPipeline` from the pinned path
 
 Traces to: REQ-PIPELINE-004, Addendum §5.2.4-01 through -05, PRD-5-30, PRD-17-05, PRD-8-12, DECISION-10.
 

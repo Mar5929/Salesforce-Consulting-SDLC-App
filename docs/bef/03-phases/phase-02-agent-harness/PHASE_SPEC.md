@@ -296,6 +296,55 @@ Replaces the generic `BRIEFING` harness task. Five stages:
   - **Cache store:** Postgres row in a new `briefing_cache` table (or an existing cache infra if already present) keyed by `(projectId, briefingType)` with latest `inputs_hash` + generated text + `generated_at`. Reuse of existing cache infra preferred over new table; confirm during Task 14 implementation.
 - **File structure:** `src/lib/pipelines/briefing/` with one file per stage + Inngest step function. Briefing-type templates in `src/lib/pipelines/briefing/templates/`.
 
+#### Published Interfaces
+
+Phase 2 publishes the following contracts verbatim. Phase 5 Task 14 and Phase 7 Task 16 import from the pinned path.
+
+```typescript
+// src/lib/pipelines/briefing/index.ts
+export enum BriefingType {
+  daily_standup = 'daily_standup',
+  weekly_status = 'weekly_status',
+  executive_summary = 'executive_summary',
+  blocker_report = 'blocker_report',
+  discovery_gap_report = 'discovery_gap_report',
+  sprint_health = 'sprint_health',
+}
+
+export interface BriefingOptions {
+  recipientRole?: 'PM' | 'SA' | 'BA' | 'DEV' | 'QA';
+  requestorUserId?: string;
+  bypassCache?: boolean;
+  sprintId?: string;  // required when briefingType = 'sprint_health'
+}
+
+export interface BriefingOutput {
+  briefingId: string;
+  briefingType: BriefingType;
+  projectId: string;
+  generatedAt: Date;
+  inputsHash: string;
+  content: { sections: BriefingSection[]; rawMarkdown: string };
+  cached: boolean;
+  cacheTtlSeconds: number;
+}
+
+export async function invokeBriefingPipeline(
+  projectId: string,
+  briefingType: BriefingType,
+  options?: BriefingOptions
+): Promise<BriefingOutput>;
+```
+
+Inngest event contract:
+- Event name: `BRIEFING_REQUESTED`
+- Payload: `{ projectId: string; briefingType: BriefingType; recipientRole?: string; requestorUserId?: string; sprintId?: string; bypassCache?: boolean }`
+- Handler registered in `src/lib/pipelines/briefing/inngest.ts`
+
+Consumers:
+- Phase 5 Task 14 (sprint_health briefings)
+- Phase 7 Task 16 (daily_standup, weekly_status for dashboards)
+
 ---
 
 ## 4. Functional Requirements — Freeform Agent (REQ-AGENT-FREEFORM-001)
