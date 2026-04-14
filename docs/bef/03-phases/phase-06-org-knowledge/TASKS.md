@@ -366,6 +366,7 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] Embedding enqueued to `knowledge_article_embeddings` (Task 4; cites DECISION-05).
 - [ ] Initial brownfield ingestion budget: 30–90 minutes for a large org; progress surfaced as percent-complete every 60 seconds in ingestion UI (closes GAP-18, ADD-4.7-14).
 - [ ] PRD-13-14 placeholder KnowledgeArticle seeded at project initialization (idempotent) (orphan owner per DECISION-08).
+- [ ] `KnowledgeArticle.source` enum includes `'PHASE_4_BOOTSTRAP'` (Wave 3 absorption; closes Phase 4 OQ-1 / phase-04-audit OQ-1 per DECISION-08). Phase 4 Task 14 emits rows with this source; Phase 6 owns the schema migration. Enum reconciliation only; no other changes.
 
 ---
 
