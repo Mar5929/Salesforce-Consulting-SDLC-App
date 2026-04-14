@@ -30,6 +30,7 @@ These decisions are authoritative for all fix agents executing Waves 1–3. Fix 
 **Decision:** Run the Addendum §3.1-02 / §8.A 50-pair quality test before Phase 11 execution lands.
 **Downstream actions:**
 - Phase 11: add a task (or extend an existing one) to run the test, record results, sign off. Block Phase 11 merge on test completion.
+- **Scope clarification (added 2026-04-14):** Gate applies to any phase that enqueues via `embeddings.enqueue` — Phase 3, Phase 4, and Phase 6 inherit this merge gate because they share the embedding path.
 **Rationale:** Addendum-locked requirement; skipping without evidence is a silent scope change. Test cost is low vs. regression cost.
 
 ## DECISION-04 — PRD-16-06 document preview
@@ -97,6 +98,15 @@ These decisions are authoritative for all fix agents executing Waves 1–3. Fix 
 - Phase 7: wire firm-wide alert notification per PRD-23-03. No enforcement gate.
 - Phase 2: no firm-level blocking in pipeline runs; per-project caps remain blocking per existing locked behavior.
 **Rationale:** A firm-level block can halt all users from one user's behavior with no override path. Advisory is safer for V1; revisit with usage data. Revisit trigger: once V1 in production for ≥1 month, review cap utilization and upgrade to blocking if needed.
+
+## DECISION-11 — Phase 3 `questionImpactFunction` collapses into pipeline listener
+**Resolves:** Cross-phase contradiction A derivative (CROSS_PHASE_SUMMARY §4) — no prior explicit DECISION ID.
+**Decision:** Phase 3 `questionImpactFunction` collapses into a `QUESTION_IMPACT_COMPLETED` event listener; the Answer Analysis Pipeline owns impact analysis per Addendum §2 (Addendum-wins).
+**Downstream actions:**
+- Phase 3: PHASE_SPEC / TASKS cite `DECISION-11` (replaces the earlier "DECISION-01 derivation + Addendum §2" citation already applied in Wave 2 commit `253c0ed`).
+- Wave 3 and all verifier agents: cite `DECISION-11` for this collapse.
+**Rationale:** Future verifier agents cite by stable ID; derivation logic rots. Retro-minted 2026-04-14 after Wave 2 merged without an explicit ID.
+**Authority:** Addendum §2 (Addendum-wins) + PRD Addendum v1 pipeline-first architecture.
 
 ## DECISION-10 — Archive read-only gate ownership
 **Resolves:** Ambiguity (Phase 9 GAP-02)
