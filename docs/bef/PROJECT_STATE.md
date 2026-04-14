@@ -4,6 +4,7 @@
 
 **Active step:** Step 3 — Gap-closure pass. Wave 1 merged (Phase 11 + Phase 2). Wave 2 (Phase 6, 3, 4) ready to dispatch. See `.claude/threads/2026-04-13-prd-traceability-audit.md` for 5 carry-forward decisions from Wave 1 agent reports.
 **Last updated:** 2026-04-14
+**Visual companion:** `docs/bef/PROJECT_STATE_VISUAL.md` — Mermaid diagrams of pipeline, phase graph, and current focus. Keep in sync when editing this file.
 
 ### Start here (fresh session)
 
