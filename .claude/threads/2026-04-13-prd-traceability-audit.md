@@ -94,16 +94,43 @@ Three parallel fix agents in isolated worktrees; all merged to `main` with `--no
 7. **Phase 6 — polymorphic integrity on `article_entity_refs` implemented as BEFORE INSERT/UPDATE trigger** (Postgres can't enforce cross-table CHECK). Matches the audit's parenthetical fallback.
 8. **Phase 6 — all embedding columns corrected to `vector(512)`** per DECISION-02 where pre-existing text said `vector(1536)`.
 
+### Recommendations on the 8 Wave 2 flags (resolve before or during Wave 3 dispatch)
+
+1. **Flag 1 — no DECISION ID for pipeline-first listener collapse.**
+   **Recommendation: mint `DECISION-11` in `AUDIT_DECISIONS.md`.** One-liner: "Phase 3 `questionImpactFunction` collapses into a `QUESTION_IMPACT_COMPLETED` event listener; pipeline owns impact analysis per Addendum §2 (Addendum-wins)." Then patch the Phase 3 PHASE_SPEC / TASKS citations from "DECISION-01 derivation + Addendum §2" to `DECISION-11`. Reason: future verifier agents cite by ID; derivation logic rots.
+2. **Flag 2 — DECISION-03 extended as a Phase 3 merge gate.**
+   **Recommendation: accept.** Phase 3 enqueues embeddings consumed through the Phase 11 embedding pipeline, so the 50-pair quality test must pass before either ships. Add a one-sentence clarification to `AUDIT_DECISIONS.md` DECISION-03: "Gate applies to any phase that enqueues via `embeddings.enqueue` — Phase 3 + Phase 6 + Phase 4." No spec edits needed.
+3. **Flag 3 — `KnowledgeArticle.source = 'PHASE_4_BOOTSTRAP'` enum addition.**
+   **Recommendation: Wave 3 Phase 6 wrap-up agent (or a standalone 5-minute fix) absorbs the enum value into Phase 6's `KnowledgeArticle` schema task.** Phase 4 consumes it; Phase 6 owns the schema. Cross-reference the Phase 4 Task 14 bootstrap AC. Do NOT let Phase 4 migration add the enum — that splits schema ownership.
+4. **Flag 4 — attachment storage backend (Vercel Blob vs S3).**
+   **Recommendation: decide before Phase 4 execution, not during Wave 3 spec pass.** Phase 8 doesn't own attachment storage (it owns document generation). Better owner is Phase 1 (infra) or Phase 4 (first consumer). My call if pressed: Vercel Blob for V1 — zero-config with Next.js, good enough for < 50 GB, migrate to S3 when scale demands. Document the decision as DECISION-12 when you make it.
+5. **Flag 5 — `runStoryGenerationPipeline` import path pending Phase 2 execution.**
+   **Recommendation: leave as-is.** Shape is pinned; path resolves mechanically at execution time. Not a spec gap.
+6. **Flag 6 — `knowledge_article_embeddings` owned by Phase 6.**
+   **Recommendation: accept.** Phase 11 scope is closed (Wave 1 already merged). Schema reconciliation note in Phase 6 Task 5 is the right mechanism. No action.
+7. **Flag 7 — Phase 6 polymorphic integrity via trigger instead of CHECK.**
+   **Recommendation: accept.** Postgres can't do cross-table CHECK; trigger is the canonical pattern. No action.
+8. **Flag 8 — `vector(512)` corrections in Phase 6.**
+   **Recommendation: accept.** Matches DECISION-02. No action.
+
+### Pre-Wave-3 checklist (derived from flags)
+
+- [ ] Mint `DECISION-11` (flag 1) and patch Phase 3 citations.
+- [ ] Amend `DECISION-03` scope note (flag 2).
+- [ ] Decide attachment storage backend → `DECISION-12` (flag 4). Optional pre-Wave-3; can defer to Phase 4 execution.
+- [ ] Queue a Phase 6 enum-absorption micro-task for the Wave 3 Phase 6 touch-up (flag 3). Alternative: include as an explicit instruction in the Wave 3 Phase 8 agent prompt since Phase 8 also touches KnowledgeArticle.
+
 ## Next session: what to do
 
 1. Read `docs/bef/PROJECT_STATE.md` first.
-2. Read this thread (Wave 1 completion + 5 carry-forward decisions above).
-3. Read `docs/bef/audits/2026-04-13/CROSS_PHASE_SUMMARY.md` (wave plan) and `AUDIT_DECISIONS.md` (10 locked decisions).
-4. Dispatch **Wave 2** (Phase 6, 3, 4) fix agents in parallel, isolated worktrees, same pattern as Wave 1:
-   - Input each agent: its `phase-NN-audit.md` + `AUDIT_DECISIONS.md` + this thread (for carry-forward decisions) + the phase's `PHASE_SPEC.md` + `TASKS.md`.
-   - **Phase 6 agent must explicitly** create/confirm `article_entity_refs` (carry-forward #3) and return `SearchResponse` from `search_org_kb` (carry-forward #2).
+2. Read this thread (Waves 1 + 2 completion + 8 Wave 2 flags + recommendations above).
+3. Read `docs/bef/audits/2026-04-13/CROSS_PHASE_SUMMARY.md` (wave plan) and `AUDIT_DECISIONS.md` (10 locked decisions + any newly minted IDs).
+4. **Before dispatching Wave 3:** work through the "Pre-Wave-3 checklist" above. Mint `DECISION-11` and amend `DECISION-03` scope note at minimum.
+5. Dispatch **Wave 3** (Phase 5, 7, 8, 9, 10) fix agents in parallel, isolated worktrees, same pattern as Waves 1 + 2:
+   - Input each agent: its `phase-NN-audit.md` + `AUDIT_DECISIONS.md` + this thread + the phase's `PHASE_SPEC.md` + `TASKS.md`.
+   - **Phase 7 agent** gets briefing-type mapping (carry-forward #4: reuse `daily_standup → Current Focus` and `weekly_status → Recommended Focus`, no new enum values).
+   - **Phase 6 enum absorption** (flag 3): add to either the Phase 8 agent prompt or run a standalone micro-edit.
    - No Linear sync. One commit per phase. Force-remove worktrees after merge.
-5. After Wave 2 lands, dispatch **Wave 3** (Phase 5, 7, 8, 9, 10). Phase 7 agent gets briefing-type mapping (carry-forward #4).
 6. Each fix agent must cite `DECISION-nn` when amending a PHASE_SPEC or TASKS file for any Wave 0 decision.
 7. When all waves complete, run a second verification pass (`/bef:replan` or fresh audit round) to confirm gap closure.
 
