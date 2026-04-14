@@ -2,30 +2,52 @@
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
 > Gap Report: [04-work-management-gaps.md](./04-work-management-gaps.md)
-> Depends On: Phase 2 (Story Generation Pipeline), Phase 3 (Discovery, Questions)
-> Status: Draft
-> Last Updated: 2026-04-10
+> Depends On: Phase 1 (RBAC + auth), Phase 2 (Story Generation Pipeline, output schema, validation), Phase 3 (Discovery, Questions readiness signals), Phase 6 (`search_org_kb` hybrid retrieval — consumed via pipeline), Phase 9 (`assertProjectWritable` helper, polymorphic `Attachment` infrastructure), Phase 11 (embeddings enqueue API)
+> Status: Draft (Wave 2 audit-fix applied 2026-04-14)
+> Last Updated: 2026-04-14
 
 ---
 
 ## 1. Scope Summary
 
-Implement the story quality gate (DRAFT-to-READY mandatory field validation), wire AI test case stub generation into the story creation pipeline, build the dual-mode OrgComponent selector in the story form, auto-initialize EpicPhase records on epic creation, fix enrichment dedup for free-text components, add Salesforce development guardrails to AI prompts, cross-reference the org knowledge base during story generation, and add missing UX entry points (story detail status controls, feature-level Generate Stories button).
+Phase 4 owns the **data layer + workflow + UI consumption** for Epic / Feature / Story / Task / TestCase / StoryComponent. It does NOT own the Story Generation Pipeline (Phase 2), the Tasks-tier UI (Phase 10, per DECISION-06), the archival lifecycle helper (Phase 9, per DECISION-10), embeddings infrastructure (Phase 11), or hybrid retrieval (Phase 6).
 
-**In scope:** 9 of 11 domain gaps -> 9 tasks
-**Resolved upstream:** GAP-WORK-007 (BA transitions) resolved by Phase 1 REQ-RBAC-009. GAP-WORK-009 (acceptanceCriteria nullable) absorbed into GAP-WORK-001 DRAFT->READY validation.
+In-domain responsibilities:
+
+1. EpicPhase auto-init + backfill (REQ-WORK-001).
+2. Enrichment dedup fix (REQ-WORK-002).
+3. Salesforce dev guardrails injected into Phase 2 pipeline prompts and Tier-1 project summary (REQ-WORK-003) — see GAP-WORK-006 below; this is a hard blocker for Phases 5/6.
+4. Story Detail status controls (REQ-WORK-004).
+5. Feature-level Generate Stories button (REQ-WORK-005).
+6. Dual-mode OrgComponent selector (REQ-WORK-006).
+7. UI consumption of pipeline cross-reference output (REQ-WORK-007 — UI-only post-fix).
+8. UI consumption + persistence of pipeline-emitted test case stubs (REQ-WORK-008 — UI-only post-fix).
+9. UI consumption of pipeline validation results (REQ-WORK-009 — UI-only post-fix).
+10. Wire story generation UI to Phase 2 pipeline; enqueue story embeddings via Phase 11 (REQ-WORK-010, Addendum amendment).
+11. Optimistic concurrency on Story / Epic / Feature edits with VersionHistory (REQ-WORK-011, per DECISION-08 orphan-owner assignment).
+12. Component conflict resolution UI for pipeline Stage 5 output (REQ-WORK-012).
+13. Polymorphic attachments for Story / Question entities (REQ-WORK-013, per DECISION-08 — Phase 9 owns the Defect refactor).
+14. Initial KnowledgeArticle drafts per process/domain (REQ-WORK-014, per DECISION-08 PRD-13-17 ownership).
+15. `assertProjectWritable` consumer wiring at every Phase 4 mutation entry point (per DECISION-10).
+
+**In scope:** 14 functional requirements across 14 tasks (was 9; +5 added per audit fix plan).
+
+**Resolved upstream:** GAP-WORK-007 (BA transitions) → Phase 1 REQ-RBAC-009. GAP-WORK-009 (acceptanceCriteria nullable) absorbed into REQ-WORK-009. PRD-9-08 (epic prefix uniqueness) → Phase 3 (per audit GAP-13 deferral). PRD-13-14 (planned KB placeholder) → Phase 6 (per DECISION-08).
 
 ---
 
-## Addendum v1 Amendments (April 13, 2026)
+## Addendum v1 Amendments (April 13, 2026; revised April 14, 2026 audit-fix)
 
-These amendments integrate PRD Addendum v1 into Phase 4. They are additive — existing requirements below are unchanged.
+These amendments integrate PRD Addendum v1 §5.2.3 (Story Generation Pipeline) into Phase 4. The Addendum supersedes the agent-harness model in any conflict.
 
-- **Story Generation routing:** Story generation now runs as the deterministic pipeline (Addendum §5.2.3) owned by Phase 2. Phase 4 wires the story generation UI trigger to call the pipeline instead of the generic harness task type.
-- **Story embeddings:** Enqueue via Phase 11 infrastructure on `story.create` and `story.update`.
-- **Mandatory field validation:** Now a deterministic stage inside the Story Generation Pipeline. Phase 4 does not re-implement mandatory-field validation separately; it verifies the UI reflects pipeline validation errors correctly.
-- **Eval harness:** The eval harness for Story Generation is owned in Phase 2. Phase 4 may add integration-level tests if needed.
-- **What does not change:** Epic/Feature/Story CRUD, Kanban views, status machines, dual-mode component selector, test case stub generation, enrichment dedup.
+- **Story Generation routing (REQ-WORK-010):** Story generation runs as the deterministic 7-stage pipeline (Addendum §5.2.3 Stages 1–7) owned by Phase 2. Phase 4 wires the UI to call `runStoryGenerationPipeline()` from Phase 2. Phase 4 does NOT register `storyGenerationTask`, agent-loop tools, or `create_test_case_stub` as a tool.
+- **Story embeddings:** On `story.create` and `story.update` (mandatory-field changes), enqueue via Phase 11 `embeddings.enqueue()`. Pipeline reference and Phase 11 interface pinned in REQ-WORK-010 below.
+- **Mandatory field validation (REQ-WORK-009):** Stage 3 of the pipeline performs deterministic validation in Phase 2. Phase 4 consumes `validation_result.errors[]` and renders per-field errors. No re-implementation of validation logic in Phase 4.
+- **Component cross-reference (REQ-WORK-007):** Stage 4 of the pipeline calls `search_org_kb` (Phase 6 hybrid retrieval, returns `SearchResponse` per carry-forward decision #2). Phase 4 does NOT directly query `OrgComponent` via Prisma for generation context. Phase 4 renders the Stage 4 cross-reference output in the draft preview.
+- **Conflict resolution (REQ-WORK-012):** Stage 5 of the pipeline runs Sonnet to resolve flagged collisions. Phase 4 renders `component_conflicts[]` in a modal with extend / replace / duplicate options.
+- **Test case stubs (REQ-WORK-008):** Stage 2 emits `test_cases[]` inside the structured-output `story_draft` schema. Phase 4 does NOT register `create_test_case_stub` as an agent tool. Phase 4 persists the emitted test cases on draft accept via `createTestCases`.
+- **Eval harness:** Story Generation eval harness owned by Phase 2. Phase 4 may add UI-level smoke tests.
+- **Archive read-only gate (DECISION-10):** Every Phase 4 mutation entry point (story / epic / feature / question CRUD, status transitions, component edits, attachment uploads) calls `assertProjectWritable(projectId)` published by Phase 9. Phase 4 does NOT redefine this helper.
 
 ---
 
@@ -33,132 +55,264 @@ These amendments integrate PRD Addendum v1 into Phase 4. They are additive — e
 
 ### 2.1 EpicPhase Auto-Initialization (REQ-WORK-001)
 
-- **What it does:** Automatically creates all 5 EpicPhase records (DISCOVERY, DESIGN, BUILD, TEST, DEPLOY) with `NOT_STARTED` status when a new epic is created. Backfills existing epics that have zero EpicPhase records.
-- **Inputs:** Epic creation via `createEpic` server action
-- **Outputs:** 5 EpicPhase rows per epic in the database
+**Trace:** PRD-5-11 → no Addendum supersession.
+
+- **What it does:** Automatically creates all 5 EpicPhase records (DISCOVERY, DESIGN, BUILD, TEST, DEPLOY) with `NOT_STARTED` status when a new epic is created. Backfills existing epics with zero EpicPhase records.
+- **Inputs:** Epic creation via `createEpic` server action.
+- **Outputs:** 5 EpicPhase rows per epic.
 - **Business rules:**
-  - The `initializeEpicPhases` action already exists in `src/actions/epic-phases.ts` (lines 113-148) but is never called. Wire it into `createEpic`.
-  - Backfill migration: query all epics with zero EpicPhase records and create the 5 default rows. Use `createMany` with `skipDuplicates` to be idempotent.
-  - After this, the EpicPhase Grid displays real database state instead of phantom `NOT_STARTED` fallbacks.
-- **Files:** `src/actions/epics.ts` (wire call), migration script for backfill
+  - The `initializeEpicPhases` action already exists in `src/actions/epic-phases.ts` (lines 113-148). Wire it into `createEpic`.
+  - Backfill migration: query all epics with zero EpicPhase records; create the 5 default rows. Use `createMany` with `skipDuplicates`.
+  - `createEpic` must call `assertProjectWritable(projectId)` before any write (DECISION-10).
+- **Files:** `src/actions/epics.ts` (wire call + writable assertion), migration script for backfill.
 
 ### 2.2 Enrichment Dedup Fix (REQ-WORK-002)
 
-- **What it does:** Prevents the enrichment path from creating duplicate free-text component records when AI enrichment is applied multiple times to the same story.
-- **Inputs:** `applyEnrichmentSuggestion` action with `COMPONENTS` category
-- **Outputs:** No duplicate `StoryComponent` rows
-- **Business rules:**
-  - Before creating a component in the enrichment loop, check for an existing record matching `storyId + componentName + impactType`.
-  - If a match exists, skip creation (upsert semantics).
-  - The existing `addStoryComponent` action already has this dedup check (lines 373-385 of `src/actions/stories.ts`). The fix is to replicate this check in the `applyEnrichmentSuggestion` path in `src/actions/enrichment.ts` (lines 100-113), or refactor to call `addStoryComponent` instead of raw `prisma.storyComponent.create`.
-  - Prefer the refactor approach: have the enrichment path call `addStoryComponent` directly, which centralizes the dedup logic.
-- **Files:** `src/actions/enrichment.ts`
+**Trace:** PRD-10-09, PRD-5-32, PRD-5-33 → no Addendum supersession.
 
-### 2.3 Salesforce Guardrails in AI Prompts (REQ-WORK-003)
-
-- **What it does:** Injects the 6 Salesforce development guardrails (PRD Section 15) as compact reminders into story generation and enrichment system prompts, and into the Tier 1 project summary.
-- **Inputs:** N/A (prompt configuration change)
-- **Outputs:** AI-generated stories reference guardrail-aware component impacts and acceptance criteria
+- **What it does:** Prevents the enrichment path from creating duplicate free-text component records.
+- **Inputs:** `applyEnrichmentSuggestion` action with `COMPONENTS` category.
+- **Outputs:** No duplicate `StoryComponent` rows.
 - **Business rules:**
-  - Create a `src/lib/agent-harness/prompts/salesforce-guardrails.ts` module exporting a constant string block summarizing the 6 guardrails:
-    1. Governor Limits Awareness — no SOQL/DML in loops
-    2. Bulkification — handlers operate on collections
-    3. Test Class Requirements — positive, negative, bulk, assertion-based
-    4. Naming Conventions — firm pattern enforcement
-    5. Security Patterns — CRUD/FLS checks, no hardcoded IDs, no SOQL injection
-    6. Sharing Model Enforcement — explicit `with sharing`/`without sharing` declaration
-  - Inject this block into `storyGenerationTask` system prompt with framing: "When generating acceptance criteria and component impacts, ensure compliance with these Salesforce development guardrails."
-  - Inject into `storyEnrichmentTask` system prompt similarly.
-  - Add a `guardrails` section to the `getProjectSummary` context loader output (the Tier 1 "always loaded" summary) so all agent tasks have ambient awareness.
-  - The guardrails are reminders for the web app's AI, not enforcement rules (enforcement lives in Claude Code skills per PRD Section 15).
-- **Files:** New `src/lib/agent-harness/prompts/salesforce-guardrails.ts`, modify `src/lib/agent-harness/tasks/story-generation.ts`, modify `src/lib/agent-harness/tasks/story-enrichment.ts`, modify project summary context loader
+  - Refactor enrichment path to call `addStoryComponent` (which has dedup at lines 373-385 of `src/actions/stories.ts`) instead of raw `prisma.storyComponent.create`.
+  - `applyEnrichmentSuggestion` must call `assertProjectWritable(projectId)` (DECISION-10).
+- **Files:** `src/actions/enrichment.ts`.
+
+### 2.3 Salesforce Guardrails in AI Prompts (REQ-WORK-003) [GAP-WORK-006 RESOLUTION]
+
+**Trace:** PRD §15 (Salesforce Development Guardrails), PRD-26-02 → ADD-5.2.3-02 (Stage 2 prompt assembly).
+
+- **What it does:** Defines the 6 Salesforce dev guardrails as a compact prompt module that Phase 2 Stage 2 (Sonnet draft) and the story enrichment task inject into their system prompts, and that the Tier-1 project summary embeds for ambient context.
+- **Why this is a Phase 4 deliverable:** PROJECT_STATE.md and VERIFICATION-STEP-2.md flag this as a Phase 4 blocker for Phases 5/6 developer context. Even though Phase 2 owns the pipeline, the guardrail content + module + injection points are authored here as a published string artifact Phase 2 imports.
+- **Inputs:** N/A (prompt configuration artifact).
+- **Outputs:** AI-generated stories reference guardrail-aware component impacts and acceptance criteria; Tier-1 project summary surfaces guardrails for all downstream tasks.
+- **Business rules:**
+  - Create `src/lib/agent-harness/prompts/salesforce-guardrails.ts` exporting `SF_DEV_GUARDRAILS: string` (under 200 tokens). The 6 guardrails:
+    1. **Governor Limits Awareness** — no SOQL/DML in loops; respect per-transaction limits.
+    2. **Bulkification** — handlers operate on collections, not single records.
+    3. **Test Class Requirements** — positive, negative, bulk, and assertion-based coverage.
+    4. **Naming Conventions** — firm pattern enforcement (object/field/Apex/LWC).
+    5. **Security Patterns** — CRUD/FLS checks, no hardcoded IDs, no SOQL injection.
+    6. **Sharing Model Enforcement** — explicit `with sharing` / `without sharing` / `inherited sharing` declarations.
+  - Phase 2 Stage 2 imports `SF_DEV_GUARDRAILS` and prepends it to the Sonnet draft system prompt with framing: "When generating acceptance criteria and component impacts, ensure the story narrative is consistent with these Salesforce development guardrails."
+  - `storyEnrichmentTask` system prompt imports the same constant.
+  - `getProjectSummary` Tier-1 context loader (Phase 2-owned but consumed everywhere) appends a `## Guardrails` block built from `SF_DEV_GUARDRAILS`.
+  - The guardrails are **reminders for AI narrative**, not enforcement rules. Enforcement lives in Claude Code skills per PRD §15.
+- **Cross-phase coordination:** Phase 2 must import this module in Stage 2 prompt assembly; Phase 5/6/8 inherit guardrail context via the Tier-1 project summary.
+- **Files:** `src/lib/agent-harness/prompts/salesforce-guardrails.ts` (CREATE — Phase 4 owns).
 
 ### 2.4 Story Detail Status Controls (REQ-WORK-004)
 
-- **What it does:** Adds status transition buttons to the story detail page so users can promote/demote a story without navigating away to the kanban or table view.
-- **Inputs:** User viewing a story detail page and clicking a transition button
-- **Outputs:** Story status updated, page refreshed to reflect new state
+**Trace:** PRD-10-14, PRD-19-04 → reuses Phase 1 REQ-RBAC-009.
+
+- **What it does:** Adds status transition buttons to the story detail page so users can promote/demote a story without leaving detail view.
+- **Inputs:** User clicking a transition button.
+- **Outputs:** Story status updated; page refreshes.
 - **Business rules:**
-  - Display available transitions based on the current status and the user's role (reuse `getAvailableTransitions` from `story-status-machine.ts`).
-  - Show "Move to:" buttons matching the existing pattern in `StoryForm` (lines 314-341).
-  - For the DRAFT->READY transition specifically, this is where the validation gate (REQ-WORK-009) surfaces errors — show field-specific messages if validation fails.
-  - Position the controls in the story detail header area, next to the existing "Enrich with AI" button.
-- **Files:** `src/app/(dashboard)/projects/[projectId]/work/[epicId]/[featureId]/stories/[storyId]/story-detail-client.tsx`
+  - Use `getAvailableTransitions(currentStatus, userRoleGroup)` from `story-status-machine.ts`.
+  - For DRAFT → READY transitions, surface pipeline `validation_result.errors[]` per-field (consumed from REQ-WORK-009).
+  - Place controls in detail header next to "Enrich with AI".
+  - Server-side `updateStoryStatus` calls `assertProjectWritable(projectId)` (DECISION-10).
+  - **Note:** Tasks-tier UI is Phase 10 per DECISION-06; this requirement covers Story-tier only.
+- **Files:** `src/app/(dashboard)/projects/[projectId]/work/[epicId]/[featureId]/stories/[storyId]/story-detail-client.tsx`.
 
 ### 2.5 Feature-Level Generate Stories (REQ-WORK-005)
 
-- **What it does:** Adds a "Generate Stories" button to the feature detail page, scoping AI story generation to the specific feature rather than the entire epic.
-- **Inputs:** User clicks "Generate Stories" on a feature detail page
-- **Outputs:** Navigates to conversation page with `epicId` + `featureId` as params, initiating a feature-scoped story session
+**Trace:** PRD-10-02, PRD-10-11 → ADD-5.2.3-01 (pipeline entry takes `epic_id` or `feature_id`).
+
+- **What it does:** Adds a "Generate Stories" button on the feature detail page that initiates a feature-scoped pipeline run.
+- **Inputs:** User click on feature detail.
+- **Outputs:** Navigates to conversation page with `epicId` + `featureId`; pipeline run scoped to feature.
 - **Business rules:**
-  - The `initiateStorySession` action already supports an optional `featureId` parameter.
-  - The story generation context loader already handles the feature-scoped case.
-  - This is a UI-only change: replicate the pattern from `EpicDetailClient` (line 96) in `FeatureDetailClient`.
-  - Button visibility: same role restrictions as epic-level generate (SA, PM, BA).
-- **Files:** `src/app/(dashboard)/projects/[projectId]/work/[epicId]/[featureId]/feature-detail-client.tsx`
+  - `initiateStorySession` already accepts optional `featureId`.
+  - Button visibility: SA, PM, BA only.
+  - Calls `runStoryGenerationPipeline({ feature_id, ... })` per REQ-WORK-010.
+  - Server entry calls `assertProjectWritable(projectId)` (DECISION-10).
+- **Files:** `src/app/(dashboard)/projects/[projectId]/work/[epicId]/[featureId]/feature-detail-client.tsx`.
 
-### 2.6 Linked OrgComponent Mode in Story Form (REQ-WORK-006)
+### 2.6 Dual-Mode OrgComponent Selector (REQ-WORK-006)
 
-- **What it does:** Upgrades the `ComponentSelector` widget to support two modes: (1) free-text entry (existing) and (2) linked OrgComponent search with autocomplete.
-- **Inputs:** User adding impacted components to a story via the form
-- **Outputs:** `StoryComponent` records with either `componentName` (free-text) or `orgComponentId` (linked)
+**Trace:** PRD-10-09, PRD-5-32, PRD-5-33 → no Addendum supersession.
+
+- **What it does:** Upgrades `ComponentSelector` to support free-text and linked OrgComponent modes.
+- **Inputs:** User adding impacted components.
+- **Outputs:** `StoryComponent` records with either `componentName` or `orgComponentId`.
 - **Business rules:**
-  - The selector shows a mode toggle: "Free Text" / "Link to Org". Default is "Free Text" (always available). "Link to Org" is only enabled when the project has org components (query count on page load).
-  - In linked mode, an autocomplete searches `OrgComponent` by API name and label, filtered by the project's connected org. Results show: `apiName`, `label`, `componentType`, and `domainGrouping`.
-  - When an org component is selected, `orgComponentId` is set and `componentName` is auto-populated from the org component's label (for display fallback).
-  - The `addStoryComponent` action in `src/actions/stories.ts` must accept an optional `orgComponentId` parameter. When provided, it uses the existing `@@unique([storyId, orgComponentId])` constraint for dedup.
-  - Add a DB-level check constraint (or application validation) ensuring at least one of `componentName` or `orgComponentId` is non-null on any `StoryComponent` row.
-  - When org connectivity is established later, the AI can suggest linking free-text entries to matching OrgComponents (deferred to Phase 6 for AI-driven suggestion; this phase only builds the manual linking UI).
-- **Files:** `src/components/work/component-selector.tsx` (major rework), `src/actions/stories.ts` (update `addStoryComponent` schema), new `src/actions/org-components.ts` (search endpoint, or add to existing)
+  - Mode toggle "Free Text" / "Link to Org". "Link to Org" disabled when project has 0 org components.
+  - Linked mode autocomplete via `searchOrgComponents` (interface pinned below).
+  - Selecting an org component sets `orgComponentId` and auto-populates `componentName` from `OrgComponent.label`.
+  - At least one of `componentName` or `orgComponentId` must be non-null (application-level invariant; DB constraint optional).
+  - AI-driven free-text → OrgComponent linking deferred to Phase 6.
+  - All write paths call `assertProjectWritable` (DECISION-10).
+- **Pinned interfaces (GAP-09 fix):**
+  - `searchOrgComponents` (server action at `src/actions/org-components.ts#searchOrgComponents`):
+    - Input Zod: `z.object({ projectId: z.string().cuid(), query: z.string().min(1).max(100), limit: z.number().int().min(1).max(50).default(20) })`
+    - Return: `Promise<Array<{ id: string; apiName: string; label: string; componentType: string; domainGrouping: string | null }>>`
+    - RBAC: any project member (Phase 1 REQ-RBAC-002).
+    - Errors: `{ error: 'PROJECT_NOT_FOUND' | 'NOT_AUTHORIZED' | 'INVALID_INPUT' }`.
+  - `getOrgComponentsForEpic`: REMOVED from Phase 4 scope (cross-reference now flows through pipeline Stage 4 per REQ-WORK-007).
+  - `addStoryComponent` Zod schema accepts optional `orgComponentId: z.string().cuid().nullish()`. RBAC: SA / PM / BA.
+- **Files:** `src/components/work/component-selector.tsx`, `src/actions/stories.ts` (`addStoryComponent` schema), `src/actions/org-components.ts` (CREATE).
 
-### 2.7 Org Knowledge Cross-Reference in Story Generation (REQ-WORK-007)
+### 2.7 Org Knowledge Cross-Reference UI (REQ-WORK-007)
 
-- **What it does:** Loads existing `OrgComponent` records into the story generation context so the AI can cross-reference planned story components against what already exists in the org.
-- **Inputs:** Story generation session initiation
-- **Outputs:** AI can flag conflicts like "this field already exists on Account — are you extending it or creating a new one?"
+**Trace:** PRD-10-12 → ADD-5.2.3-04 (Stage 4 hybrid retrieval via `search_org_kb`).
+
+**Scope (post-audit-fix):** UI-only consumer of pipeline Stage 4 output. Phase 4 no longer loads `OrgComponent` via direct Prisma for generation context. Phase 6 owns `search_org_kb` (returns `SearchResponse` envelope per carry-forward decision #2).
+
+- **What it does:** Renders pipeline Stage 4 cross-reference results in the story draft preview so the user can see which proposed components match (or conflict with) the connected org.
+- **Inputs:** Pipeline output containing `cross_reference_result: { matches: SearchResponse, conflicts: ComponentConflict[] }`.
+- **Outputs:** Cross-reference badges + tooltips on draft component rows.
 - **Business rules:**
-  - Add `getOrgComponentsForEpic(epicId)` to the `storyGenerationContextLoader` parallel Promise.all, matching the tech spec reference implementation (line 1087).
-  - The context loader queries `OrgComponent` records that are in the same domain grouping as the epic's existing story components, plus any components directly referenced by the epic's stories.
-  - Update the story generation system prompt to include: "Cross-reference impacted components against the existing org components provided. If a component already exists, flag whether the story is modifying it or creating a duplicate. Suggest linking to existing org components when there's a match."
-  - Also add org component context to the story enrichment task (`storyEnrichmentTask` context loader).
-  - If no org is connected (zero org components), the context loader returns an empty array and the prompt gracefully handles the absence.
-- **Files:** `src/lib/agent-harness/tasks/story-generation.ts` (context loader + prompt), `src/lib/agent-harness/context/stories-context.ts`, `src/lib/agent-harness/tasks/story-enrichment.ts`
+  - If `SearchResponse._meta.not_implemented === true` (Phase 6 not deployed yet), render a graceful fallback "Org KB cross-reference unavailable — verify components manually" notice.
+  - When matches exist, show "Matches existing: `<apiName>`" badge with click-to-link affordance.
+  - When conflicts exist, hand off to REQ-WORK-012 conflict modal.
+  - Phase 4 does **not** call `search_org_kb` directly; the pipeline does.
+- **Files:** `src/components/work/story-draft-cards.tsx` (cross-ref render), `src/components/work/draft-component-row.tsx` (CREATE).
 
-### 2.8 Test Case Stub Generation During Story Creation (REQ-WORK-008)
+### 2.8 Test Case Stub Persistence on Draft Accept (REQ-WORK-008)
 
-- **What it does:** Wires the `create_test_case_stub` tool into the story generation pipeline so the AI generates test cases from acceptance criteria during story creation, and persists them when a draft is accepted.
-- **Inputs:** Story generation session; draft acceptance by user
-- **Outputs:** `TestCase` records linked to the created story
+**Trace:** PRD-10-08 → ADD-5.2.3-02 (Stage 2 structured output includes `test_cases[]`).
+
+**Scope (post-audit-fix):** UI-only consumer + persistence layer. Phase 4 does NOT register `create_test_case_stub` as an agent tool; pipeline Stage 2 emits `test_cases[]` inside the `story_draft` schema.
+
+- **What it does:** Persists `test_cases[]` from the accepted draft into `TestCase` records.
+- **Inputs:** `StoryDraft.test_cases` array (emitted by Phase 2 Stage 2 schema).
+- **Outputs:** `TestCase` records with `source: "STUB"` linked to the new story.
 - **Business rules:**
-  - **Tool definition:** The tech spec already specifies `create_test_case_stub` (lines 1278-1291). Add this tool to the story generation tools array in `src/lib/agent-harness/tools/`. Tool parameters: `storyDraftIndex` (referencing the draft in the current session), `title`, `expectedResult`, `testType` (HAPPY_PATH, EDGE_CASE, NEGATIVE, BULK).
-  - **Prompt update:** Add to the story generation system prompt: "After creating each story draft, generate at minimum one happy-path test case and one edge-case test case from the acceptance criteria. Use the create_test_case_stub tool for each test case."
-  - **StoryDraft interface:** Add a `testCases` array to the `StoryDraft` interface in `create-story-draft.ts`. When the AI calls `create_test_case_stub`, the handler appends to the draft's test cases array rather than persisting immediately (the draft hasn't been persisted yet).
-  - **Draft accept flow:** In `StoryDraftCards.handleAccept`, after calling `createStory` and `addStoryComponent`, also call a new `createTestCases` action to persist the draft's test cases with the newly created story ID.
-  - **`createTestCases` server action:** New action in `src/actions/test-cases.ts` (or add to `stories.ts`) that accepts an array of test case objects and creates them via `prisma.testCase.createMany`. Validates: title required, expectedResult required, testType must be valid enum.
-  - **Source field:** All test cases created by this pipeline use `source: "STUB"` to distinguish them from Phase 9's AI-generated test cases (`source: "AI_GENERATED"`). Phase 9's regeneration replaces only `AI_GENERATED` records, preserving `STUB` records as the user's accepted baseline from story generation.
-  - **StoryDraftCards UI:** Show test case stubs in the draft preview card so the user can see them before accepting.
-- **Files:** New `src/lib/agent-harness/tools/create-test-case-stub.ts`, modify `src/lib/agent-harness/tools/create-story-draft.ts` (interface), modify `src/lib/agent-harness/tasks/story-generation.ts` (tools array + prompt), modify `src/components/work/story-draft-cards.tsx` (accept flow + preview), new or modify `src/actions/test-cases.ts`
+  - On draft accept, after `createStory` returns, call `createTestCases(storyId, draft.test_cases)`.
+  - `source: "STUB"` distinguishes from Phase 9 `AI_GENERATED` records (Phase 9 regenerates only `AI_GENERATED`).
+  - Draft preview card shows `test_cases[]` (title, type, expected result) before accept.
+  - Rollback semantics (GAP-10): if `createTestCases` fails after `createStory` succeeds, transactionally roll back the story to avoid orphaned test cases. Use `prisma.$transaction([createStory, createTestCases])`.
+- **Pinned interface (GAP-09 fix):**
+  - `createTestCases` (server action at `src/actions/test-cases.ts`):
+    - Input Zod: `z.object({ storyId: z.string().cuid(), testCases: z.array(z.object({ title: z.string().min(1).max(200), expectedResult: z.string().min(1).max(2000), testType: z.enum(['HAPPY_PATH','EDGE_CASE','NEGATIVE','BULK']) })).min(1) })`
+    - Return: `Promise<{ createdIds: string[] }>`
+    - RBAC: SA / PM / BA / QA (Phase 1 REQ-RBAC-002 / 005).
+    - Errors: `{ error: 'STORY_NOT_FOUND' | 'NOT_AUTHORIZED' | 'INVALID_INPUT' | 'PROJECT_ARCHIVED' }`.
+    - Calls `assertProjectWritable(projectId)` (DECISION-10).
+- **Files:** `src/actions/test-cases.ts` (CREATE), `src/components/work/story-draft-cards.tsx` (preview + accept flow).
 
-### 2.9 DRAFT-to-READY Mandatory Field Validation (REQ-WORK-009)
+### 2.9 DRAFT-to-READY Validation UI (REQ-WORK-009)
 
-- **What it does:** Implements the PRD's mandatory field validation gate on the DRAFT->READY story transition, checking all 7 required fields.
-- **Inputs:** `updateStoryStatus` call with `status: "READY"` from current status `"DRAFT"`
-- **Outputs:** Either successful transition or a validation error listing all missing fields
+**Trace:** PRD-10-03, PRD-10-05, PRD-10-07, PRD-10-13, PRD-6-13 → ADD-5.2.3-03 (Stage 3 deterministic validation owned by Phase 2).
+
+**Scope (post-audit-fix):** UI consumer of Phase 2 Stage 3 validation output. Phase 4 does NOT implement `validateStoryReadiness` — that lives in Phase 2 pipeline Stage 3 with the structural rules below.
+
+- **What it does:** Renders `validation_result.errors[]` from the pipeline / from a Phase 2 standalone validator invoked at status-transition time. Surfaces "Fix with AI" remediation.
+- **Inputs:** Phase 2 `validateStoryReadiness(storyId): Promise<{ ok: boolean; errors: Array<{ field: string; message: string; remediationHint?: string }> }>`.
+- **Outputs:** Per-field error list in story detail; "Fix with AI" button triggering enrichment.
+- **Business rules (validation rules to be enforced by Phase 2 Stage 3; ACs specified here per audit GAP-05):**
+  1. **Persona format (PRD-10-03):** Regex `^As a [A-Z][a-zA-Z0-9 _-]+,` AND role name appears in `Project.stakeholders[]`. Empty / "Bob" / missing-comma forms FAIL.
+  2. **Description (PRD-10-04):** Non-empty, trimmed.
+  3. **Acceptance Criteria (PRD-10-05):**
+     - Parse for `Given` / `When` / `Then` tokens.
+     - Require ≥1 scenario classified as "happy path" AND ≥1 scenario classified as "exception". Heuristic regex fallback when classifier unavailable: scenarios containing `error|invalid|fail|reject|denied|exception` count as exception.
+     - "it works" form FAILS.
+  4. **Parent link (PRD-10-06):** `epicId` or `featureId` non-null (schema-enforced; double-check).
+  5. **Story Points (PRD-10-07):** `> 0`. AI-suggest pathway emits `aiSuggestedPoints` on the draft; UI shows suggestion with explicit user confirm action before persisting.
+  6. **TestCases ≥ 1 (PRD-10-08):** Includes `STUB` and `AI_GENERATED` sources.
+  7. **StoryComponents ≥ 1 (PRD-10-09):** Free-text or linked.
+- **UI behavior:**
+  - Display all errors at once, per-field.
+  - "Fix with AI" button calls `storyEnrichmentTask` with targeted prompt: "The following fields are missing or incomplete: [list]. Generate suggestions."
+  - Fallback hint: "Use 'Enrich with AI' to fill missing fields."
+  - `updateStoryStatus` server action calls `assertProjectWritable` (DECISION-10).
+- **Pinned interface (GAP-09 fix):**
+  - `validateStoryReadiness` (Phase 2 import path TBD by Phase 2 deep-dive):
+    - Return: `Promise<{ ok: boolean; errors: Array<{ field: string; message: string; remediationHint?: string }> }>`
+  - `updateStoryStatus` mismatch resolved: returns `{ error: 'NOT_READY'; validationErrors: Array<{ field, message }> }` on validation failure.
+- **Files:** `src/components/work/story-detail-client.tsx`, `src/components/work/story-form.tsx` (consume validation result). `src/lib/story-validation.ts` is REMOVED from Phase 4 scope (relocated to Phase 2).
+
+### 2.10 Optimistic Concurrency on Story / Epic / Feature Edits (REQ-WORK-011) [NEW per audit GAP-04 + DECISION-08]
+
+**Trace:** PRD-5-26, PRD-19-11, PRD-19-12, PRD-25-03 → no Addendum supersession.
+
+- **What it does:** Prevents silent overwrites on concurrent edits via version-based optimistic locking; snapshots prior state into `VersionHistory`; surfaces a diff modal on conflict.
+- **Inputs:** `updateStory`, `updateEpic`, `updateFeature` server actions, each receiving `expectedVersion: number`.
+- **Outputs:** Either successful update with incremented `version`, or `ConcurrencyError` (HTTP 409) with diff payload.
 - **Business rules:**
-  - **Validation function:** Create `validateStoryReadiness(storyId)` that checks:
-    1. `persona` — non-null, non-empty string
-    2. `description` — non-null, non-empty string
-    3. `acceptanceCriteria` — non-null, non-empty string (addresses GAP-WORK-009)
-    4. `epicId` or `featureId` — at least one parent link exists (always true by schema, but validate)
-    5. `storyPoints` — non-null number > 0
-    6. `testCases` — at least one TestCase record exists for this story
-    7. `storyComponents` — at least one StoryComponent record exists for this story
-  - **Error format:** Return an array of field-specific messages, e.g., `["Persona is required", "At least one test case must be defined"]`. The UI displays all missing fields at once, not one at a time.
-  - **Wire into `updateStoryStatus`:** After the existing `canTransition` role check (line 282), add the readiness validation check. Only applies when transitioning TO `READY` from `DRAFT`.
-  - **Other transitions:** No validation gate on other transitions (Ready->Sprint Planned, etc.). Only DRAFT->READY is gated.
-  - **AI-assisted remediation:** When validation fails, the response includes the field-specific errors plus a call-to-action that triggers AI content generation for the missing fields. Specifically: the UI shows a "Fix with AI" button alongside the error list. Clicking it calls the existing `storyEnrichmentTask` with a targeted prompt: "The following fields are missing or incomplete: [list]. Generate suggestions for each." The enrichment response populates the missing fields as suggestions the user can accept or edit. This satisfies PRD Section 10.4 step 5: "the AI highlights what needs to be corrected and suggests specific content."
-  - **Fallback:** If the user dismisses the AI suggestion, the static error messages remain visible with a manual "Use 'Enrich with AI' to fill missing fields" hint.
-- **Files:** New `src/lib/story-validation.ts`, modify `src/actions/stories.ts` (`updateStoryStatus`)
+  - Add `version Int @default(1)` column to `Story`, `Epic`, `Feature` (schema migration — confirm absence first).
+  - On every update: compare `expectedVersion` with current `version` row inside a transaction. Mismatch → throw `ConcurrencyError` carrying current row state for diff.
+  - `VersionHistory` table (already in schema per PRD-5-26) records every successful update: actor, entity type/id, prior JSON snapshot, timestamp.
+  - On conflict, UI shows diff modal with two actions:
+    - **Merge** — user manually reconciles fields, resubmits with new `expectedVersion`.
+    - **Overwrite** — user explicitly chooses to clobber; prior state still snapshotted to `VersionHistory` first.
+  - Never silent overwrite (PRD-19-12).
+  - All update paths call `assertProjectWritable` (DECISION-10).
+- **Pinned interface:**
+  - `updateStory` Zod input adds: `expectedVersion: z.number().int().min(1)`.
+  - Error response: `{ error: 'CONCURRENCY_CONFLICT'; currentVersion: number; currentValue: Story; conflictingFields: string[] }`.
+- **Files:** `prisma/schema.prisma` (add `version` column, confirm `VersionHistory`), `src/actions/stories.ts` / `epics.ts` / `features.ts`, `src/components/work/concurrency-conflict-modal.tsx` (CREATE), migration script.
+
+### 2.11 Component Conflict Resolution UI (REQ-WORK-012) [NEW per audit GAP-06]
+
+**Trace:** PRD-10-12 → ADD-5.2.3-05 (Stage 5 conflict resolution).
+
+- **What it does:** Surfaces pipeline Stage 5 `component_conflicts[]` as a per-conflict modal allowing user confirmation of extend / replace / duplicate decisions.
+- **Inputs:** Pipeline output `component_conflicts: Array<{ draftComponent, existingOrgComponent, aiSuggestion: 'extend'|'replace'|'duplicate', rationale, confidence }>`.
+- **Outputs:** User decisions written as `StoryComponent` records:
+  - `extend` → set `orgComponentId` to existing component.
+  - `replace` → new `StoryComponent` with `decisionRationale` field (verify schema; add migration if absent).
+  - `duplicate` → new `StoryComponent` flagged `isDuplicate = true` with `decisionRationale`.
+- **Business rules:**
+  - Modal lists conflicts; per row shows existing component (apiName/label/semantics), AI proposal + rationale, accept / override controls.
+  - User can override AI suggestion per row.
+  - Persistence calls `assertProjectWritable` (DECISION-10).
+- **Files:** `src/components/work/component-conflict-modal.tsx` (CREATE), `src/actions/stories.ts` (resolve action), potential `prisma/schema.prisma` migration for `decisionRationale` field.
+
+### 2.12 Polymorphic Attachments on Story / Question (REQ-WORK-013) [NEW per audit GAP-07 + DECISION-08]
+
+**Trace:** PRD-5-25 → no Addendum supersession.
+
+**Scope split:** Phase 4 owns Story + Question attachment surface. Phase 9 owns Defect attachment refactor (per DECISION-08).
+
+- **What it does:** Upload / list / delete attachments on Story and Question entities via polymorphic `Attachment` table (`entityType` + `entityId`).
+- **Inputs:** File upload (S3 / Vercel Blob), entity reference.
+- **Outputs:** `Attachment` rows; signed-URL downloads.
+- **Business rules:**
+  - Server actions `uploadAttachment(entityType, entityId, file)`, `listAttachments(entityType, entityId)`, `deleteAttachment(attachmentId)`.
+  - MIME allowlist: `image/png`, `image/jpeg`, `application/pdf`, `text/csv`, `text/plain`. Size limit 25 MB.
+  - RBAC: any project member can upload/list; only uploader or PM/SA can delete.
+  - All write paths call `assertProjectWritable` (DECISION-10).
+  - Storage backend: confirm with Phase 8 (document storage owner) — default to Vercel Blob if Phase 8 has not yet finalized.
+- **Pinned interface:**
+  - `uploadAttachment` Zod input: `z.object({ entityType: z.enum(['Story','Question']), entityId: z.string().cuid(), filename: z.string().min(1).max(255), mimeType: z.string(), sizeBytes: z.number().int().max(25_000_000) })`.
+  - Return: `{ id: string; downloadUrl: string }`.
+- **Files:** `src/actions/attachments.ts` (CREATE), `src/components/shared/attachment-list.tsx` (CREATE), schema confirmation for `Attachment` model.
+
+### 2.13 Initial KnowledgeArticle Drafts per Process / Domain (REQ-WORK-014) [NEW per audit GAP-08 + DECISION-08]
+
+**Trace:** PRD-13-17 → no Addendum supersession (this is bootstrap; ongoing KA writes are Phase 6).
+
+- **What it does:** When a Phase 4 entity is first created (epic with new `domainGrouping`, or feature mapped to a new business process), Phase 4 writes an initial `KnowledgeArticle` draft scoped to that process/domain so Phase 6 has a seed to enrich.
+- **Inputs:** Epic / Feature creation with novel domain or process mapping.
+- **Outputs:** `KnowledgeArticle` row with `status: 'DRAFT'`, `source: 'PHASE_4_BOOTSTRAP'`, minimal title + slug, empty body for Phase 6 to populate.
+- **Business rules:**
+  - Detect "novel" via `SELECT 1 FROM KnowledgeArticle WHERE projectId=? AND process=? OR domain=? LIMIT 1`. If absent, create draft.
+  - PRD-13-14 (planned-component placeholder KA entries) is **Phase 6** per DECISION-08.
+  - Bootstrap path calls `assertProjectWritable` (DECISION-10).
+- **Files:** `src/actions/epics.ts` / `features.ts` (bootstrap hook), `src/lib/ka-bootstrap.ts` (CREATE).
+
+### 2.14 Story Generation UI → Pipeline Wire + Embeddings Enqueue (REQ-WORK-010) [NEW per audit GAP-01]
+
+**Trace:** PRD-10-11, PRD-10-12, PRD-10-13 → ADD-5.2.3-01..07 (full 7-stage pipeline); Phase 11 §<embedding queue spec, see Phase 11 PHASE_SPEC §3 for `embeddings.enqueue`).
+
+- **What it does:** Replaces all Phase 4 invocations of the legacy `storyGenerationTask` agent loop with calls to the Phase 2 `runStoryGenerationPipeline`. Enqueues story embeddings via Phase 11 on create / update.
+- **Inputs:** UI trigger from conversation page or feature/epic detail.
+- **Outputs:** Pipeline run that returns `story_draft`, `validation_result`, `cross_reference_result`, `component_conflicts[]`, `ai_suggestions[]`, `pipeline_run_id`. Story create / update enqueues embedding job.
+- **Business rules:**
+  - Pipeline call: `runStoryGenerationPipeline({ project_id, epic_id?, feature_id?, requirement_id?, prompt, user_id })` published by Phase 2 (signature pinned by Phase 2 deep-dive; Phase 4 imports the public function — no inline reimplementation).
+  - Embeddings: on `story.create` and on `story.update` where mandatory fields change (persona / description / acceptanceCriteria / storyPoints), call `embeddings.enqueue({ entity_type: 'story', entity_id, content, project_id })` per Phase 11 PHASE_SPEC. Inngest event name: `embedding.requested` (per Phase 11 carry-forward). Failure semantics: queue retries 3x with exponential backoff; final failure pushes to DLQ; UI shows non-blocking "embedding pending" badge.
+  - Surface `pipeline_run_id` in audit log row for traceability.
+  - All entry points call `assertProjectWritable(projectId)` (DECISION-10).
+- **UI rendering:**
+  - `story_draft` → existing `StoryDraftCards`.
+  - `cross_reference_result` → REQ-WORK-007 badges.
+  - `component_conflicts[]` → REQ-WORK-012 modal.
+  - `ai_suggestions[]` → inline suggestion chips above each draft field.
+  - `validation_result.errors[]` → REQ-WORK-009 per-field display.
+- **Files:** `src/lib/agent-harness/tasks/story-generation.ts` (REMOVE legacy task — now a thin pipeline-call wrapper), `src/components/work/story-draft-cards.tsx` (consume new payload shape), `src/actions/stories.ts` (post-create / post-update embeddings enqueue).
 
 ---
 
@@ -166,59 +320,63 @@ These amendments integrate PRD Addendum v1 into Phase 4. They are additive — e
 
 ### 3.1 Implementation Strategy
 
-Schema/data fixes first, then AI infrastructure, then UX, then the quality gate:
+Order shifts post-audit-fix:
 
-1. **Schema & data** (REQ-001, 002) — EpicPhase backfill and enrichment dedup. Zero AI involvement. Quick wins.
-2. **AI prompt infrastructure** (REQ-003, 007) — Guardrails module and org cross-reference context. Changes to prompt assembly, no UI.
-3. **AI tool infrastructure** (REQ-008) — Test case stub tool, StoryDraft interface changes, draft accept flow. The largest task.
-4. **UX enhancements** (REQ-004, 005, 006) — Story detail controls, feature generate button, dual-mode component selector. Independent UI work.
-5. **Quality gate** (REQ-009) — DRAFT->READY validation. Must come after test case stubs exist (REQ-008) since test case presence is one of the 7 mandatory checks.
+1. **Schema & data foundations** (REQ-001, 002, 011 schema migration) — EpicPhase backfill, dedup fix, optimistic-concurrency `version` columns + VersionHistory snapshotting. Zero AI involvement.
+2. **Cross-phase contracts** (REQ-003 guardrails module, REQ-013 attachments scaffolding) — standalone artifacts other phases consume.
+3. **Pipeline UI consumption** (REQ-010 wire, REQ-007 cross-ref UI, REQ-008 test-case persistence, REQ-009 validation rendering, REQ-012 conflict modal) — all UI-only consumers of Phase 2 pipeline output. Blocked on Phase 2 publishing the pipeline.
+4. **UX features** (REQ-004, 005, 006) — independent UI work.
+5. **Bootstrap hook** (REQ-014 KA drafts) — once epics / features stable.
+6. **Archive gate wiring** (DECISION-10) — applied at every mutation in tasks above; not its own task because it threads through everything.
 
-### 3.2 File/Module Structure
+### 3.2 File / Module Structure
 
 ```
 src/
   lib/
-    story-validation.ts                          — CREATE (validateStoryReadiness)
     agent-harness/
       prompts/
-        salesforce-guardrails.ts                 — CREATE (guardrails constant block)
+        salesforce-guardrails.ts                 — CREATE (REQ-003) [Phase 4 owns; Phase 2 imports]
       tasks/
-        story-generation.ts                      — MODIFY (context loader + prompt + tools)
-        story-enrichment.ts                      — MODIFY (prompt + context)
-      tools/
-        create-test-case-stub.ts                 — CREATE (test case tool handler)
-        create-story-draft.ts                    — MODIFY (add testCases to interface)
-      context/
-        stories-context.ts                       — MODIFY (add org component loading)
+        story-generation.ts                      — REWRITE as pipeline-call wrapper (REQ-010)
+        story-enrichment.ts                      — MODIFY (import guardrails)
+    ka-bootstrap.ts                              — CREATE (REQ-014)
   actions/
-    epics.ts                                     — MODIFY (wire initializeEpicPhases)
-    stories.ts                                   — MODIFY (addStoryComponent orgComponentId, updateStoryStatus validation)
-    enrichment.ts                                — MODIFY (dedup fix)
-    test-cases.ts                                — CREATE (createTestCases action)
+    epics.ts                                     — MODIFY (init phases, writable assert, KA bootstrap, optimistic-concurrency)
+    features.ts                                  — MODIFY (writable assert, KA bootstrap, optimistic-concurrency)
+    stories.ts                                   — MODIFY (orgComponentId, writable assert, optimistic-concurrency, post-create embeddings, conflict resolution)
+    enrichment.ts                                — MODIFY (dedup fix, writable assert)
+    test-cases.ts                                — CREATE (createTestCases)
+    org-components.ts                            — CREATE (searchOrgComponents)
+    attachments.ts                               — CREATE (REQ-013)
   components/
     work/
-      component-selector.tsx                     — MODIFY (dual-mode: free-text + org link)
-      story-draft-cards.tsx                      — MODIFY (test case preview + accept flow)
+      component-selector.tsx                     — MODIFY (dual-mode)
+      story-draft-cards.tsx                      — MODIFY (test cases, cross-ref badges, conflict modal trigger, ai_suggestions)
+      draft-component-row.tsx                    — CREATE (REQ-007)
+      component-conflict-modal.tsx               — CREATE (REQ-012)
+      concurrency-conflict-modal.tsx             — CREATE (REQ-011)
+    shared/
+      attachment-list.tsx                        — CREATE (REQ-013)
   app/(dashboard)/projects/[projectId]/work/
     [epicId]/[featureId]/
-      feature-detail-client.tsx                  — MODIFY (Generate Stories button)
+      feature-detail-client.tsx                  — MODIFY (Generate Stories)
       stories/[storyId]/
-        story-detail-client.tsx                  — MODIFY (status transition controls)
+        story-detail-client.tsx                  — MODIFY (status controls, validation render)
 prisma/
-  schema.prisma                                  — No changes (schema already supports all)
-  seed or migration                              — EpicPhase backfill script
+  schema.prisma                                  — MODIFY (version columns on Story/Epic/Feature; confirm VersionHistory + Attachment + decisionRationale)
+  migrations/                                    — Optimistic-concurrency + EpicPhase backfill scripts
 ```
 
 ### 3.3 Data Changes
 
-**No schema migration required.** All needed schema elements already exist:
-- `TestCase` model with all required fields
-- `StoryComponent` with both `componentName?` and `orgComponentId?`
-- `EpicPhase` model with all phase statuses
-- `Story` with nullable `acceptanceCriteria`, `persona`, `storyPoints`
-
-**Data backfill:** EpicPhase records for existing epics with zero phase records. This can be a seed script or a one-time migration.
+- **Schema additions:**
+  - `Story.version Int @default(1)`, `Epic.version Int @default(1)`, `Feature.version Int @default(1)` (REQ-011).
+  - Confirm `VersionHistory` model exists per PRD-5-26; if absent, add per Phase 4.
+  - Confirm `Attachment` polymorphic model; verify `entityType` enum includes `Story`, `Question`. (Defect added by Phase 9 per DECISION-08.)
+  - `StoryComponent.decisionRationale String?` (REQ-012); confirm absence first.
+  - `KnowledgeArticle.source` enum should include `'PHASE_4_BOOTSTRAP'` (Phase 6 may have authoritative enum; coordinate).
+- **Removed from scope:** No app-side `validateStoryReadiness` in Phase 4 (Phase 2 owns; per audit GAP-02).
 
 ---
 
@@ -226,77 +384,108 @@ prisma/
 
 | Scenario | Expected Behavior | Error Response |
 |----------|------------------|---------------|
-| DRAFT->READY with 0 test cases | Blocked | "At least one test case must be defined" |
-| DRAFT->READY with null acceptanceCriteria | Blocked | "Acceptance criteria are required" |
-| DRAFT->READY with null persona | Blocked | "Persona is required" |
-| DRAFT->READY with null storyPoints | Blocked | "Story points estimate is required" |
-| DRAFT->READY with 0 components | Blocked | "At least one impacted component is required" |
-| Multiple missing fields on DRAFT->READY | All errors returned at once | Array of all missing field messages |
-| Story already READY, no re-validation | Only DRAFT->READY triggers validation | Other transitions pass through |
-| OrgComponent search with no org connected | Empty results, free-text mode only | "No org components available — use free-text mode" |
-| OrgComponent search returns 100+ results | Paginate/limit autocomplete to 20 results | User refines search query |
-| Linked OrgComponent is later deleted from org | StoryComponent retains `orgComponentId` (orphaned FK) | Display falls back to `componentName` |
-| Enrichment applied twice to same story | Dedup check prevents duplicate components | Silently skips existing components |
-| AI generates 0 test cases for a draft | Draft still accepted; user must manually add before READY | No error on accept, but DRAFT->READY will block |
-| AI generates test case for wrong draft index | Tool handler validates draft index exists | "Invalid draft index" error, test case skipped |
-| Epic created with `initializeEpicPhases` failure | Transaction: if phase init fails, epic creation rolls back | "Failed to create epic" |
-| Feature-level generate with no requirements | AI uses epic context as fallback | Generates stories from epic description and discovery |
-| Story generation with 0 org components | AI generates free-text component suggestions | No conflict detection (graceful degradation) |
-| Guardrails prompt adds tokens to context | ~200 tokens — negligible within budget | N/A |
+| DRAFT→READY with 0 test cases | Blocked by Phase 2 Stage 3; Phase 4 renders | `validationErrors: [{ field: 'testCases', message: 'At least one test case must be defined' }]` |
+| DRAFT→READY with malformed persona ("Bob") | Blocked | `{ field: 'persona', message: "Persona must follow 'As a [Role], ...' format using a stakeholder from the project list" }` |
+| DRAFT→READY with AC missing exception scenario | Blocked | `{ field: 'acceptanceCriteria', message: 'Acceptance criteria require at least one happy-path AND one exception scenario in Given/When/Then format' }` |
+| DRAFT→READY with persona role not in `Project.stakeholders` | Blocked | `{ field: 'persona', message: "Role '<X>' is not in the project stakeholder list" }` |
+| Multiple missing fields | All errors returned at once | Array of per-field errors |
+| Other transitions (READY→SPRINT_PLANNED) | No validation gate | Pass-through |
+| Sprint-assigned story regressed to DRAFT | Allowed only with PM/SA confirmation; sprint assignment cleared | `{ error: 'STATUS_REGRESSION_REQUIRES_CONFIRMATION' }` until `forceRegress: true` flag set |
+| OrgComponent search with no org connected | Empty results; UI hides linked-mode toggle | "No org components available — use free-text mode" |
+| OrgComponent search returns 100+ results | Limit 20; user refines | N/A |
+| Linked OrgComponent later deleted from org | `StoryComponent.orgComponentId` retained (orphan FK); display falls back to `componentName` | Warning badge "Linked component no longer in org" |
+| Enrichment applied twice | Dedup prevents duplicates | Silent skip |
+| Pipeline emits 0 test cases | Draft accepted; Phase 2 Stage 3 blocks READY | "At least one test case required" on transition |
+| `createTestCases` fails after `createStory` succeeds (GAP-10) | `prisma.$transaction` rolls back story | `{ error: 'TEST_CASE_PERSIST_FAILED'; transactional: true }` |
+| Concurrent DRAFT→READY transitions on same story (GAP-10) | Optimistic-concurrency `version` check rejects second writer | 409 `CONCURRENCY_CONFLICT` |
+| Two BAs editing same story (REQ-011) | Second writer gets 409 with diff modal | `{ error: 'CONCURRENCY_CONFLICT'; currentVersion, currentValue }` |
+| Discarded draft with orphaned in-memory test cases (GAP-10) | Test cases never persisted; in-memory only — drop on session end | N/A (no DB writes) |
+| EpicPhase backfill races epic.create (GAP-10) | Backfill `INSERT … ON CONFLICT DO NOTHING` semantics via `createMany({ skipDuplicates: true })` | Idempotent |
+| "Fix with AI" exceeds token budget (GAP-10) | Phase 2 enrichment task enforces ceiling; UI degrades to static suggestions | `{ error: 'TOKEN_CEILING'; useStaticHints: true }` |
+| Long-prompt guardrails injection precedence (GAP-10) | Guardrails block placed at top of system prompt; truncation strategy preserves it last to drop | N/A |
+| Pipeline `cross_reference_result._meta.not_implemented === true` (Phase 6 not deployed) | UI renders "cross-ref unavailable" notice | Graceful degradation |
+| `assertProjectWritable` throws on archived project | All Phase 4 mutations return 409 | `{ error: 'PROJECT_ARCHIVED'; readOnly: true }` |
+| Embeddings enqueue fails after story.create | Story persists; embedding job retries 3x; DLQ on final failure; UI shows "embedding pending" badge | Non-blocking |
+| Attachment upload exceeds 25 MB | Rejected pre-upload | `{ error: 'FILE_TOO_LARGE'; maxBytes: 25_000_000 }` |
+| KA bootstrap race: two epics in new domain created concurrently | `INSERT … ON CONFLICT DO NOTHING` on `(projectId, slug)` unique constraint | One winner; second silently skipped |
+| Conflict modal closed without decision (REQ-012) | Draft remains in pending state; cannot accept until each conflict resolved | UI block on accept |
+| Guardrails prompt token cost | ~200 tokens — negligible | N/A |
 
 ---
 
 ## 5. Integration Points
 
 ### From Phase 1
-- **REQ-RBAC-009** (story status machine fix) resolves GAP-WORK-007. BA can now do management transitions. Phase 4 marks this gap as resolved.
-- **REQ-RBAC-001** (auth fix) ensures all new Phase 4 server actions reject removed members.
-- **REQ-RBAC-002-007** (role gates) protect epic/feature/story write operations that Phase 4 extends.
+- **REQ-RBAC-009** resolves GAP-WORK-007.
+- **REQ-RBAC-001..007** protect all Phase 4 server actions.
+
+### From Phase 2 (CRITICAL)
+- **`runStoryGenerationPipeline`** — Phase 4 imports as the sole story-generation entry point.
+- **Pipeline output schema** — Phase 4 consumes `story_draft`, `validation_result`, `cross_reference_result`, `component_conflicts[]`, `ai_suggestions[]`, `pipeline_run_id`.
+- **`validateStoryReadiness`** (Phase 2 Stage 3 standalone export) — Phase 4 calls on DRAFT→READY.
+- **Tier-1 `getProjectSummary`** — embeds Phase 4 `SF_DEV_GUARDRAILS`.
 
 ### From Phase 3
-- **REQ-DISC-001** (IMPACT_ASSESSED status) provides the complete question lifecycle state, available as a readiness signal for story generation scope decisions.
-- **REQ-DISC-010/011** (gap detection + readiness assessment) produce data that can inform which epics have sufficient discovery for story generation. Phase 4 does not depend on this data but benefits from it.
-- **REQ-DISC-008** (impact assessment downstream actions) creates blocking relationships that feed into story status awareness. Stories blocked by unanswered questions are visible in the story detail page.
+- **REQ-DISC-001 / 008 / 010 / 011** — discovery readiness signals consumed by epic / feature scope decisions.
+
+### From Phase 6
+- **`search_org_kb`** — pipeline Stage 4 calls; returns `SearchResponse` envelope (carry-forward decision #2). Phase 4 consumes via pipeline output, never directly.
+
+### From Phase 9 (CRITICAL — DECISION-10)
+- **`assertProjectWritable(projectId)`** — Phase 4 imports and calls at every mutation entry point. Phase 4 does NOT redefine this helper.
+- **`Attachment` polymorphic infra** — coordinated extension; Phase 9 owns Defect surface, Phase 4 adds Story / Question.
+
+### From Phase 11
+- **`embeddings.enqueue({ entity_type, entity_id, content, project_id })`** — Phase 4 calls on `story.create` / `story.update` (mandatory-field changes).
+- Inngest event: `embedding.requested`.
 
 ### For Future Phases
-- **Phase 5 (Sprint/Developer):** Test case stubs on stories are available in context packages. OrgComponent links enable sprint conflict detection (already wired in the context-package API, which queries by `orgComponentId`). Guardrails in project summary are included in Tier 1 context for Claude Code.
-- **Phase 6 (Org/Knowledge):** The OrgComponent search infrastructure from REQ-WORK-006 is reusable for knowledge article UI. Phase 6's AI-driven "suggest linking free-text to OrgComponent" feature builds on the linked mode UI from this phase.
-- **Phase 7 (Dashboards):** EpicPhase records now exist in the database (not phantom fallbacks), enabling accurate dashboard metrics and the Epic Phase Grid. Story quality metrics (Ready vs Draft counts) are meaningful with the validation gate active.
-- **Phase 9 (QA/Jira/Archival):** Test cases created during story generation (REQ-WORK-008) are the starting point for Phase 9's test execution UI and coverage metrics.
+- **Phase 5 (Sprint / Developer):** test case stubs available in context packages; OrgComponent links enable conflict detection; guardrails inherited via Tier-1 summary.
+- **Phase 7 (Dashboards):** EpicPhase rows + story quality metrics meaningful with validation gate.
+- **Phase 9 (QA):** STUB test cases are baseline preserved across `AI_GENERATED` regenerations.
+- **Phase 10 (Work Tab UI):** consumes Story-tier data; renders Tasks-tier UI per DECISION-06.
 
 ---
 
 ## 6. Acceptance Criteria
 
-- [ ] EpicPhase records are auto-created (5 rows, NOT_STARTED) when an epic is created
-- [ ] Existing epics without EpicPhase records are backfilled
+- [ ] EpicPhase records auto-created (5 rows, NOT_STARTED) on epic create
+- [ ] Existing epics without EpicPhase records backfilled idempotently
 - [ ] Enrichment path does not create duplicate free-text component records
-- [ ] Story generation and enrichment system prompts include Salesforce guardrail reminders
-- [ ] Tier 1 project summary includes a guardrails section
-- [ ] Story detail page has status transition controls matching the user's role permissions
-- [ ] Feature detail page has a "Generate Stories" button that initiates a feature-scoped session
-- [ ] ComponentSelector supports free-text and linked OrgComponent modes
-- [ ] `addStoryComponent` action accepts and persists `orgComponentId`
-- [ ] OrgComponent search returns results filtered by project's connected org
-- [ ] Story generation context includes org components for the epic's domain
-- [ ] Story generation prompt instructs AI to cross-reference and flag component conflicts
-- [ ] `create_test_case_stub` tool is available during story generation
-- [ ] AI generates at least one happy-path and one edge-case test case per story draft
-- [ ] Test cases are displayed in the draft preview card
-- [ ] Test cases are persisted when a story draft is accepted with `source: "STUB"`
-- [ ] DRAFT->READY transition validates all 7 mandatory fields
-- [ ] Validation returns all missing fields at once (not one at a time)
-- [ ] DRAFT->READY with missing fields returns field-specific error messages
-- [ ] DRAFT->READY failure shows "Fix with AI" button that triggers targeted enrichment for missing fields
-- [ ] AI remediation generates suggestions for each missing field that the user can accept or edit
-- [ ] Other status transitions (READY->SPRINT_PLANNED, etc.) are not gated by field validation
-- [ ] No regressions in existing story CRUD, generation, enrichment, or status transition flows
+- [ ] `SF_DEV_GUARDRAILS` module exported from `src/lib/agent-harness/prompts/salesforce-guardrails.ts` covering all 6 guardrails under 200 tokens (REQ-WORK-003 / GAP-WORK-006)
+- [ ] Phase 2 Stage 2 imports `SF_DEV_GUARDRAILS` (verified via Phase 2 integration test)
+- [ ] `storyEnrichmentTask` imports and prepends guardrails
+- [ ] Tier-1 project summary surfaces guardrails block
+- [ ] Story detail page shows status transition controls per role
+- [ ] Feature detail page has Generate Stories button
+- [ ] ComponentSelector supports free-text + linked OrgComponent modes
+- [ ] `searchOrgComponents` action implemented per pinned interface
+- [ ] `addStoryComponent` accepts optional `orgComponentId`
+- [ ] Story generation UI calls `runStoryGenerationPipeline` (no calls to legacy `storyGenerationTask`)
+- [ ] Pipeline `cross_reference_result` rendered as badges; graceful fallback when `_meta.not_implemented === true`
+- [ ] Pipeline-emitted `test_cases[]` displayed in draft preview; persisted on accept with `source: "STUB"` via transactional `createTestCases`
+- [ ] DRAFT→READY blocked by Phase 2 Stage 3 validation; UI displays per-field errors
+- [ ] Persona regex + stakeholder list cross-check enforced (PRD-10-03)
+- [ ] AC requires Given/When/Then + ≥1 happy + ≥1 exception (PRD-10-05)
+- [ ] Story Points AI suggestion + explicit user confirm flow implemented (PRD-10-07)
+- [ ] "Fix with AI" button surfaces remediation suggestions; static fallback present
+- [ ] Optimistic concurrency (REQ-WORK-011): `version` columns on Story/Epic/Feature; 409 `CONCURRENCY_CONFLICT` on stale `expectedVersion`; diff modal with Merge/Overwrite; VersionHistory snapshot on every overwrite; never-silent-overwrite assertion test
+- [ ] Component conflict resolution modal renders pipeline `component_conflicts[]` with extend / replace / duplicate options (REQ-WORK-012)
+- [ ] Polymorphic `Attachment` upload / list / delete for Story + Question with MIME allowlist + 25 MB cap (REQ-WORK-013)
+- [ ] Initial KnowledgeArticle bootstrap drafts created on first novel domain / process (REQ-WORK-014)
+- [ ] `runStoryGenerationPipeline` called with `pipeline_run_id` surfaced in audit log
+- [ ] Story embeddings enqueued via Phase 11 on create + update; failure semantics non-blocking with DLQ
+- [ ] Every Phase 4 mutation entry point calls `assertProjectWritable(projectId)`; archived-project tests return 409 (DECISION-10)
+- [ ] No re-implementation of pipeline logic, validation logic, or `assertProjectWritable` helper inside Phase 4
+- [ ] No regressions in existing CRUD / status transitions
 
 ---
 
 ## 7. Open Questions
 
-None — all scoping decisions resolved during deep dive.
+- **OQ-1:** `KnowledgeArticle.source` enum extension — Phase 4 needs `'PHASE_4_BOOTSTRAP'` value. Confirm with Phase 6 deep-dive whether this enum is owned by Phase 6 schema migration or whether Phase 4 may add. **Default action:** Phase 4 adds during execution; Phase 6 absorbs in its deep-dive.
+- **OQ-2:** Attachment storage backend — Vercel Blob vs S3. Phase 8 doc-gen owns broader storage decisions. **Default action:** start with Vercel Blob; revisit if Phase 8 standardizes elsewhere.
+- **OQ-3:** Pipeline `runStoryGenerationPipeline` exact import path. **Pinned by:** Phase 2 deep-dive (must complete before REQ-WORK-010 task starts).
 
 ---
 
@@ -304,4 +493,6 @@ None — all scoping decisions resolved during deep dive.
 
 | Date | Change | Reason |
 |------|--------|--------|
-| 2026-04-10 | Initial spec | Created via `/bef:deep-dive 4`. 9 of 11 gaps addressed. GAP-WORK-007 resolved by Phase 1. GAP-WORK-009 absorbed into GAP-WORK-001. |
+| 2026-04-10 | Initial spec | `/bef:deep-dive 4`. 9 of 11 gaps addressed. |
+| 2026-04-13 | Addendum amendments | Pipeline-first integration; Phase 2 ownership. |
+| 2026-04-14 | Wave 2 audit-fix (13 gap fixes per phase-04-audit.md) | Cites DECISION-06, DECISION-08, DECISION-10. Resolves GAP-WORK-006. Adds REQ-WORK-010..014. Reframes REQ-WORK-007/008/009 as UI-only consumers of Phase 2 pipeline. Pins interfaces. Adds optimistic concurrency, conflict modal, attachments, KA bootstrap. Carries forward decisions #2 (`SearchResponse` envelope), #5 (`assertProjectWritable` ordering). |
