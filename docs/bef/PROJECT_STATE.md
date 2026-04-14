@@ -40,7 +40,9 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
 
 ## Recently Completed
 
-- **Wave 1 audit fixes** (2026-04-14). Phase 11 (13 gaps) + Phase 2 (18 gaps) applied by parallel fix agents in isolated worktrees, merged to `main`. Commits: `15ba83e` (phase-11, cites DECISION-01/02/03), `895d58d` (phase-02, cites DECISION-01/08/09/10), `73c3196` (merge). 5 carry-forward decisions logged in the session thread. Next: Wave 2 (Phase 6, 3, 4).
+- **Wave 2 audit fixes** (2026-04-14). Phase 3 (15 gaps), Phase 4 (13 gaps), Phase 6 (20 gaps) applied by parallel fix agents in isolated worktrees, merged to `main`. Commits: `253c0ed` (phase-03, cites DECISION-01), `51faeb3` (phase-04, cites DECISION-06/08/10), `a9ff4b7` (phase-06, cites DECISION-02/05/08/10), plus merge commits `9651181`/`0de3565`/`e3d2342`. 48 gaps closed total. Phase 6 explicitly locks `article_entity_refs` ownership + `search_org_kb → SearchResponse` envelope. Phase 4 resolves GAP-WORK-006 (6 SF dev guardrails in story-gen prompts). Next: Wave 3 (Phase 5, 7, 8, 9, 10).
+
+- **Wave 1 audit fixes** (2026-04-14). Phase 11 (13 gaps) + Phase 2 (18 gaps) applied by parallel fix agents in isolated worktrees, merged to `main`. Commits: `15ba83e` (phase-11, cites DECISION-01/02/03), `895d58d` (phase-02, cites DECISION-01/08/09/10), `73c3196` (merge). 5 carry-forward decisions logged in the session thread.
 
 - **PRD traceability + developer-readiness audit** (2026-04-13). 10 phases audited from scratch (Phase 1 excluded) against a 442-row PRD + Addendum requirement index. Verdict: 0 Ready, 4 Ready-after-fixes (Phase 3, 6, 10, 11), 6 Not-ready (Phase 2, 4, 5, 7, 8, 9). 137 total gaps: 25 Blocker, 82 Major, 30 Minor. 8 cross-phase contradictions (6 resolvable via Addendum-wins rule, 2 require user decision). 10 Wave 0 items require user sign-off before any fix agent dispatches. Artifacts: `docs/bef/audits/2026-04-13/` — `REQUIREMENT_INDEX.md`, `_TEMPLATE_phase-audit.md`, `phase-02-audit.md` through `phase-11-audit.md`, `CROSS_PHASE_SUMMARY.md`.
 
@@ -67,11 +69,11 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
     - [x] Phase 11 deep-dive (2026-04-13)
     - [x] Phase 2 deep-dive (2026-04-13)
     - [ ] Phase 6 re-dive (next — blocker: resolve `KnowledgeArticle.embedding` migration path)
-  - [~] Step 3b: PRD traceability audit + gap closure — Wave 1 merged, Wave 2 active
+  - [~] Step 3b: PRD traceability audit + gap closure — Waves 1 + 2 merged, Wave 3 ready
     - [x] Wave 0: user-decision queue from cross-phase summary
     - [x] Wave 1: Phase 11 + Phase 2 audit fixes merged (2026-04-14)
-    - [ ] Wave 2: Phase 6, 3, 4 audit fixes (ready to dispatch)
-    - [ ] Wave 3: Phase 5, 7, 8, 9 audit fixes
+    - [x] Wave 2: Phase 3 + 4 + 6 audit fixes merged (2026-04-14, 48 gaps closed)
+    - [ ] Wave 3: Phase 5, 7, 8, 9, 10 audit fixes (ready to dispatch)
   - [x] Step 4a: Initial verifier sweep (2026-04-13) — verdict PROCEED with 7 critical findings
   - [ ] Step 4b: Post-gap-closure verifier sweep (required after Wave 2/3 land)
 - [ ] Stage 5: Execute — Blocked on Stage 4 (Phase 1 previously complete before Addendum replan)

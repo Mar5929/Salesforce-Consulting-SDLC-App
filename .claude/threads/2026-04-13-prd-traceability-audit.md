@@ -73,6 +73,27 @@ These are supplemental to `AUDIT_DECISIONS.md`. Not added to that file because t
 4. **Briefing-type mapping for Current Focus / Recommended Focus**: Agent selected the audit's preferred path — reuse `daily_standup → Current Focus` and `weekly_status → Recommended Focus`. No new mini-types added. Phase 7 fix-agent prompt (Wave 3) must consume this mapping; do not add `current_focus` / `recommended_focus` enum values.
 5. **`assertProjectWritable` publish/consume ordering**: DECISION-10 already assigned Phase 9 as publisher. This is an execution-time ordering concern (Phase 9 executes before Phase 2), not a spec change. No action needed in any fix wave.
 
+## Wave 2 completed (2026-04-14)
+
+Three parallel fix agents in isolated worktrees; all merged to `main` with `--no-ff` merge commits.
+
+- `253c0ed audit-fix(phase-03): apply 15 gap fixes per phase-03-audit.md (cites DECISION-01)` → merge `9651181`
+- `51faeb3 audit-fix(phase-04): apply 13 gap fixes per phase-04-audit.md (cites DECISION-06/08/10)` → merge `0de3565`
+- `a9ff4b7 audit-fix(phase-06): apply 20 gap fixes per phase-06-audit.md (cites DECISION-02/05/08/10)` → merge `e3d2342`
+
+48 gaps closed. No file overlap between branches. ff-only not possible (main had advanced to `4e02777`); non-ff merges clean.
+
+### Wave 2 agent-report flags (to carry into Wave 3 / verification)
+
+1. **Phase 3 — no dedicated DECISION ID for pipeline-first listener collapse.** The audit's GAP on `questionImpactFunction → QUESTION_IMPACT_COMPLETED` listener is a Wave 0 contradiction (CROSS_PHASE_SUMMARY §A) that flows from Addendum §2 Addendum-wins but has no explicit `DECISION-nn`. Agent cited "DECISION-01 derivation + Addendum §2." If a formal ID is wanted, mint it before Wave 3.
+2. **Phase 3 — DECISION-03 (Voyage 50-pair test) extended as a Phase 3 merge gate.** Agent reasoned: Phase 3 enqueues embeddings consumed by Phase 11, so the shared embedding path is gated too. Confirm this extension (or narrow to Phase 11 only).
+3. **Phase 4 — OQ-1: `KnowledgeArticle.source = 'PHASE_4_BOOTSTRAP'` enum extension.** Phase 4 spec adds the enum value; Phase 6 owns the `KnowledgeArticle` schema. Phase 6 agent did not reconcile. Wave 3 / Phase 6 final review must absorb the enum addition.
+4. **Phase 4 — OQ-2: attachment storage backend (Vercel Blob vs S3) deferred to Phase 8 coordination.** Phase 8 agent prompt (Wave 3) should resolve.
+5. **Phase 4 — OQ-3: `runStoryGenerationPipeline` import path pending.** Shape is pinned; path finalizes when Phase 2 execution lands.
+6. **Phase 6 — `knowledge_article_embeddings` owned by Phase 6 (not Phase 11).** Agent took the "own in Phase 6" branch because Phase 11 scope is closed. Phase 11 gets a schema reconciliation note in Phase 6 Task 5 but no direct edit.
+7. **Phase 6 — polymorphic integrity on `article_entity_refs` implemented as BEFORE INSERT/UPDATE trigger** (Postgres can't enforce cross-table CHECK). Matches the audit's parenthetical fallback.
+8. **Phase 6 — all embedding columns corrected to `vector(512)`** per DECISION-02 where pre-existing text said `vector(1536)`.
+
 ## Next session: what to do
 
 1. Read `docs/bef/PROJECT_STATE.md` first.
