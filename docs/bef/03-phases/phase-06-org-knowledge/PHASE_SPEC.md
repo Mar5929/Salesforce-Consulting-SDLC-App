@@ -291,6 +291,8 @@ AI-drafted defaults (PRD-13-21): `authorType=AI_GENERATED, confidence ∈ {LOW, 
 
 **PRD-13-14 — Planned KB placeholder (orphan owner per DECISION-08):** at project initialization, Phase 6 seeds a placeholder KnowledgeArticle with `articleType=PLANNED, authorType=PLACEHOLDER, content=<empty markdown>` so downstream UI never sees an empty KB list. Seeding is idempotent.
 
+**`KnowledgeArticle.source` enum (Wave 3 absorption, closes Phase 4 OQ-1; enum reconciliation per phase-04-audit OQ-1):** the `KnowledgeArticle.source` enum adds `'PHASE_4_BOOTSTRAP'` as an allowed value. Phase 4 Task 14 (Initial KnowledgeArticle Bootstrap Drafts, cites DECISION-08) emits rows with `source: 'PHASE_4_BOOTSTRAP'` and empty body so Phase 6 can populate them during `articleType=BUSINESS_PROCESS` / `DOMAIN_OVERVIEW` creation. Phase 6 schema migration owns the enum addition (single source of truth); Phase 4 consumes. Cross-reference: `docs/bef/03-phases/phase-04-work-management/TASKS.md` Task 14 AC, `PHASE_SPEC.md` §Outputs.
+
 ### 2.11 KnowledgeArticle Confirmation Model (REQ-ORG-007) — PRESERVED
 
 Unchanged. `isConfirmed` field, confirm/reject/edit/bulk actions, SA-only role gate, context-assembly filter. See `PHASE_SPEC.pre-addendum.md` §2.7.

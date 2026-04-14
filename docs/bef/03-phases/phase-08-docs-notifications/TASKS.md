@@ -1,9 +1,9 @@
 # Phase 8 Tasks: Documents, Notifications
 
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
-> Total Tasks: 9
-> Status: 0/9 complete
-> Last Updated: 2026-04-10
+> Total Tasks: 13
+> Status: 0/13 complete
+> Last Updated: 2026-04-14 (Wave 3 audit-fix)
 
 ---
 
@@ -11,14 +11,18 @@
 
 ```
 Task 1 (schema alignment) ─────────────────────────────┐
-  ├── Task 2 (recipient fixes)          ─┐              │
-  ├── Task 3 (wire senders + rate limit)  ├── parallel   │
-  └── Task 9 (notification UX)          ─┘              │
-Task 4 (branding admin)    ─┐                           │
-Task 5 (document versioning) ├── parallel with Tasks 2-3│
-Task 7 (epic scope)        ─┘                           │
-  └── Task 6 (new templates) ─── after 4, 5            │
-       └── Task 8 (quality + UX) ─── last              │
+  ├── Task 2 (recipient fixes)                  ─┐     │
+  ├── Task 3 (wire senders + rate limit)         ├── parallel
+  ├── Task 9 (notification UX)                   │     │
+  └── Task 10 (pipeline pending_review notifs)  ─┘     │
+Task 4 (branding admin)      ─┐                        │
+Task 5 (document versioning)   │                        │
+Task 7 (epic scope)            ├── parallel with 2-3-9-10
+Task 11 (regen w/ adjustments) │                        │
+Task 13 (TECH_SPEC reconcile) ─┘                        │
+  └── Task 6 (templates: 8 types) ─── after 4, 5       │
+       ├── Task 8 (quality + hard-gate validation) ─── after 4, 6
+       └── Task 12 (PDF preview) ─── after 6            │
 ```
 
 ---
@@ -37,7 +41,8 @@ Task 7 (epic scope)        ─┘                           │
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] NotificationType enum includes: DOCUMENT_GENERATED, QUESTION_CONFLICT, PROJECT_ARCHIVED, PROJECT_REACTIVATED, DEFECT_CREATED, DEFECT_STATUS_CHANGED, TEST_EXECUTION_RECORDED, TEAM_MEMBER_ADDED, RATE_LIMIT_WARNING
+- [ ] NotificationType enum includes: DOCUMENT_GENERATED, QUESTION_CONFLICT, PROJECT_ARCHIVED, PROJECT_REACTIVATED, DEFECT_CREATED, DEFECT_STATUS_CHANGED, TEST_EXECUTION_RECORDED, TEAM_MEMBER_ADDED, RATE_LIMIT_WARNING, WORK_ITEM_UNBLOCKED, SPRINT_CONFLICT_DETECTED, STORY_REASSIGNED, STORY_STATUS_CHANGED, ARTICLE_FLAGGED_STALE, METADATA_SYNC_COMPLETE, PIPELINE_REVIEW_PENDING, PIPELINE_CONFLICT_FLAGGED (traces PRD-17-23 events 2, 3, 11, 12, 13, 14 + ADD-5.2.1/5.2.2)
+- [ ] Notification entityType enum includes: PENDING_REVIEW, CONFLICT_FLAG (for pipeline virtual entities)
 - [ ] `document-generation.ts` sends `DOCUMENT_GENERATED` (was invalid string)
 - [ ] `question-impact.ts` sends `QUESTION_CONFLICT` (was invalid string)
 - [ ] `project-archive.ts` sends `PROJECT_ARCHIVED` / `PROJECT_REACTIVATED` (was `AI_PROCESSING_COMPLETE`)
@@ -83,7 +88,7 @@ In `questions.ts` updateQuestion: If `assigneeId` changed, emit `NOTIFICATION_SE
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Wire 6 dead notification senders: STORY_MOVED_TO_QA, DECISION_RECORDED, RISK_CHANGED, QUESTION_AGING (cron), TEAM_MEMBER_ADDED, JIRA_SYNC_REQUESTED consumer. Plus RATE_LIMIT_WARNING from Phase 2. |
+| **Scope** | Wire all PRD §17.8 senders that are currently dead or missing: STORY_MOVED_TO_QA, DECISION_RECORDED, RISK_CHANGED, QUESTION_AGING (cron), TEAM_MEMBER_ADDED, JIRA_SYNC_REQUESTED consumer, WORK_ITEM_UNBLOCKED, SPRINT_CONFLICT_DETECTED, STORY_REASSIGNED, STORY_STATUS_CHANGED, ARTICLE_FLAGGED_STALE, METADATA_SYNC_COMPLETE. Plus RATE_LIMIT_WARNING from Phase 2. Every mutation-path sender calls `assertProjectWritable(projectId)` per DECISION-10. |
 | **Depends On** | Task 1 |
 | **Complexity** | M |
 | **Status** | Not Started |
@@ -91,15 +96,21 @@ In `questions.ts` updateQuestion: If `assigneeId` changed, emit `NOTIFICATION_SE
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] When a story status changes to QA, a STORY_MOVED_TO_QA notification is sent to the test assignee (or all QA members if no assignee)
-- [ ] When a decision is created (via AI tool or action), a DECISION_RECORDED notification is sent to PM + SA + affected epic owners
-- [ ] When a risk is created or severity changes, a RISK_CHANGED notification is sent to PM + SA
-- [ ] A daily cron runs and sends QUESTION_AGING notifications to PM for questions open > 7 days
-- [ ] Question aging batches into one notification per PM (not one per question)
-- [ ] When a team member is added, a TEAM_MEMBER_ADDED notification is sent to all existing team members
-- [ ] JIRA_SYNC_REQUESTED event has a consumer that triggers the sync (or the retry UI calls the action directly)
-- [ ] When AI usage reaches 80% of daily or monthly limit, a RATE_LIMIT_WARNING is sent to PM + SA
-- [ ] Rate limit warning fires only once per threshold crossing (not repeatedly at 81%, 82%, etc.)
+- [ ] STORY_MOVED_TO_QA (event 8, HIGH, PRD-17-23-08 / PRD-5-14): recipients = `story.testAssigneeId` else all ACTIVE QA ProjectMembers; null fallback exercised in tests
+- [ ] DECISION_RECORDED (event 9, MEDIUM): recipients = PM + SA + `Decision.featureId → Feature.epicId → Epic.ownerId` owners (document FK chain in code comment)
+- [ ] RISK_CHANGED (event 10, HIGH): recipients = PM + SA; fires on create or severity change
+- [ ] QUESTION_AGING (event 5, MEDIUM, PRD-17-23-05): daily cron at 9am `Project.timezone` (fall back to UTC); recipients = question owner **+** project PM (aligns with PRD §17.8 table); re-alert cadence = suppress if duplicate within last 7 days
+- [ ] Question aging batches into one notification per (recipient, project) when more than 10 stale questions exist
+- [ ] TEAM_MEMBER_ADDED (MEDIUM): recipients = all ACTIVE ProjectMembers except the new member
+- [ ] JIRA_SYNC_REQUESTED: consumer registered; retry UI fallback calls sync action directly
+- [ ] RATE_LIMIT_WARNING: 80% threshold, one-shot per period (daily + monthly)
+- [ ] WORK_ITEM_UNBLOCKED (event 2, HIGH, PRD-17-23-02): fired from `questions.ts` `answerQuestion` when any `QuestionBlocksStory` row resolves; recipients = unblocked story assignees + PM
+- [ ] SPRINT_CONFLICT_DETECTED (event 3, HIGH, PRD-17-23-03): dispatch call wired at the Phase 7 sprint-conflict-check call site (cross-phase handoff documented); recipients = affected story assignees + PM
+- [ ] STORY_REASSIGNED (event 11, MEDIUM, PRD-17-23-11): fired from `stories.ts` `updateStory` when `assigneeId` changes; recipients = `[oldAssignee, newAssignee]`
+- [ ] STORY_STATUS_CHANGED (event 12, LOW, PRD-17-23-12): fired on status change (excluding to QA); recipients = assignee + `sprint.pmId` when sprint is ACTIVE
+- [ ] ARTICLE_FLAGGED_STALE (event 13, LOW, PRD-17-23-13): fired on `isStale=true` transition from the Phase 2 `entity.changed` consumer in `knowledge-articles.ts`; recipient = project SA
+- [ ] METADATA_SYNC_COMPLETE (event 14, LOW, PRD-17-23-14): dispatch call wired at the Phase 6 org-sync Inngest function success path; recipient = project SA
+- [ ] Every mutation-path sender calls `assertProjectWritable(projectId)` before emit (DECISION-10); archived-project tests assert 409 / `ProjectArchivedError`
 
 **Implementation Notes:**
 Most senders are one-liners — emit `inngest.send({ name: "NOTIFICATION_SEND", data: { ... } })` at the right point in the action/tool.
@@ -132,7 +143,7 @@ export const questionAgingFunction = inngest.createFunction(
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] BrandingConfig model exists with projectId (unique), firmName, logoUrl, primaryColor, accentColor, fontFamily, footerText
+- [ ] BrandingConfig model covers full PRD-16-04 set: projectId (unique), firmName, logoUrl, primaryColor, accentColor, secondaryColor, tertiaryColor, headingFont, bodyFont, headerFormat (Json), coverPageLayout (Json), footerText. All extended fields ship with defaults.
 - [ ] SA/PM can access a "Branding" tab in project settings to edit branding fields
 - [ ] Logo upload accepts PNG/JPEG up to 2MB, stores to S3/R2, saves URL to BrandingConfig
 - [ ] `branding.ts` loads BrandingConfig from DB for the project, falls back to hardcoded defaults if none exists
@@ -168,6 +179,10 @@ Settings tab: Add alongside existing settings tabs. Gate with the existing Phase
 - [ ] "Approve" action sets status to APPROVED (only one APPROVED per chain)
 - [ ] Version history table shows version number, status badge, and approve button
 - [ ] Migration runs successfully, existing documents get version 1 and DRAFT status
+- [ ] Unique constraint `@@unique([projectId, documentType, scopeEpicId, version])` plus partial unique index for null-scope chain (Postgres) prevents duplicate version rows (closes GAP-09 race)
+- [ ] Version increment runs inside a Prisma `$transaction` with `SELECT ... FOR UPDATE` on the current max-version row; on unique-constraint conflict, retry once then 409
+- [ ] Concurrent-regeneration test: two simultaneous regen requests produce version N+1 and N+2 sequentially, never two N+1 rows
+- [ ] `assertProjectWritable(projectId)` called before the transaction (DECISION-10)
 
 **Implementation Notes:**
 In the document generation Inngest function's DB record step, before creating the new document:
@@ -190,7 +205,7 @@ Remove the computed version facade in `getDocuments` — use the actual `version
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create 5 new document template definitions: SOW, Test Script, Deployment Runbook, Training Material, Status Report. Register in templates/index.ts. |
+| **Scope** | Create 8 document template definitions covering PRD-16-01 in full: BRD, SDD, Client Deck (PPTX PRESENTATION), SOW, Test Script, Deployment Runbook, Training Material, Status Report. Register in templates/index.ts. BRD / SDD / Client Deck added per DECISION-07. STATUS_REPORT is a first-class documentType enum value per TECHNICAL_SPEC §2.2 (not a "variant"). |
 | **Depends On** | Task 4 (branding loaded from DB), Task 5 (versioning in place) |
 | **Complexity** | L |
 | **Status** | Not Started |
@@ -198,12 +213,15 @@ Remove the computed version facade in `getDocuments` — use the actual `version
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] SOW template generates a document with: scope, deliverables, timeline, assumptions, exclusions
-- [ ] Test Script template generates grouped test cases with steps and expected results
-- [ ] Deployment Runbook template generates pre-deploy checklist, deployment steps, rollback procedures, post-deploy verification
-- [ ] Training Material template generates feature overviews with step-by-step instructions
-- [ ] Status Report template generates project health summary, sprint progress, blockers, milestones, recent decisions
-- [ ] All 5 templates are registered in templates/index.ts and selectable in the generation dialog
+- [ ] BRD template generates executive summary, business drivers, scope, functional requirements, non-functional requirements, success criteria (PRD-16-01 / DECISION-07)
+- [ ] SDD template generates architecture overview, data model, integrations, security, deployment model (PRD-16-01 / DECISION-07)
+- [ ] Client Deck (PRESENTATION) template generates title slide, executive summary, scope, timeline, team, next steps (PRD-16-01 / DECISION-07)
+- [ ] SOW template generates a document with: scope, deliverables, timeline, assumptions, exclusions (PRD-16-01)
+- [ ] Test Script template generates grouped test cases with steps and expected results (PRD-16-01)
+- [ ] Deployment Runbook template generates pre-deploy checklist, deployment steps, rollback procedures, post-deploy verification (PRD-16-01)
+- [ ] Training Material template generates feature overviews with step-by-step instructions (PRD-16-01)
+- [ ] Status Report template generates project health summary, sprint progress, blockers, milestones, recent decisions (GAP-AGENT-001 resolution; `documentType = STATUS_REPORT` matches TECHNICAL_SPEC §2.2)
+- [ ] All 8 templates registered in templates/index.ts and selectable in the generation dialog
 - [ ] Each template defines its context queries, section structure, and output schema
 - [ ] Generated documents use project branding (from REQ-DOCS-004) and create version chains (from REQ-DOCS-005)
 
@@ -266,8 +284,9 @@ The STATUS_REPORT template uses read-only context across all project data (same 
 
 **Acceptance Criteria:**
 - [ ] AI-generated content is run through `postProcessOutput` (firm rules from Phase 2) before rendering
-- [ ] Document generation logs a warning if any required section has empty content
-- [ ] Context assembly estimates token count before calling Claude; truncates least important sections if over limit
+- [ ] Branding validation is a **hard gate** per PRD-16-03: empty required sections, missing logo render (when `logoUrl` set), missing required colors, or empty footer write `validationErrors` JSON on the GeneratedDocument row and block S3/R2 upload until user acknowledges in UI
+- [ ] `MAX_CONTEXT_TOKENS` sourced from Phase 2 model router (`modelRouter.getContextBudget(model)`; 75% of model window; e.g. 150_000 for Sonnet)
+- [ ] Context assembly estimates token count before calling Claude; truncates least-important sections by template-declared priority if over limit
 - [ ] Token truncation logs which sections were truncated
 - [ ] Documents list refreshes automatically after generation dialog closes (no manual page refresh needed)
 
@@ -335,17 +354,96 @@ Add a light background tint for URGENT: `bg-red-50` on the entire notification r
 
 ---
 
+---
+
+### Task 10: Wire pending_review + conflicts_flagged pipeline notifications (REQ-DOCS-010)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | On `pending_review` row insert (Addendum §5.2.1 step 5), emit `NOTIFICATION_SEND` with type `PIPELINE_REVIEW_PENDING`, entityType `PENDING_REVIEW`. On `conflicts_flagged` row insert (Addendum §5.2.2 step 5), emit `NOTIFICATION_SEND` with type `PIPELINE_CONFLICT_FLAGGED`, entityType `CONFLICT_FLAG`. Route map + icon entries added in Task 1. |
+| **Depends On** | Task 1 |
+| **Complexity** | S |
+| **Status** | Not Started |
+
+**Acceptance Criteria:**
+- [ ] `PIPELINE_REVIEW_PENDING` emits on every `pending_review` insert; recipients = PM + BA; priority MEDIUM (ADD-5.2.1)
+- [ ] `PIPELINE_CONFLICT_FLAGGED` emits on every `conflicts_flagged` insert; recipients = PM + SA; priority MEDIUM (ADD-5.2.2)
+- [ ] Route map: `PENDING_REVIEW → /projects/:id/pipelines/pending-review`; `CONFLICT_FLAG → /projects/:id/pipelines/conflicts`
+- [ ] When a pipeline run produces more than 10 items of the same type, collapse into one summary notification per recipient (count + link)
+- [ ] `assertProjectWritable(projectId)` called before emit (DECISION-10)
+
+---
+
+### Task 11: Regeneration with adjustments (REQ-DOCS-011, PRD-16-07, DECISION-08)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Add `regenerationAdjustments` field to `requestDocumentGenerationSchema` and document-generation Inngest payload. UI shows an adjustments textarea when a prior version exists. Content loader loads prior-version content as reference context and prepends adjustments to the system prompt. Closes PRD-16-07 orphan (DECISION-08). |
+| **Depends On** | Task 5 (versioning), Task 6 (templates) |
+| **Complexity** | M |
+| **Status** | Not Started |
+
+**Acceptance Criteria:**
+- [ ] `requestDocumentGenerationSchema` has `regenerationAdjustments: z.string().max(2000).optional()`
+- [ ] Inngest `document-generation` event payload carries `regenerationAdjustments`; GeneratedDocument row stores it on `regenerationAdjustments` column
+- [ ] `generation-dialog.tsx` shows a textarea "Adjustments from last version" only when a prior version for the `(documentType, scopeEpicId)` chain exists
+- [ ] `document-content.ts` loads the most recent prior-version content as reference context and prepends adjustments to the system prompt
+- [ ] End-to-end test: regenerating with "shorten executive summary" produces version N+1 whose executive summary byte count is less than version N
+- [ ] AI output sanitization (PRD-22-05, Phase 2) strips secrets from adjustments before persisting
+- [ ] `assertProjectWritable(projectId)` called before the regeneration mutation (DECISION-10)
+
+---
+
+### Task 12: PDF preview before persistence (REQ-DOCS-012, PRD-16-06, DECISION-04)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Implement in-browser PDF preview before S3/R2 persistence. For DOCX/PPTX outputs, generate an on-the-fly PDF preview (LibreOffice headless if available; otherwise display a "Preview unavailable — download to review" fallback). User clicks "Accept & Save" to persist the original format; "Regenerate" routes to Task 11. Closes DECISION-04; PRD-16-06 satisfied by PDF path. |
+| **Depends On** | Task 6 (templates), Task 8 (validation gate) |
+| **Complexity** | M |
+| **Status** | Not Started |
+
+**Acceptance Criteria:**
+- [ ] PDF buffer streamed to a signed temporary URL after render + validation, before final S3/R2 upload
+- [ ] `generation-dialog.tsx` renders preview inline via `<iframe>` (or PDF.js worker)
+- [ ] "Accept & Save" persists the final file (in its original DOCX/PPTX/PDF format) to S3/R2 and writes the final URL on the GeneratedDocument row
+- [ ] "Regenerate" opens the adjustments textarea (Task 11)
+- [ ] DOCX/PPTX preview fallback message displays when LibreOffice rendition is unavailable
+- [ ] `assertProjectWritable(projectId)` called before preview generation (DECISION-10)
+
+---
+
+### Task 13: TECHNICAL_SPEC reconciliation (REQ-DOCS-013)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Update `docs/bef/01-architecture/TECHNICAL_SPEC.md` to reflect Phase 8 schema changes: GeneratedDocument gains version, parentDocumentId, status (DocumentStatus enum), validationErrors, regenerationAdjustments. Notification gains all new enum values (see Task 1). entityType gains PENDING_REVIEW + CONFLICT_FLAG. Remove "STATUS_REPORT as variant" wording from PHASE_SPEC (STATUS_REPORT is a first-class documentType enum value). |
+| **Depends On** | Task 1, Task 5 |
+| **Complexity** | S |
+| **Status** | Not Started |
+
+**Acceptance Criteria:**
+- [ ] TECHNICAL_SPEC §2.2 GeneratedDocument table includes version, parentDocumentId, status, validationErrors, regenerationAdjustments columns
+- [ ] TECHNICAL_SPEC §2.2 Notification table documents all NotificationType enum values added in Task 1
+- [ ] TECHNICAL_SPEC §2.2 Notification entityType includes PENDING_REVIEW and CONFLICT_FLAG
+- [ ] Spec cross-references Phase 8 REQ-DOCS-001, 005, 010 as source of truth for the schema delta
+
+---
+
 ## Summary
 
 | Task | Title | Depends On | Complexity | Status |
 |------|-------|-----------|------------|--------|
 | 1 | NotificationType schema alignment + icon/route fixes | — | M | Not Started |
 | 2 | Fix notification recipient resolution | 1 | S | Not Started |
-| 3 | Wire missing notification senders + rate limit alerts | 1 | M | Not Started |
-| 4 | Build branding admin system | — | M | Not Started |
-| 5 | Build document versioning model | — | M | Not Started |
-| 6 | Create new document templates | 4, 5 | L | Not Started |
+| 3 | Wire all PRD §17.8 senders + rate limit alerts | 1 | M | Not Started |
+| 4 | Build branding admin system (full PRD-16-04 coverage) | — | M | Not Started |
+| 5 | Build document versioning model (unique constraint + transaction) | — | M | Not Started |
+| 6 | Create 8 document templates (BRD/SDD/Client Deck/SOW/TestScript/Runbook/Training/StatusReport) | 4, 5 | L | Not Started |
 | 7 | Wire epic-scoped document generation | — | M | Not Started |
-| 8 | Document generation quality + UX fixes | 4, 6 | S | Not Started |
+| 8 | Document generation quality + hard-gate branding validation | 4, 6 | S | Not Started |
 | 9 | Notification UX improvements | 1 | M | Not Started |
-| 10 | Wire pending_review + conflicts_flagged notification events (Addendum v1; Phase 2 pipelines) | 1 | S | Not Started |
+| 10 | Wire pending_review + conflicts_flagged pipeline notifications | 1 | S | Not Started |
+| 11 | Regeneration with adjustments (PRD-16-07 / DECISION-08) | 5, 6 | M | Not Started |
+| 12 | PDF preview before persistence (DECISION-04 / PRD-16-06) | 6, 8 | M | Not Started |
+| 13 | TECHNICAL_SPEC reconciliation | 1, 5 | S | Not Started |
