@@ -284,7 +284,9 @@ The STATUS_REPORT template uses read-only context across all project data (same 
 
 **Acceptance Criteria:**
 - [ ] AI-generated content is run through `postProcessOutput` (firm rules from Phase 2) before rendering
-- [ ] Branding validation is a **hard gate** per PRD-16-03: empty required sections, missing logo render (when `logoUrl` set), missing required colors, or empty footer write `validationErrors` JSON on the GeneratedDocument row and block S3/R2 upload until user acknowledges in UI
+- [ ] Branding validation is a **hard gate** per PRD-16-03: empty required sections, missing logo render (when `logoUrl` set), missing required colors, or empty footer write `validationErrors` JSON on the GeneratedDocument row, set `status = DRAFT`, and block S3/R2 upload
+- [ ] SA role can explicitly bypass the gate (audit-logged with SA member id + reason + `validationErrors` snapshot); non-SA roles cannot bypass
+- [ ] End-to-end test: generate a document with a BrandingConfig whose `footerText` is blank; assert (a) `validationErrors.footerText` is persisted, (b) no S3/R2 upload URL is written, (c) document `status = DRAFT`, (d) a non-SA user bypass attempt returns 403, (e) an SA bypass succeeds, persists the file, and writes an audit log row
 - [ ] `MAX_CONTEXT_TOKENS` sourced from Phase 2 model router (`modelRouter.getContextBudget(model)`; 75% of model window; e.g. 150_000 for Sonnet)
 - [ ] Context assembly estimates token count before calling Claude; truncates least-important sections by template-declared priority if over limit
 - [ ] Token truncation logs which sections were truncated
