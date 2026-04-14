@@ -3,7 +3,9 @@
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
 > Total Tasks: 12
 > Status: 0/12 complete
-> Last Updated: 2026-04-10
+> Last Updated: 2026-04-14 (Wave 3 audit-fix; see PHASE_SPEC Revision History)
+
+Every task carries a **Traces to** row citing the PRD requirement IDs it satisfies. Where a task is driven by a locked audit decision, the decision ID is cited inline (for example, `DECISION-06` on Task 11 Tasks-tier rendering).
 
 ---
 
@@ -41,6 +43,7 @@ Layer 4 (Kanban):
 |-----------|---------|
 | **Scope** | Extract all inline status/priority color maps into `src/lib/status-colors.ts`. Create `StatusBadge` component in `src/components/shared/status-badge.tsx` that renders the correct badge for any entity type + status. Create `PriorityBadge` variant. Migrate all existing work components to use them. |
 | **Depends On** | None |
+| **Traces to** | PRD-10-01, PRD-10-14 (status rendering) |
 | **Complexity** | S |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -54,6 +57,7 @@ Layer 4 (Kanban):
 - [ ] All 2 detail clients migrated: epic-detail-client, feature-detail-client
 - [ ] No inline color constants remain in any work component
 - [ ] Visual output is pixel-identical to current (same hex values, same badge variant)
+- [ ] StatusBadge always includes a text label alongside the color (status is never signaled by color alone, per §2.9)
 
 **Implementation Notes:**
 Current color locations to extract:
@@ -81,8 +85,9 @@ Red:    bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `PageHeader` component (`src/components/shared/page-header.tsx`) with breadcrumb, title, subtitle, badge, and actions slot. Enhance existing `EmptyState` (`src/components/shared/empty-state.tsx`) with icon prop, secondary action, and illustration slot. |
+| **Scope** | Create `PageHeader` component (`src/components/shared/page-header.tsx`) with breadcrumb, title, subtitle, badge, and actions slot. Enhance existing `EmptyState` (`src/components/shared/empty-state.tsx`) with icon prop, secondary action, and illustration slot. Consume the canonical empty-state content table from PHASE_SPEC §2.1.7. |
 | **Depends On** | None |
+| **Traces to** | PRD-10-01 (hierarchy surfaces), app-wide empty-state coverage (PHASE_SPEC §2.1.7) |
 | **Complexity** | S |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -96,6 +101,7 @@ Red:    bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]
 - [ ] `EmptyState` supports `icon` prop (LucideIcon, rendered at 48px, muted color)
 - [ ] `EmptyState` supports `secondaryAction` prop (renders outline button alongside primary)
 - [ ] Both components exported from their files and usable standalone
+- [ ] `EmptyState` consumes the canonical empty-state content from PHASE_SPEC §2.1.7 and renders each case (Epics, All Stories, Feature list, Story list, Tasks list, Filter→0, Kanban column 0, Swimlane 0) correctly
 
 **Implementation Notes:**
 PageHeader structure:
@@ -121,8 +127,9 @@ EmptyState enhancement: Add optional `icon` rendered above heading, `secondaryAc
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `DetailPageLayout` (`src/components/shared/detail-page-layout.tsx`) — a two-column responsive layout. Create `MetadataSidebar` (`src/components/shared/metadata-sidebar.tsx`) — a structured sidebar with labeled field rows. |
+| **Scope** | Create `DetailPageLayout` (`src/components/shared/detail-page-layout.tsx`), a two-column responsive layout. Create `MetadataSidebar` (`src/components/shared/metadata-sidebar.tsx`), a structured sidebar with labeled field rows. |
 | **Depends On** | None |
+| **Traces to** | PRD-10-01, PRD-10-02 (hierarchy detail pages), accessibility baseline (PHASE_SPEC §2.9) |
 | **Complexity** | M |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -136,6 +143,8 @@ EmptyState enhancement: Add optional `icon` rendered above heading, `secondaryAc
 - [ ] Sidebar is sticky on scroll (sticky top-20, accounting for header height)
 - [ ] Sidebar has a Card wrapper with consistent padding
 - [ ] Layout gap between columns is 24px (gap-6)
+- [ ] `MetadataSidebar` renders semantic `dl`/`dt`/`dd` markup (per PHASE_SPEC §2.9)
+- [ ] Layout pages pass an axe-core scan with zero serious/critical violations (WCAG 2.1 AA)
 
 **Implementation Notes:**
 DetailPageLayout structure:
@@ -177,8 +186,9 @@ interface MetadataField {
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `EditableField` (`src/components/shared/editable-field.tsx`) — a click-to-edit pattern that toggles between display and edit modes. Supports text input, textarea, and select types. Handles save/cancel with keyboard shortcuts and loading states. |
+| **Scope** | Create `EditableField` (`src/components/shared/editable-field.tsx`), a click-to-edit pattern that toggles between display and edit modes. Supports text input, textarea, and select types. Handles save/cancel with keyboard shortcuts and loading states. Accepts a `canEdit` prop driven by the per-field permission keys defined in PHASE_SPEC §2.5.1. |
 | **Depends On** | None |
+| **Traces to** | PRD-10-03..10 (inline editing of mandatory story fields), PRD-19-04, PRD-19-05, PRD-19-08 (permission gating), accessibility (§2.9) |
 | **Complexity** | M |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -195,6 +205,8 @@ interface MetadataField {
 - [ ] `readOnly` prop prevents edit mode entirely (no hover indicator)
 - [ ] `placeholder` shown when value is empty (italic, muted)
 - [ ] Focus automatically placed in input on entering edit mode
+- [ ] `canEdit` prop: when false, the field renders display-only with no hover affordance, cursor, or click handler
+- [ ] Keyboard accessibility (per §2.9): Tab focuses the display; Enter or Space enters edit mode; Enter saves for `text`; Ctrl+Enter saves for `textarea`; Escape cancels edit and returns focus to the trigger; aria-label derived from field label; loading state announced via `aria-live="polite"`
 
 **Implementation Notes:**
 Props interface:
@@ -221,8 +233,9 @@ For `text` and `textarea`, show small Save/Cancel icon buttons (CheckIcon/XIcon)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `ProgressBar` (`src/components/shared/progress-bar.tsx`) — segmented horizontal bar showing status distribution. Create `StatCard` (`src/components/shared/stat-card.tsx`) — compact metric card for dashboards and sidebars. |
+| **Scope** | Create `ProgressBar` (`src/components/shared/progress-bar.tsx`), segmented horizontal bar showing status distribution. Create `StatCard` (`src/components/shared/stat-card.tsx`), compact metric card for dashboards and sidebars. |
 | **Depends On** | None |
+| **Traces to** | PRD-10-01, PRD-10-14 (status-by-category visualization) |
 | **Complexity** | S |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -264,8 +277,9 @@ StatCard for sidebar:
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `FilterBar` (`src/components/shared/filter-bar.tsx`) — horizontal bar with search input, filter dropdowns, sort selector, and active filter pills. Create `ViewTabs` (`src/components/shared/view-tabs.tsx`) — multi-view tab selector replacing the simple two-button ViewToggle for pages with more than 2 views. All state persisted to URL via nuqs. |
-| **Depends On** | Task 1 (StatusBadge — for filter dropdown option rendering) |
+| **Scope** | Create `FilterBar` (`src/components/shared/filter-bar.tsx`), horizontal bar with search input, filter dropdowns, sort selector, and active filter pills. Create `ViewTabs` (`src/components/shared/view-tabs.tsx`), multi-view tab selector replacing the simple two-button ViewToggle for pages with more than 2 views. All state persisted to URL via nuqs. |
+| **Depends On** | Task 1 (StatusBadge, for filter dropdown option rendering) |
+| **Traces to** | PRD-10-01, PRD-12-01 (developer filter path), accessibility (§2.9) |
 | **Complexity** | M |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -283,6 +297,9 @@ StatCard for sidebar:
 - [ ] Active tab shows underline/highlight style
 - [ ] Tab selection persisted to `?view=` URL param via nuqs
 - [ ] `ViewTabs` accepts `tabs: Array<{ id: string, label: string, icon: LucideIcon }>`
+- [ ] Keyboard accessibility (per §2.9): Tab through search → filters → sort in DOM order; Popover filters open on Enter, arrows navigate options, Space toggles, Escape closes; active-filter pills are focusable and Backspace-dismissible on focus
+- [ ] Invalid `sort` / `groupBy` URL params fall back to defaults silently (per §3.3)
+- [ ] `ViewTabs` built on Radix Tabs primitives (role="tablist", tab/panel aria wiring)
 
 **Implementation Notes:**
 FilterBar config type:
@@ -321,8 +338,9 @@ Use nuqs `useQueryStates` for batch URL state management. Filter dropdowns use P
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Add sortable column headers, pagination controls, and FilterBar integration to all work tables (epic-table, feature-table, story-table). Create shared `TablePagination` component. Wire FilterBar search/filter state into table data filtering. |
+| **Scope** | Add sortable column headers, pagination controls, and FilterBar integration to all work tables (epic-table, feature-table, story-table). Create shared `TablePagination` component. Wire FilterBar search/filter state into table data filtering. Add an optional Completeness column on story table (hidden by default) rendering the Draft completeness dot from PHASE_SPEC §2.5.3. |
 | **Depends On** | Task 6 (FilterBar) |
+| **Traces to** | PRD-10-01, PRD-10-03..10 (Completeness column), PRD-12-01 |
 | **Complexity** | M |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -338,6 +356,8 @@ Use nuqs `useQueryStates` for batch URL state management. Filter dropdowns use P
 - [ ] Epic table integrates FilterBar for status filtering and name search
 - [ ] Client-side filtering and pagination (no API changes for V1)
 - [ ] Sort and page state persisted to URL via nuqs
+- [ ] Story table supports an optional Completeness column (hidden by default, user-toggleable) that shows an amber dot when `story.status === Draft && missingMandatoryFields.length > 0`
+- [ ] Invalid `page` / `pageSize` params resolve per §3.3 (clamp / fallback, no toast)
 
 **Implementation Notes:**
 Create `TablePagination` in `src/components/shared/table-pagination.tsx`. Use `@tanstack/react-table` sorting and pagination features (already a dependency via story-table).
@@ -355,8 +375,9 @@ Pagination layout:
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Rewrite `work-page-client.tsx` and modify `work/page.tsx` to support four views: Epics Table, Epics Kanban, All Stories Table, All Stories Kanban. Add ViewTabs, FilterBar, and integrate enhanced tables/kanbans. Server component fetches both epics (with stats) and all stories. |
+| **Scope** | Rewrite `work-page-client.tsx` and modify `work/page.tsx` to support four views: Epics Table, Epics Kanban, All Stories Table, All Stories Kanban. Add ViewTabs, FilterBar, and integrate enhanced tables/kanbans. Server component fetches both epics (with stats) and all stories. Implement the Developer default "My Work" landing view per PHASE_SPEC §2.2. |
 | **Depends On** | Tasks 1, 2, 5, 6, 7 |
+| **Traces to** | PRD-10-01, PRD-10-02, PRD-12-01 (Developer default view) |
 | **Complexity** | L |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -373,6 +394,10 @@ Pagination layout:
 - [ ] All Stories Kanban view: story-kanban showing all stories, with swimlane grouping options
 - [ ] Server component (`page.tsx`) fetches both epics (with story status counts) and all project stories in parallel
 - [ ] Loading skeleton shown while data loads
+- [ ] Developer role landing (PRD-12-01): when `getCurrentMember().role === "DEVELOPER"` and no `?view=` is present, the page lands on `stories-table` with `assignee=<currentMemberId>` and `status=SPRINT_PLANNED,IN_PROGRESS,IN_REVIEW` pre-applied; a "My Work" filter pill is visible and dismissible
+- [ ] Non-Developer roles land on the default `epics-table` view unchanged
+- [ ] Each of the 4 views renders the correct canonical empty state from PHASE_SPEC §2.1.7
+- [ ] Invalid `?view=` value falls back to the default view silently (per §3.3)
 
 **Implementation Notes:**
 Modify `work/page.tsx` to fetch additional data:
@@ -417,6 +442,7 @@ const views = [
 |-----------|---------|
 | **Scope** | Rewrite `epic-detail-client.tsx` and modify `work/[epicId]/page.tsx` to use two-column DetailPageLayout with MetadataSidebar. Replace inline edit mode with per-field EditableField components. Add ProgressBar and StatCards for story metrics. Enhanced feature list with FilterBar. |
 | **Depends On** | Tasks 1, 2, 3, 4, 5 |
+| **Traces to** | PRD-10-01, PRD-10-02, PRD-10-14 |
 | **Complexity** | L |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -470,6 +496,7 @@ MetadataSidebar configuration:
 |-----------|---------|
 | **Scope** | Rewrite `feature-detail-client.tsx` and modify `work/[epicId]/[featureId]/page.tsx` to mirror the Epic Detail pattern: two-column layout, per-field inline editing, progress bar, stats. Story list with FilterBar. |
 | **Depends On** | Task 9 (same pattern, ensures consistency) |
+| **Traces to** | PRD-10-01, PRD-10-02, PRD-10-14 |
 | **Complexity** | M |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -505,8 +532,9 @@ const storyStats = await prisma.story.groupBy({
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Rewrite `story-detail-client.tsx` and modify the story detail `page.tsx` to use two-column DetailPageLayout. All text fields inline editable. All metadata fields in sidebar with inline editing. Status transitions via dropdown in sidebar. Remove StoryForm dependency for editing. |
+| **Scope** | Rewrite `story-detail-client.tsx` and modify the story detail `page.tsx` to use two-column DetailPageLayout. All text fields inline editable. All metadata fields in sidebar with inline editing. Status transitions via dropdown in sidebar. Remove StoryForm dependency for editing. Add the Tasks-tier section in the Details tab (per `DECISION-06`). Implement per-field permission gating (PRD-19-04, -05, -08) and the Sprint auto-transition to Sprint Planned (PRD-19-06). |
 | **Depends On** | Tasks 1, 2, 3, 4 |
+| **Traces to** | PRD-10-02 (Tasks tier, `DECISION-06`), PRD-10-03..10, PRD-10-14, PRD-19-04, PRD-19-05, PRD-19-06, PRD-19-08 |
 | **Complexity** | L |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -536,6 +564,15 @@ const storyStats = await prisma.story.groupBy({
 - [ ] StoryForm sheet removed from this page (all editing is inline)
 - [ ] "Edit" button removed from header (replaced by inline editing)
 - [ ] Role-based edit permissions: fields are read-only for users without edit access
+- [ ] Tasks-tier section (per `DECISION-06`): renders below Acceptance Criteria in the Details tab; each row shows status checkbox (toggles OPEN/DONE), click-to-edit title, inline assignee dropdown from project members, and a delete action; "Add task" row creates a new task via `createStoryTask`; empty state uses the canonical "No tasks yet" copy from §2.1.7
+- [ ] `EditableField` wrapper uses a `canEdit: boolean` prop resolved from the current member's role and the per-field permission key table in PHASE_SPEC §2.5.1
+- [ ] Sprint field is display-only for users without "Assign stories to sprints" even if they can edit other content
+- [ ] Status dropdown shows only transitions returned by `getAvailableTransitions(currentStatus, role)` (PRD-19-04, PRD-19-05)
+- [ ] Saving a non-null sprint on a Draft or Ready story auto-transitions status to Sprint Planned in the same server round-trip; sidebar Status re-renders from the same response (PRD-19-06)
+- [ ] Saving a sprint on a story already in an execution-phase status (In Progress, In Review, QA, Done) does not change status
+- [ ] On a 4xx response from `updateStory`, `updateStoryStatus`, or `assignStoryToSprint`, UI shows a toast with the server error message and refetches story + current member to re-gate the sidebar
+- [ ] Server-action signatures consumed verbatim from PHASE_SPEC §5 (`updateStory`, `updateStoryStatus`, `assignStoryToSprint`, and Phase-4 task actions)
+- [ ] Story kanban card and (optional) story table Completeness column render an amber warning dot when `story.status === Draft && missingMandatoryFields.length > 0`
 
 **Implementation Notes:**
 The story detail page is the most complex redesign. Key changes:
@@ -569,8 +606,9 @@ Each inline save calls the appropriate existing server action:
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Enhance kanban cards across all entity types with richer information. Add swimlane grouping to story kanban (group by epic, assignee, priority). Add column count badges and collapsible columns. |
+| **Scope** | Enhance kanban cards across all entity types with richer information. Add swimlane grouping to story kanban (group by epic, assignee, priority). Add column count badges and collapsible columns. Render the Draft completeness indicator from PHASE_SPEC §2.5.3 on story cards. |
 | **Depends On** | Tasks 1, 5 |
+| **Traces to** | PRD-10-01, PRD-10-02, PRD-10-03..10 (Draft completeness indicator), PRD-12-01, accessibility (§2.9) |
 | **Complexity** | L |
 | **Status** | Not Started |
 | **Completed** | — |
@@ -588,6 +626,9 @@ Each inline save calls the appropriate existing server action:
 - [ ] Columns are collapsible (click header to minimize to header-only)
 - [ ] All drag-drop functionality continues to work within swimlanes
 - [ ] Group-by selector rendered above the kanban board (or integrated into FilterBar)
+- [ ] Story kanban card renders an amber warning dot when `story.status === Draft && missingMandatoryFields.length > 0` (tooltip: "{N} mandatory fields missing")
+- [ ] Keyboard drag-drop (per §2.9): cards are focusable in DOM order via Tab; Space picks up; arrow keys move between columns and rows; Space drops; Escape cancels; pickup/move/drop announced via `aria-live="assertive"` with card title + source + destination column; focus returns to the moved card after drop
+- [ ] Swimlane triggers set `aria-expanded`; swimlane sections use `role="region"` with `aria-labelledby`
 
 **Implementation Notes:**
 Swimlane implementation approach:
