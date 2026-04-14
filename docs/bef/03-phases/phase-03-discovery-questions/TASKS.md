@@ -1,9 +1,9 @@
 # Phase 3 Tasks: Discovery, Questions
 
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
-> Total Tasks: 13
-> Status: 0/13 complete
-> Last Updated: 2026-04-10
+> Total Tasks: 14
+> Status: 0/14 complete
+> Last Updated: 2026-04-14
 
 ---
 
@@ -13,15 +13,16 @@
 Task 1 (schema migration) ────────────────────────────────────────┐
   ├── Task 2 (display ID scheme) ────── parallel ─────────────────┤
   ├── Task 3 (ESCALATED cleanup) ────── parallel ─────────────────┤
-  ├── Task 4 (source field wiring) ──── parallel ─────────────────┤
+  ├── Task 4 (source field + clarity + scope-required) ── parallel ┤
   ├── Task 5 (client/TBD owner) ─────── parallel ─────────────────┤
   ├── Task 6 (detail page rendering) ── parallel ─────────────────┤
-  └── Task 7 (pagination) ──────────── parallel ──────────────────┤
-       └── Task 8 (impact assessment overhaul) ───────────────────┤
+  ├── Task 7 (pagination) ──────────── parallel ──────────────────┤
+  └── Task 14 (Answer Logging Pipeline wiring + embeddings) ──────┤
+       └── Task 8 (status advancement listener) ──────────────────┤
             ├── Task 9 (QuestionAffects) ────── parallel with 8 ──┤
             ├── Task 10 (gap detection) ─────── depends on 8 ─────┤
             ├── Task 11 (readiness assessment) ─ depends on 8 ────┤
-            └── Task 12 (blocking priority) ──── parallel w/10,11 ┤
+            └── Task 12 (blocking priority + reasoning) ─ parallel ┤
                  └── Task 13 (dashboard completion) ──────────────┘
 ```
 
@@ -42,10 +43,13 @@ Task 1 (schema migration) ──────────────────
 
 **Acceptance Criteria:**
 - [ ] `QuestionStatus` enum contains: `OPEN`, `SCOPED`, `OWNED`, `ANSWERED`, `IMPACT_ASSESSED`, `PARKED`
+- [ ] Lifecycle enum order matches PRD-9-01 semantically: `OPEN` (= `RAISED`) → `SCOPED` → `OWNED` → `ANSWERED` → `IMPACT_ASSESSED`, plus terminal `PARKED`. PHASE_SPEC §2.1 documents the `OPEN` ↔ `RAISED` reconciliation.
 - [ ] `REVIEWED` is no longer in the enum. Existing `REVIEWED` records are migrated to `ANSWERED`.
 - [ ] `QuestionSource` enum exists with `MANUAL`, `TRANSCRIPT`, `CHAT`
 - [ ] `Question.source` field exists with default `MANUAL`
+- [ ] `Question.embeddingContentHash String?` field exists (gates re-embed in Task 14, per PRD-8-07 / ADD-5.2.2-05)
 - [ ] `Project` model has `cachedGapAnalysis Json?`, `cachedGapAnalysisAt DateTime?`, `cachedReadinessAssessment Json?`, `cachedReadinessAssessmentAt DateTime?`
+- [ ] Two partial unique indexes exist on `QuestionAffects`: `question_affects_epic_only` (questionId, epicId) WHERE featureId IS NULL, and `question_affects_feature_only` (questionId, featureId) WHERE epicId IS NULL — see PHASE_SPEC §3.3 (PRD-5-32)
 - [ ] Migration runs cleanly on existing data
 
 **Implementation Notes:**
@@ -55,8 +59,9 @@ Task 1 (schema migration) ──────────────────
    - Add `source QuestionSource @default(MANUAL)` to `Question` model
    - Add 4 cached fields to `Project` model
 2. Migration SQL must include: `UPDATE "Question" SET status = 'ANSWERED' WHERE status = 'REVIEWED'` before the enum rename
-3. Update the transition table in `src/actions/questions.ts` — replace any `REVIEWED` references with `IMPACT_ASSESSED`
-4. Update any TypeScript code that references `"REVIEWED"` as a string literal
+3. Migration SQL also creates the two partial unique indexes on `QuestionAffects` (see PHASE_SPEC §3.3 SQL block)
+4. Update the transition table in `src/actions/questions.ts` — replace any `REVIEWED` references with `IMPACT_ASSESSED`
+5. Update any TypeScript code that references `"REVIEWED"` as a string literal
 
 ---
 
@@ -156,6 +161,10 @@ File 2: `src/lib/agent-harness/tasks/dashboard-synthesis.ts` line 39 — remove 
 - [ ] Questions created during transcript processing have `source: "TRANSCRIPT"`
 - [ ] Questions created during chat sessions have `source: "CHAT"`
 - [ ] The `create_question` tool determines source from session metadata (`taskType`)
+- [ ] **Clarity validation (PRD-9-10):** `createQuestion` server action validates `questionText.length >= 15` and rejects text matching `^(yes|no|tbd|\?+)$` (case-insensitive). Returns 400 on violation.
+- [ ] **Needs-review trigger (PRD-9-10):** `create_question` tool (TRANSCRIPT/CHAT path) sets `needsReview = true` when extracted `questionText` is `< 25` chars OR lacks a terminal `?` punctuation.
+- [ ] **Scope-required (PRD-9-02):** `create_question` tool input schema requires `scope: 'ENGAGEMENT' | 'EPIC' | 'FEATURE'`. When `scope === 'EPIC'`, requires `scopeEpicId`. When `scope === 'FEATURE'`, requires both `scopeEpicId` and `scopeFeatureId`. Tool handler rejects with validation error on missing required fields.
+- [ ] Server-side check: `scope === 'FEATURE' && !scopeFeatureId` returns an error before insert.
 
 **Implementation Notes:**
 1. `src/actions/questions.ts` (createQuestion action): Add `source: "MANUAL"` to the `prisma.question.create` data block.
@@ -248,98 +257,65 @@ File 2: `src/lib/agent-harness/tasks/dashboard-synthesis.ts` line 39 — remove 
 
 ---
 
-### Task 8: Unify impact assessment + add downstream actions
+### Task 8: Status advancement listener for QUESTION_IMPACT_COMPLETED
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Deprecate `questionImpactAssessmentFunction`, route all answered-question events through `questionImpactFunction`, modify the impact task for structured output, add 4 downstream write operations, advance status to `IMPACT_ASSESSED`. |
-| **Depends On** | Task 1 |
-| **Complexity** | L |
+| **Scope** | Resolve Wave 0 contradiction A (cites pipeline-first lock per AUDIT_DECISIONS DECISION-01 derivation and Addendum v1 §2). Phase 3 no longer owns impact assessment. Delete `questionImpactFunction`, `questionImpactAssessmentFunction`, and the `question-impact.ts` agent task. Create a thin `question-impact-completed-listener` Inngest function that subscribes to `QUESTION_IMPACT_COMPLETED` (emitted by Phase 2 Answer Logging Pipeline) and advances `Question.status` to `IMPACT_ASSESSED`, persisting the pipeline's `summary` to `Question.impactAssessment`. |
+| **Depends On** | Task 1, Task 14 |
+| **Complexity** | S |
 | **Status** | Not Started |
 | **Completed** | — |
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] `answerQuestion` action fires `QUESTION_IMPACT_REQUESTED` (not `ENTITY_CONTENT_CHANGED`)
-- [ ] `questionImpactAssessmentFunction` is removed (or disabled)
-- [ ] All answered questions go through hybrid routing with conflict detection
-- [ ] Impact task produces structured JSON with: summary, designChanges, unblockedItems, newQuestions, contradictions
-- [ ] Follow-up questions from `newQuestions[]` are created as real Question records
-- [ ] `QuestionBlocksStory/Epic/Feature` records for the answered question are deleted (unblocking)
-- [ ] `WORK_ITEM_UNBLOCKED` notifications are sent for each unblocked item
-- [ ] Contradictions flag affected Decision records with `needsReview: true`
-- [ ] Question status advances to `IMPACT_ASSESSED` after all downstream actions complete
-- [ ] If AI returns invalid JSON, fallback to storing raw text; status stays `ANSWERED`
-- [ ] Race conditions prevented by Inngest concurrency key
+- [ ] `src/lib/inngest/functions/question-impact.ts` is DELETED
+- [ ] `src/lib/inngest/functions/question-impact-assessment.ts` is DELETED
+- [ ] `src/lib/agent-harness/tasks/question-impact.ts` is DELETED
+- [ ] Inngest client no longer registers either deprecated function
+- [ ] New file `src/lib/inngest/functions/question-impact-completed-listener.ts` exists and registers a function subscribing to `QUESTION_IMPACT_COMPLETED`
+- [ ] On `QUESTION_IMPACT_COMPLETED`: listener loads question, sets `status = "IMPACT_ASSESSED"`, sets `impactAssessment = payload.summary`, commits in a single Prisma update
+- [ ] Listener is idempotent: re-receiving the same event for a question already in `IMPACT_ASSESSED` is a no-op (no error, no duplicate writes)
+- [ ] Listener does NOT re-execute downstream writes (designChanges, unblockedItems, newQuestions, contradictions); these are owned by the Phase 2 pipeline
+- [ ] PRD-8-04, PRD-8-05, PRD-8-06, PRD-9-04, PRD-9-05, PRD-9-06 trace to ADD-5.2.2-04 (Phase 2 Answer Logging Pipeline Stage 4)
 
 **Implementation Notes:**
 
-**Step 1 — Route change:**
-In `src/actions/questions.ts`, `answerQuestion` function (~line 219): Change `inngest.send({ name: EVENTS.ENTITY_CONTENT_CHANGED, data: { entityType: "question", entityId, action: "answered" } })` to `inngest.send({ name: EVENTS.QUESTION_IMPACT_REQUESTED, data: { projectId, questionId: entityId, memberId } })`.
-
-**Step 2 — Structured output schema:**
-In `src/lib/agent-harness/tasks/question-impact.ts`, add an `outputValidator` that parses JSON:
-```ts
-outputValidator: (result) => {
-  try {
-    const parsed = JSON.parse(result);
-    const required = ["summary", "designChanges", "unblockedItems", "newQuestions", "contradictions"];
-    const missing = required.filter(k => !(k in parsed));
-    if (missing.length > 0) return { valid: false, corrections: [`Missing fields: ${missing.join(", ")}`] };
-    return { valid: true };
-  } catch {
-    return { valid: false, corrections: ["Output must be valid JSON with fields: summary, designChanges, unblockedItems, newQuestions, contradictions"] };
-  }
-}
-```
-
-**Step 3 — Downstream actions in Inngest function:**
-In `src/lib/inngest/functions/question-impact.ts`, after the AI assessment step, add new steps:
+This task replaces the legacy Phase-3-owned impact assessment with a thin listener. The pipeline-first architecture (Addendum v1 §2) requires that Stage 4 logic (unblocks, contradictions, new-question creation, design-change flags) live exclusively in the Phase 2 Answer Logging Pipeline.
 
 ```ts
-// Step: Create follow-up questions
-await step.run("create-follow-up-questions", async () => {
-  for (const q of parsed.newQuestions) {
-    await prisma.question.create({
-      data: {
-        projectId, displayId: await generateQuestionDisplayId(...),
-        questionText: q.questionText, scope: q.scope || parentQuestion.scope,
-        scopeEpicId: q.scopeEpicId || parentQuestion.scopeEpicId,
-        source: "CHAT", status: "OPEN",
-      }
+// src/lib/inngest/functions/question-impact-completed-listener.ts
+export const questionImpactCompletedListener = inngest.createFunction(
+  { id: "question-impact-completed-listener", retries: 1 },
+  { event: EVENTS.QUESTION_IMPACT_COMPLETED },
+  async ({ event, step }) => {
+    const { projectId, questionId, summary } = event.data;
+    await step.run("advance-status", async () => {
+      const q = await prisma.question.findUnique({ where: { id: questionId }, select: { status: true } });
+      if (!q) return { skipped: "not_found" };
+      if (q.status === "IMPACT_ASSESSED") return { skipped: "already_assessed" };
+      await prisma.question.update({
+        where: { id: questionId },
+        data: { status: "IMPACT_ASSESSED", impactAssessment: summary },
+      });
+      return { advanced: true };
     });
   }
-});
-
-// Step: Unblock items
-await step.run("unblock-items", async () => {
-  await prisma.questionBlocksStory.deleteMany({ where: { questionId } });
-  await prisma.questionBlocksEpic.deleteMany({ where: { questionId } });
-  await prisma.questionBlocksFeature.deleteMany({ where: { questionId } });
-  // Send WORK_ITEM_UNBLOCKED notifications for each
-});
-
-// Step: Flag contradictions
-await step.run("flag-contradictions", async () => {
-  for (const c of parsed.contradictions) {
-    await prisma.decision.update({
-      where: { id: c.existingDecisionId },
-      data: { needsReview: true, reviewReason: c.description }
-    });
-  }
-});
-
-// Step: Advance status
-await step.run("advance-to-impact-assessed", async () => {
-  await prisma.question.update({
-    where: { id: questionId },
-    data: { status: "IMPACT_ASSESSED", impactAssessment: parsed.summary }
-  });
-});
+);
 ```
 
-**Step 4 — Remove deprecated function:**
-Delete or disable `src/lib/inngest/functions/question-impact-assessment.ts`. Remove its registration from the Inngest client.
+**Cross-phase coordination (Phase 2 must):**
+- Confirm `ANSWER_LOGGING_REQUESTED` event contract per Task 14.
+- Emit `QUESTION_IMPACT_COMPLETED` with `{ projectId, questionId, summary, designChanges[], unblockedItems[], newQuestions[], contradictions[] }`.
+- Implement the structured-output validator inside the pipeline (Sonnet stage), not in Phase 3.
+- Persist the four downstream writes (follow-up questions, unblock records, contradictions, design changes) inside the pipeline. Phase 3's listener does NOT replicate them.
+
+**Removal checklist:**
+- [ ] Delete `src/lib/inngest/functions/question-impact.ts`
+- [ ] Delete `src/lib/inngest/functions/question-impact-assessment.ts`
+- [ ] Delete `src/lib/agent-harness/tasks/question-impact.ts`
+- [ ] Remove imports/registrations from the Inngest client and from any task registry
+- [ ] Remove `EVENTS.QUESTION_IMPACT_REQUESTED` if no longer referenced (or downgrade to internal-only)
 
 ---
 
@@ -360,7 +336,8 @@ Delete or disable `src/lib/inngest/functions/question-impact-assessment.ts`. Rem
 - [ ] AI system prompts instruct: "When a question relates to multiple epics, use tag_question_affects"
 - [ ] Question detail form has a multi-select for affected epics/features
 - [ ] `updateQuestionAffects` server action accepts an array of `{epicId?, featureId?}` and syncs
-- [ ] Duplicate records are handled via upsert (no errors)
+- [ ] Duplicate records are handled via query-then-create (no errors). Upsert never produces duplicate `(questionId, epicId)` or `(questionId, featureId)` rows under either partial unique index (PRD-5-32; see PHASE_SPEC §3.3).
+- [ ] **Advisory lock (PRD-19-13 / GAP-14):** `updateQuestionAffects` server action acquires `pg_advisory_xact_lock(hashtext('question_affects_' || questionId))` before delete/create. The `tag_question_affects` AI tool acquires the same lock so a manual full-replace cannot wipe AI records mid-Inngest-run; the second waiter merges rather than replaces.
 
 **Implementation Notes:**
 1. Create `src/lib/agent-harness/tools/tag-question-affects.ts`:
@@ -386,18 +363,29 @@ Delete or disable `src/lib/inngest/functions/question-impact-assessment.ts`. Rem
     required: ["questionId", "affects"]
   },
   execute: async (input) => {
-    for (const a of input.affects) {
-      await prisma.questionAffects.upsert({
-        where: { questionId_epicId_featureId: { questionId: input.questionId, epicId: a.epicId, featureId: a.featureId } },
-        create: { questionId: input.questionId, epicId: a.epicId, featureId: a.featureId },
-        update: {}
-      });
-    }
-    return { success: true, count: input.affects.length };
+    return prisma.$transaction(async (tx) => {
+      // Acquire advisory lock keyed on questionId to serialize against manual updateQuestionAffects
+      await tx.$executeRawUnsafe(
+        `SELECT pg_advisory_xact_lock(hashtext($1))`,
+        `question_affects_${input.questionId}`,
+      );
+      for (const a of input.affects) {
+        // Query-then-create pattern (Prisma upsert cannot target the partial unique indexes)
+        const existing = await tx.questionAffects.findFirst({
+          where: { questionId: input.questionId, epicId: a.epicId ?? null, featureId: a.featureId ?? null },
+        });
+        if (!existing) {
+          await tx.questionAffects.create({
+            data: { questionId: input.questionId, epicId: a.epicId ?? null, featureId: a.featureId ?? null },
+          });
+        }
+      }
+      return { success: true, count: input.affects.length };
+    });
   }
 }
 ```
-2. Add tool to `transcript-processing.ts` and `question-impact.ts` task definitions' tools arrays.
+2. Add tool to `transcript-processing.ts` task definition's tools array. NOTE: `question-impact.ts` is removed in Task 8 (pipeline-first); register the tool on the Phase 2 Answer Logging Pipeline task instead (cross-phase coordination).
 3. Add prompt instruction: "If you identify a question that relates to multiple epics, use the tag_question_affects tool to record the cross-cutting relationship."
 4. Create `updateQuestionAffects` server action in `src/actions/questions.ts`: delete existing records, create new ones (full replace strategy).
 5. Add multi-select in question form showing project epics/features.
@@ -422,9 +410,12 @@ Delete or disable `src/lib/inngest/functions/question-impact-assessment.ts`. Rem
 - [ ] Quantitative coverage (answered/total per epic) is computed in the context loader (not by AI)
 - [ ] AI adds qualitative analysis: whether answered questions cover key design areas
 - [ ] Results stored in `project.cachedGapAnalysis` and `project.cachedGapAnalysisAt`
-- [ ] Rate limited: returns cached if < 1 hour old
+- [ ] Rate limited: cached result returned when `now - cachedGapAnalysisAt < 3600000ms`; otherwise AI invoked.
 - [ ] Inngest function triggered by `GAP_ANALYSIS_REQUESTED` event
 - [ ] Epics with 0 questions flagged as "potential blind spot"
+- [ ] **Auto-trigger threshold (PRD-8-16):** Phase 2 pipeline session-close emits `answered_questions_delta`. When `answered_questions_delta >= 5` for a session, the pipeline (or downstream listener) fires `GAP_ANALYSIS_REQUESTED` automatically.
+- [ ] **Severity bands (PRD-8-16):** computed as `<25% answered → CRITICAL`, `25–49% → HIGH`, `50–74% → MEDIUM`, `≥75% → LOW`. Encoded in the agent task validator and in stored output.
+- [ ] **Edge cases:** project with 0 epics returns `epics: []` with `recommendation: "Define epics before running gap analysis."` AI call failure beyond `maxRetries=2` returns 502; cache is NOT updated.
 
 **Implementation Notes:**
 
@@ -503,7 +494,9 @@ Add a "Run Gap Analysis" button on the dashboard that sends this event.
 - [ ] Results stored in `project.cachedReadinessAssessment` and `project.cachedReadinessAssessmentAt`
 - [ ] Rate limited: returns cached if < 1 hour old
 - [ ] Inngest function triggered by `READINESS_ASSESSMENT_REQUESTED` event
+- [ ] **Chained trigger (PRD-8-17):** Upon `GAP_ANALYSIS_COMPLETED`, system fires `READINESS_ASSESSMENT_REQUESTED` automatically when `overallCoverage >= 50`.
 - [ ] AI cross-references existing stories (don't recommend creation for epics that already have stories)
+- [ ] Edge case: AI call failure beyond `maxRetries=2` returns 502; dashboard shows "Analysis failed, try again." Cache is NOT updated.
 
 **Implementation Notes:**
 
@@ -561,6 +554,7 @@ Add `READINESS_ASSESSMENT_REQUESTED` to events.
 - [ ] `getBlockingPriorityQuestions(projectId)` returns questions ranked by total blocking count
 - [ ] Only includes unanswered questions (OPEN, SCOPED, OWNED)
 - [ ] Each result includes: questionId, displayId, questionText, totalBlocks, blocksStories, blocksEpics, blocksFeatures, owner (name or ownerDescription), ageDays
+- [ ] **Reasoning field (PRD-8-21):** Each row includes `reasoning: string` built from the templated format: `"Blocks {totalBlocks} work item(s): {blocksStories} stories, {blocksEpics} epics, {blocksFeatures} features. Asked {ageDays} day(s) ago. Owner: {owner}."`
 - [ ] Primary sort: totalBlocks descending. Secondary: ageDays descending.
 - [ ] Returns empty array when no blocking relationships exist
 - [ ] Function is efficient (single query with joins, not N+1)
@@ -604,6 +598,10 @@ export async function getBlockingPriorityQuestions(projectId: string) {
       owner: q.owner?.user?.name ?? q.ownerDescription ?? "Unassigned",
       ageDays: Math.floor((Date.now() - q.askedDate.getTime()) / 86400000),
     }))
+    .map((row) => ({
+      ...row,
+      reasoning: `Blocks ${row.totalBlocks} work item(s): ${row.blocksStories} stories, ${row.blocksEpics} epics, ${row.blocksFeatures} features. Asked ${row.ageDays} day(s) ago. Owner: ${row.owner}.`,
+    }))
     .sort((a, b) => b.totalBlocks - a.totalBlocks || b.ageDays - a.ageDays);
 }
 ```
@@ -622,7 +620,10 @@ export async function getBlockingPriorityQuestions(projectId: string) {
 | **Linear ID** | — |
 
 **Acceptance Criteria:**
-- [ ] Dashboard renders: (1) Outstanding questions by scope with owner and age, (2) Follow-up recommendations as structured cards with blocking counts, (3) Recently answered questions with impact summary, (4) Blocked work items, (5) Per-epic discovery progress bars, (6) Unmapped requirements, (7) Health score
+- [ ] Dashboard renders 6 of 7 PRD-specified sections: (1) Outstanding questions by scope with owner and age, (2) Follow-up recommendations as structured cards with blocking counts and `reasoning`, (3) Recently answered questions with impact summary, (4) Blocked work items (`blocked-work-items.tsx`), (5) Per-epic discovery progress bars, (6) Unmapped requirements
+- [ ] Section (7) Project Health Score is OUT OF SCOPE for Phase 3 (deferred to Phase 7 per PRD-17-16). Phase 3 reserves a placeholder region in the dashboard layout that Phase 7 fills.
+- [ ] Blocked Work Items section lists up to 25 work items currently blocked by open questions, showing `workItemType`, `workItemDisplayId`, `blockingQuestionDisplayId`, `blockingQuestionText`, and `ageDays` (PRD-8-23).
+- [ ] Follow-up cards render the `reasoning` string under the question text (PRD-8-21).
 - [ ] "Run Gap Analysis" button triggers gap detection; results render as per-epic progress bars with severity indicators
 - [ ] "Check Readiness" button triggers readiness assessment; results render as per-epic readiness badges
 - [ ] Cached results show "Last updated: {time}" with refresh button
@@ -639,8 +640,11 @@ New components to create:
 1. `src/components/dashboard/recently-answered.tsx` — Query last 10 `ANSWERED` or `IMPACT_ASSESSED` questions. Show question text, answer date, impact summary (first 200 chars).
 2. `src/components/dashboard/epic-discovery-progress.tsx` — Read `cachedGapAnalysis` from project. Render progress bars per epic with color-coded severity.
 3. `src/components/dashboard/unmapped-requirements.tsx` — Query `requirement.findMany({ where: { projectId, status: "CAPTURED" } })`. Show count and list with link to map them.
-4. `src/components/dashboard/blocking-priority-cards.tsx` — Use `getBlockingPriorityQuestions` result. Render as cards: question ID, text, blocking count badge, owner, age.
-5. `src/components/dashboard/outstanding-questions-detail.tsx` — Group questions by scope, show owner and age columns.
+4. `src/components/dashboard/blocked-work-items.tsx` — Query stories/epics/features with `QuestionBlocksStory/Epic/Feature` records joined on questions where `status IN ('OPEN', 'SCOPED', 'OWNED')`. Limit 25. Columns: workItemType, workItemDisplayId, blockingQuestionDisplayId, blockingQuestionText, ageDays. (PRD-8-23)
+5. `src/components/dashboard/blocking-priority-cards.tsx` — Use `getBlockingPriorityQuestions` result. Render as cards: question ID, text, blocking count badge, owner, age, AND `reasoning` field (PRD-8-21).
+6. `src/components/dashboard/outstanding-questions-detail.tsx` — Group questions by scope, show owner and age columns.
+
+NOTE: No `health-score` component is created in Phase 3. Render an empty placeholder `<section data-phase7-placeholder="health-score" />` that Phase 7 will fill (PRD-8-25 / PRD-17-16).
 
 Modify `src/app/(dashboard)/projects/[projectId]/dashboard/page.tsx`:
 - Add queries for recently answered, unmapped requirements, blocking priority
@@ -650,21 +654,77 @@ Modify `src/app/(dashboard)/projects/[projectId]/dashboard/page.tsx`:
 
 ---
 
+### Task 14: Wire UI answer-submission to Answer Logging Pipeline + enqueue question embeddings
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Phase 3 wires the UI answer-submission path to the Phase 2 Answer Logging Pipeline (Addendum v1 §2 pipeline-first). Adds embedding enqueue on question.create / question.update via Phase 11 infrastructure. Adds duplicate-answer dedup gate (PRD-19-13). |
+| **Depends On** | Task 1 |
+| **Complexity** | M |
+| **Status** | Not Started |
+| **Completed** | — |
+| **Linear ID** | — |
+
+**Acceptance Criteria:**
+- [ ] `answerQuestion` server action fires `ANSWER_LOGGING_REQUESTED` with payload `{ projectId: string; userId: string; answerText: string; questionIdHint?: string; source: 'MANUAL' | 'CHAT' }` (per ADD-5.2.2-01)
+- [ ] UI shows `Submitting…` until `QUESTION_IMPACT_COMPLETED` arrives (via existing notification channel — SSE/polling per Phase 2 pattern)
+- [ ] On `QUESTION_IMPACT_COMPLETED`, the question detail view refreshes (Task 8 listener handles status advancement)
+- [ ] **Embedding enqueue (PRD-8-07, ADD-5.2.2-05):** On `question.create` and `question.update` where `questionText` or `answerText` changes, `enqueueEmbedding({ entity: 'Question', id, content: <computed> })` is called. Hash of `{questionText, answerText, scope}` is stored on `Question.embeddingContentHash` (Task 1 schema field); re-enqueue is skipped when hash unchanged.
+- [ ] Status-only update (e.g., `OPEN → SCOPED`) with unchanged text does NOT call `enqueueEmbedding`.
+- [ ] **Duplicate-answer dedup (PRD-19-13):** Answer submission to a question already in `ANSWERED` status with `answeredAt` within the last 5 minutes returns 409 with `code: DUPLICATE_ANSWER_CONFLICT` and does not invoke the pipeline.
+- [ ] PHASE_SPEC §2.14 cites ADD-5.2.2-01, ADD-5.2.2-02, ADD-5.2.2-05 trace.
+
+**Implementation Notes:**
+
+```ts
+// src/actions/questions.ts (answerQuestion excerpt)
+const recent = await prisma.question.findUnique({
+  where: { id: questionId },
+  select: { status: true, answeredAt: true },
+});
+if (recent?.status === "ANSWERED" && recent.answeredAt && Date.now() - recent.answeredAt.getTime() < 300_000) {
+  throw new ActionError("DUPLICATE_ANSWER_CONFLICT", 409);
+}
+
+await inngest.send({
+  name: EVENTS.ANSWER_LOGGING_REQUESTED,
+  data: { projectId, userId, answerText, questionIdHint: questionId, source: "MANUAL" },
+});
+```
+
+```ts
+// src/lib/embeddings/question-hash.ts
+import { createHash } from "node:crypto";
+export function computeQuestionEmbeddingHash(q: { questionText: string; answerText: string | null; scope: string }) {
+  return createHash("sha256")
+    .update(JSON.stringify({ q: q.questionText, a: q.answerText ?? "", s: q.scope }))
+    .digest("hex");
+}
+```
+
+After every `prisma.question.create` or `prisma.question.update` that touches `questionText` or `answerText`, recompute the hash; if it differs from the stored value, call `enqueueEmbedding` (Phase 11 surface) and persist the new hash.
+
+**Cross-phase coordination:**
+- Phase 2 publishes and freezes `ANSWER_LOGGING_REQUESTED` and `QUESTION_IMPACT_COMPLETED` event contracts.
+- Phase 11 publishes the `enqueueEmbedding` surface and consumes the queue.
+
+---
+
 ## Summary
 
 | Task | Title | Depends On | Complexity | Status |
 |------|-------|-----------|------------|--------|
-| 1 | Schema migration — enum fixes, source field, cached fields | — | S | Not Started |
+| 1 | Schema migration — enum fixes, source field, cached fields, embedding hash, partial unique indexes | — | S | Not Started |
 | 2 | Fix question display ID scheme | 1 | M | Not Started |
 | 3 | Clean up ESCALATED references | 1 | S | Not Started |
-| 4 | Wire source field in creation paths | 1 | S | Not Started |
+| 4 | Wire source field + clarity validation + scope-required (PRD-9-02, PRD-9-10) | 1 | S | Not Started |
 | 5 | Enable client/TBD owner assignment | 1 | S | Not Started |
 | 6 | Render parkedReason + QuestionAffects on detail page | 1 | S | Not Started |
 | 7 | Wire pagination to questions list page | 1 | S | Not Started |
-| 8 | Unify impact assessment + add downstream actions | 1 | L | Not Started |
-| 9 | Populate QuestionAffects via AI + manual UI | 1 | M | Not Started |
+| 8 | Status advancement listener for QUESTION_IMPACT_COMPLETED (pipeline-first) | 1, 14 | S | Not Started |
+| 9 | Populate QuestionAffects via AI + manual UI (advisory lock; query-then-create) | 1 | M | Not Started |
 | 10 | Implement gap detection analysis | 8 | L | Not Started |
 | 11 | Implement readiness assessment | 8 | L | Not Started |
-| 12 | Build blocking-priority question ranking | 1 | M | Not Started |
-| 13 | Complete discovery dashboard sections | 10, 11, 12 | M | Not Started |
-| 14 | Wire UI answer-submission to Answer Logging Pipeline + enqueue question embeddings (Addendum v1; references Phase 2 + Phase 11) | 1 | S | Not Started |
+| 12 | Build blocking-priority question ranking + reasoning field | 1 | M | Not Started |
+| 13 | Complete discovery dashboard sections (6 of 7; health score deferred to Phase 7) | 10, 11, 12 | M | Not Started |
+| 14 | Wire UI answer-submission to Answer Logging Pipeline + enqueue question embeddings + duplicate-answer 409 | 1 | M | Not Started |
