@@ -2,9 +2,54 @@
 
 > Parent: [Phase Plan](../../02-phase-plan/PHASE_PLAN.md)
 > Gap Report: [07-dashboards-search-gaps.md](./07-dashboards-search-gaps.md)
-> Depends On: Phase 3 (Discovery), Phase 4 (Work Management), Phase 5 (Sprint/Developer), Phase 6 (Org/Knowledge)
-> Status: Draft
-> Last Updated: 2026-04-10
+> Depends On: Phase 2 (Briefing/Status Pipeline), Phase 3 (Discovery), Phase 4 (Work Management), Phase 5 (Sprint/Developer), Phase 6 (Org/Knowledge), Phase 11 (Hybrid Retrieval `search_project_kb` + `search_org_kb`)
+> Status: Draft (Wave 3 audit-fix applied 2026-04-14)
+> Last Updated: 2026-04-14
+
+---
+
+## 0. Requirement Traceability
+
+This table enumerates every PRD/Addendum requirement in Phase 7 scope (per `REQUIREMENT_INDEX.md` and the phase-07 audit). Fix agents and verifiers cite by REQ-ID.
+
+| REQ-ID | Source | Covered by §/Task | Status |
+|--------|--------|-------------------|--------|
+| PRD-5-29 | PRD §5 | §2.1 / Task 2 | Pass |
+| PRD-6-20 | PRD §6 | §2.1-§2.6, Addendum amendments | Pass |
+| PRD-6-21 | PRD §6 | §2.4, §2.14 / Tasks 5, 16 | Pass |
+| PRD-6-22 | PRD §6 | §2.11, §2.14 / Task 12 | Pass |
+| PRD-8-20..25 | PRD §8 | §2.3, §2.4 / Tasks 4, 5 | Pass |
+| PRD-17-02 | PRD §17 | §2.3 / Task 4 | Pass |
+| PRD-17-03 | PRD §17 | §2.4, §2.14 / Tasks 5, 16 | Pass |
+| PRD-17-04 | PRD §17 | §2.4 / Task 5 | Pass |
+| PRD-17-05 | PRD §17 | §2.14 / Task 16 (consumes Phase 2 emit per DECISION-08) | Pass |
+| PRD-17-06 | PRD §17 | §2.3 / Task 4 | Pass |
+| PRD-17-10 | PRD §17 | §2.5 / Task 6 | Pass |
+| PRD-17-15 | PRD §17 | §2.6 / Task 7 (velocity added) | Pass |
+| PRD-17-16 | PRD §17 | §2.1 / Task 2 | Pass |
+| PRD-17-17 | PRD §17 | §2.1, §2.2 / Tasks 2, 3 | Pass |
+| PRD-17-19 | PRD §17 | §2.9 / Task 10 (calls `search_project_kb`/`search_org_kb`) | Pass |
+| PRD-17-20 | PRD §17 | §2.9, Task 1, Task 10 (Risk included) | Pass |
+| PRD-17-21 | PRD §17 | §2.9 / Task 10 (auto-activation N=5 + toggle) | Pass |
+| PRD-19-10 | PRD §19 | §2.7, §2.8 / Tasks 8, 9 | Pass |
+| PRD-23-03 | PRD §23 | §2.13 / Task 14 (per-project + per-member + firm-wide alert per DECISION-09) | Pass |
+| PRD-23-04 | PRD §23 | §2.8 / Task 9 | Pass |
+| PRD-23-05 | PRD §23 | §2.7, §2.8 | Pass |
+| PRD-23-06 | PRD §23 | §2.8 / Task 9 | Pass |
+| PRD-23-07 | PRD §23 | §2.7, §2.8 | Pass |
+| PRD-23-08 | PRD §23 | §2.7, §2.8 / Tasks 8, 9 (daily + weekly + monthly bucketing) | Pass |
+| PRD-23-09 | PRD §23 | §2.7 / Tasks 8, 15 | Pass |
+| PRD-23-12 | PRD §23 | §2.7, §2.8 / Tasks 8, 9 (Inngest event volume per DECISION-08) | Pass |
+| ADD-5.2.4-01 | Addendum §5.2.4 | §2.14 / Task 16 (Briefing Pipeline invocation) | Pass |
+| ADD-5.2.4-02 | Addendum §5.2.4 | §2.14 / Task 16 (5-min TTL + `inputs_hash`) | Pass |
+| ADD-5.2.4-03 | Addendum §5.2.4 | §2.14 / Task 16 (Stage 3 narrative) | Pass |
+| ADD-5.2.4-04 | Addendum §5.2.4 | §2.14 / Task 16 (Stage 4 validator) | Pass |
+| ADD-5.2.4-05 | Addendum §5.2.4 | §2.14 / Task 16 (Stage 5 cache with `generated_at` + `inputs_hash`) | Pass |
+| ADD-5.4-01 | Addendum §5.4 | §2.9 / Task 10 (substrate = `search_project_kb`/`search_org_kb`) | Pass |
+
+**Wave 0 decision citations:** DECISION-05 (KA embedding consumed via `search_org_kb`), DECISION-08 (PRD-17-05 / PRD-23-03 firm-wide / PRD-23-12 orphans assigned here), DECISION-09 (firm-wide cost cap is advisory/alert-only).
+
+**Briefing-type mapping (carry-forward #4 from thread 2026-04-13):** Phase 7 reuses the existing `daily_standup → Current Focus` and `weekly_status → Recommended Focus` mapping. Phase 7 does NOT introduce `current_focus` or `recommended_focus` enum values. All `§2.14` pipeline calls cite one of the existing briefing types.
 
 ---
 
@@ -12,8 +57,10 @@
 
 Rework the health score model from a weighted percentage formula to the PRD's signal counter model (Green/Yellow/Red). Add per-project configurable thresholds. Complete the briefing header with roadmap progress, requirements count, and health score badge. Add epic status section and structured recommended focus. Complete sprint dashboard with missing-fields check, developer workload view, and conflict alerts. Complete PM dashboard with risk register summary, upcoming deliverable deadlines, and client-facing items. Build the Usage & Costs settings tab as a standalone page with per-member breakdown, date range filter, and RBAC gating. Expand search to Story, OrgComponent, and BusinessProcess entity types in full-text search. Add semantic search mode toggle. Fix execution plan tab with phase grouping and dependency links. Consolidate duplicate pricing logic. Verify auto-refresh event wiring. Implement audit logging schema and basic write middleware. Implement per-project cost caps with enforcement in the agent harness.
 
-**In scope:** 26 domain gaps + 3 deferred from Phase 1 = 29 gaps total -> 15 tasks
-**Deferred to V2:** GAP-DASH-020 semantic search expansion beyond KnowledgeArticle (adding pgvector embedding columns + generation pipeline for Story, Question, Decision, OrgComponent, BusinessProcess is high-effort with diminishing V1 returns -- full-text search covers these entities adequately). GAP-DASH-008 AI-generated milestone summaries (local computation is acceptable for V1). GAP-DASH-023 dependency chain visualization (plain text with navigable links is sufficient for V1; Gantt-style visualization is V2). GAP-DASH-018 Inngest event volume metric (Inngest does not expose a simple API for event counts; manual tracking adds complexity without clear V1 value).
+**In scope:** 26 domain gaps + 3 deferred from Phase 1 + Wave 3 audit-fix additions (Task 16 Briefing Pipeline integration, firm-wide cost alert, Inngest event volume, velocity, weekly/monthly usage bucketing, `search_project_kb` substrate adoption) = 16 tasks total
+**Deferred to V2:** GAP-DASH-020 semantic search expansion to project-entity embedding tables (Story, Question, Decision, Requirement, Risk) is Phase 11's responsibility per Addendum §5.4. In Phase 7 V1, Layer 3 semantic covers KnowledgeArticle, OrgComponent, and annotations via `search_org_kb`. GAP-DASH-008 AI-generated milestone summaries (local computation is acceptable for V1). GAP-DASH-023 Gantt-style dependency visualization (plain text with navigable links is sufficient for V1).
+
+**Brought into V1 by Wave 3 audit-fix (2026-04-14):** GAP-DASH-018 Inngest event volume metric (PRD-23-12 is explicit per DECISION-08; implemented via Inngest middleware logging to an `event_audit` table -- see §2.7). Firm-wide monthly cost alert (PRD-23-03 third clause, advisory per DECISION-09 -- see §2.13). Current Focus narrative pipeline consumption (PRD-17-05 per DECISION-08 -- see §2.14). Team velocity on PM dashboard (PRD-17-15 -- see §2.6).
 
 **Consolidation decisions:**
 - GAP-DASH-001 + GAP-DASH-002 + GAP-DASH-003 + GAP-DASH-024 -> single health score rework task
@@ -30,9 +77,9 @@ Rework the health score model from a weighted percentage formula to the PRD's si
 
 ## Addendum v1 Amendments (April 13, 2026)
 
-These amendments integrate PRD Addendum v1 into Phase 7. They are additive — existing requirements below are unchanged.
+These amendments integrate PRD Addendum v1 into Phase 7. They are additive -- existing requirements below are unchanged.
 
-- **Briefing generation routing:** Briefing generation now routes through the Briefing/Status Pipeline (Phase 2). Phase 7 calls the pipeline with the appropriate `briefing_type` — it does not implement its own AI generation.
+- **Briefing generation routing:** Briefing generation now routes through the Briefing/Status Pipeline (Phase 2). Phase 7 calls the pipeline with the appropriate `briefing_type` -- it does not implement its own AI generation.
 - **Dashboard metrics are deterministic SQL.** Confirm all dashboard data comes from SQL queries, not AI inference. Sonnet synthesizes narrative prose around the deterministic metrics (via the Briefing Pipeline).
 - **Search substrate:** `search_project_kb` (Phase 11 hybrid retrieval) is the substrate. Phase 7 builds the UI over this function. The three new entity type expansions (Story, OrgComponent, BusinessProcess) resolve to Layer 1/2 queries via `search_org_kb` for org entities.
 - **What does not change:** Project overview, sprint analytics, team productivity view, risk/decision dashboards, filter UI, Usage & Costs tab, audit logging.
@@ -88,18 +135,20 @@ These amendments integrate PRD Addendum v1 into Phase 7. They are additive — e
 
 ### 2.4 Blocking Questions Data Quality and Structured Recommended Focus (REQ-DASH-004)
 
-- **What it does:** Enriches blocked-items display with question age and owner fields. Converts recommended focus from plain prose to a structured ranked list with question IDs and reasoning.
-- **Inputs:** Blocked items query results. AI synthesis output.
-- **Outputs:** Blocked items with `createdAt` age display and `ownerDescription`. Recommended focus as `Array<{ rank: number, questionId: string, questionDisplayId: string, questionText: string, reasoning: string }>`.
+**REQ-IDs traced:** PRD-17-03, PRD-17-04, PRD-6-21, PRD-8-22.
+
+- **What it does:** Enriches blocked-items display with question age, owner, and affected-stories fields. The structured `recommendedFocus` array is produced by the Briefing/Status Pipeline (see §2.14), not by an ad hoc prompt in the legacy `dashboard-synthesis` task.
+- **Inputs:** Blocked items query results. `CachedBriefing` output from the Briefing/Status Pipeline (§2.14).
+- **Outputs:** Blocked items with `askedDate` age, `ownerDescription`, and `affectedStories: Array<{ storyId, storyDisplayId, storyTitle }>`. Recommended focus as `Array<{ rank: number, questionId: string, questionDisplayId: string, questionText: string, reasoning: string }>` sourced from pipeline output.
 - **Business rules:**
-  - The `getBlockedItems` query already fetches most fields. Add `askedDate` and `ownerDescription` to the select clause.
-  - The `blocked-items.tsx` component renders age as "X days old" and owner name.
-  - The `CachedBriefing` interface changes `recommendedFocus` from `string | null` to `Array<{ rank: number, questionId: string, questionDisplayId: string, questionText: string, reasoning: string }> | null`.
-  - The dashboard synthesis task prompt is updated to request structured JSON output for recommended focus: "Return recommendedFocus as a JSON array of up to 5 items, each with rank, questionId (the displayId), questionText, and reasoning explaining why this question should be prioritized."
-  - The AI-summary-card component for recommended focus renders as a numbered list with question IDs as links to the question detail page.
-  - Backward compatibility: if `recommendedFocus` is a plain string (from old cached data), render it as prose with a "Refresh" prompt.
-- **Files:** `src/lib/dashboard/queries.ts` (add fields to blocked items select), `src/components/dashboard/blocked-items.tsx` (add age + owner columns), `src/components/dashboard/ai-summary-card.tsx` (update recommended focus rendering), `src/lib/agent-harness/tasks/dashboard-synthesis.ts` (update prompt for structured output), `src/lib/inngest/functions/dashboard-synthesis.ts` (pass question IDs to synthesis)
-- **Gaps addressed:** GAP-DASH-005, GAP-DASH-007
+  - `getBlockedItems` query selects `askedDate`, `ownerDescription`, and joins through the question-to-story relation (e.g., `QuestionStory` or the equivalent join on the Phase 4 data model) to return `affectedStories` with `storyId`, `storyDisplayId`, `storyTitle`.
+  - `blocked-items.tsx` renders age as "X days old", owner name, and a comma-separated or pill list of affected story display IDs, each linked to its story detail page.
+  - `CachedBriefing.recommendedFocus` is typed as `Array<{ rank: number, questionId: string, questionDisplayId: string, questionText: string, reasoning: string }> | null`. Populated by the pipeline per §2.14.
+  - `ai-summary-card` renders recommended focus as a numbered list with question displayId links and reasoning text.
+  - Backward compatibility: if a legacy cached row contains a string `recommendedFocus`, render it as prose with a "Refresh" button that triggers `invokeBriefingPipeline(..., { bypassCache: true })`.
+  - **Prompt ownership (resolves PHASE-7-GAP-01):** The structured recommendedFocus prompt lives in the Phase 2 Briefing/Status Pipeline (`briefing_type = weekly_status` per the carry-forward mapping). Task 5 does NOT edit `src/lib/agent-harness/tasks/dashboard-synthesis.ts` prompt text; that legacy path is removed or delegates to the pipeline per Task 16.
+- **Files:** `src/lib/dashboard/queries.ts` (fields + story join on blocked items), `src/components/dashboard/blocked-items.tsx` (age + owner + affected-stories columns), `src/components/dashboard/ai-summary-card.tsx` (structured render + legacy fallback)
+- **Gaps addressed:** GAP-DASH-005, GAP-DASH-007, PHASE-7-GAP-08
 
 ### 2.5 Sprint Dashboard Completeness (REQ-DASH-005)
 
@@ -115,31 +164,39 @@ These amendments integrate PRD Addendum v1 into Phase 7. They are additive — e
 
 ### 2.6 PM Dashboard Completeness (REQ-DASH-006)
 
-- **What it does:** Adds risk register summary, upcoming deliverable deadlines, and client-facing items needing attention to the PM dashboard.
+**REQ-IDs traced:** PRD-17-15 (includes velocity per Wave 3 audit-fix).
+
+- **What it does:** Adds risk register summary, upcoming deliverable deadlines, client-facing items, and team velocity to the PM dashboard.
 - **Inputs:** Project ID.
 - **Outputs:** Three new sections in PM dashboard data and UI.
 - **Business rules:**
   - **Risk register summary:** Query risks grouped by severity (CRITICAL, HIGH, MEDIUM, LOW) and status (OPEN, MITIGATED, CLOSED). Display as a compact summary: "X active risks (Y critical, Z high)". Show top 5 open risks sorted by severity DESC, then createdAt ASC. Add to `PmDashboardData` as `riskSummary: { bySeverity: Record<string, number>, topOpenRisks: Array<{ displayId, description, severity, mitigationStrategy }> }`.
   - **Upcoming deliverable deadlines:** Query milestones with `targetDate` not null and `status != COMPLETE`, sorted by targetDate ASC, limited to next 5. Include computed progress from linked stories. Add to `PmDashboardData` as `upcomingDeadlines: Array<{ milestoneName, targetDate, progress, daysRemaining }>`.
   - **Client-facing items:** Query open questions where `ownerDescription` contains "Client" (case-insensitive) and `askedDate` is older than `clientFollowUpDays` threshold (from project health score thresholds, default 3 days). Add to `PmDashboardData` as `clientItems: Array<{ questionDisplayId, questionText, age, owner }>`.
-  - The PM dashboard synthesis Inngest function is updated to compute these three new data sections.
+  - **Team velocity (PRD-17-15):** Compute `velocity: { completedPointsByPast3Sprints: number[], averagePerSprint: number }`. Source: sum of story points for stories in the last 3 COMPLETED sprints where `story.status = DONE`. If fewer than 3 completed sprints exist, return the available entries; `averagePerSprint` averages across present entries only. Rendered as a compact card with sparkline or bar strip plus the average.
+  - The PM dashboard synthesis Inngest function is updated to compute these four new data sections.
 - **Files:** `src/lib/inngest/functions/pm-dashboard-synthesis.ts` (add risk, deadline, client item queries), `src/components/pm-dashboard/risk-summary-card.tsx` (new), `src/components/pm-dashboard/upcoming-deadlines-card.tsx` (new), `src/components/pm-dashboard/client-items-card.tsx` (new), `src/app/(dashboard)/projects/[projectId]/pm-dashboard/page.tsx` (add sections)
 - **Gaps addressed:** GAP-DASH-012, GAP-DASH-013, GAP-DASH-014
 
 ### 2.7 Usage & Costs Backend (REQ-DASH-007)
 
-- **What it does:** Builds the complete backend for the Usage & Costs settings tab: per-member breakdown, date range filtering, trend data, and RBAC enforcement.
+**REQ-IDs traced:** PRD-23-04, PRD-23-05, PRD-23-06, PRD-23-07, PRD-23-08, PRD-23-09, PRD-23-12, PRD-19-10. **Decision cited:** DECISION-08 (PRD-23-12 orphan assigned to Phase 7).
+
+- **What it does:** Builds the complete backend for the Usage & Costs settings tab: per-member breakdown, date range filtering, trend data (daily/weekly/monthly), Inngest event volume, and RBAC enforcement.
 - **Inputs:** Project ID, date range (start, end), requesting user's role.
 - **Outputs:** `UsageDashboardData` with project totals, by-task-type breakdown, by-member breakdown, and daily trend.
 - **Business rules:**
   - Extend `getTokenUsageSummary` to accept `startDate` and `endDate` parameters. Default to last 30 days when not specified.
   - Add `getUsageByMember` function that groups SessionLog by `userId`, joins to `ProjectMember` for display names. Only callable by SA/PM.
-  - Add `getDailyUsageTrend` function that returns daily aggregates for charting.
+  - Add `getDailyUsageTrend(projectId, startDate, endDate)` returning daily aggregates.
+  - Add `getWeeklyUsageTrend(projectId, startDate, endDate)` returning weekly aggregates (ISO week bucket).
+  - Add `getMonthlyUsageTrend(projectId, startDate, endDate)` returning calendar-month aggregates.
+  - Add `getInngestEventVolume(projectId, startDate, endDate): Promise<Array<{ eventName: string, count: number }>>`. Source: new `event_audit` table populated by an Inngest middleware (`src/lib/inngest/middleware/event-audit.ts`) that logs every event fire with `(projectId, eventName, firedAt)`. The middleware is added once and applied globally; no per-event opt-in. Schema additions land in Task 1.
   - Consolidate duplicate pricing logic: remove the inline `estimateCost()` function in `pm-dashboard-synthesis.ts` and import `calculateCost` from `src/lib/config/ai-pricing.ts` everywhere.
-  - Create a `getUsageDashboard` server action with `requireRole(["SOLUTION_ARCHITECT", "PM"])` check.
+  - `getUsageDashboard` server action return type: `UsageDashboardData = { projectTotals, byTaskType, byMember, trend: { bucket: "day" | "week" | "month", points: Array<{ date: string, tokens: number, costCents: number }> }, eventVolume: Array<{ eventName: string, count: number }> }`. `requireRole(["SOLUTION_ARCHITECT", "PM"])` enforced.
   - The tech spec already defines `getProjectUsage`, `getUsageByTaskType`, `getUsageByMember`, and `getDailyUsageTrend` in Section 5.3. The existing `usage-queries.ts` implements only `getTokenUsageSummary` (all-time, by-task-type only). Rewrite to match the tech spec signatures.
-- **Files:** `src/lib/dashboard/usage-queries.ts` (rewrite with date range + by-member + trend), `src/lib/config/ai-pricing.ts` (verify single source of truth), `src/lib/inngest/functions/pm-dashboard-synthesis.ts` (remove duplicate estimateCost), `src/actions/usage.ts` (new server action with RBAC)
-- **Gaps addressed:** GAP-DASH-016, GAP-DASH-017, GAP-DASH-025, GAP-RBAC-010 (backend)
+- **Files:** `src/lib/dashboard/usage-queries.ts` (rewrite with date range + by-member + daily/weekly/monthly trend + event volume), `src/lib/config/ai-pricing.ts` (single source of truth), `src/lib/inngest/middleware/event-audit.ts` (new -- logs every event fire), `src/lib/inngest/functions/pm-dashboard-synthesis.ts` (remove duplicate estimateCost), `src/actions/usage.ts` (new server action with RBAC), `prisma/schema.prisma` (add `event_audit` table -- see Task 1)
+- **Gaps addressed:** GAP-DASH-016, GAP-DASH-017, GAP-DASH-025, GAP-RBAC-010 (backend), GAP-DASH-018 (Inngest event volume), PHASE-7-GAP-03, PHASE-7-GAP-10
 
 ### 2.8 Usage & Costs Settings Tab UI (REQ-DASH-008)
 
@@ -152,28 +209,32 @@ These amendments integrate PRD Addendum v1 into Phase 7. They are additive — e
   - Project totals section: total tokens, estimated cost, session count.
   - Task type breakdown: table with columns taskType, tokens, cost, percentage-of-total.
   - Member breakdown: table with columns member name, tokens, cost, session count. Individual users do not see other users' consumption -- this is SA/PM only.
-  - Trend chart: simple line chart (use recharts or a lightweight chart lib already in the project) showing daily cost over the selected date range.
+  - Trend chart: line chart. Bucket auto-switches by selected range: `≤31 days → day`, `32-120 days → week`, `>120 days → month`. Optional user override control (Day / Week / Month).
+  - Event Volume card (below task-type breakdown): table of Inngest event names and fire counts over the selected date range, sourced from `getInngestEventVolume`.
   - Loading states with skeleton UI for each section.
 - **Files:** `src/app/(dashboard)/projects/[projectId]/settings/usage/page.tsx` (new page), `src/components/settings/usage-dashboard.tsx` (new), `src/components/settings/usage-trend-chart.tsx` (new), `src/app/(dashboard)/projects/[projectId]/settings/layout.tsx` (add tab)
 - **Gaps addressed:** GAP-DASH-015, GAP-RBAC-010 (UI)
 
-### 2.9 Search Entity Expansion (REQ-DASH-009)
+### 2.9 Search Entity Expansion via Shared Retrieval Substrate (REQ-DASH-009)
 
-- **What it does:** Adds Story, OrgComponent, and BusinessProcess to global search (full-text and filtered layers). Adds a semantic/keyword mode toggle to the search UI.
-- **Inputs:** Search query, selected entity types, search mode preference.
-- **Outputs:** Search results including the three new entity types. Mode toggle in command palette.
+**REQ-IDs traced:** PRD-17-19, PRD-17-20, PRD-17-21, ADD-5.4-01. **Decisions cited:** DECISION-05 (Phase 5/7 consume via `search_org_kb`).
+
+- **What it does:** Expands global search to cover Story, Question, Decision, Requirement, Risk, OrgComponent, BusinessProcess, and KnowledgeArticle. Implements a thin adapter in `global-search.ts` that fans out to `search_project_kb` (project-scoped entities) and `search_org_kb` (org-scoped entities), then merges grouped results and applies UI facets. Adds a semantic/keyword mode toggle plus a "few results" auto-activation heuristic for Layer 3.
+- **Inputs:** Search query, selected entity types, search mode preference, project ID.
+- **Outputs:** `GroupedSearchResults` across all 8 entity types. Mode toggle + informational chip in command palette.
 - **Business rules:**
-  - Add `"story" | "orgComponent" | "businessProcess"` to `SearchEntityType` union.
-  - Add `stories`, `orgComponents`, `businessProcesses` to `GroupedSearchResults`.
-  - Story full-text: search `title`, `description`, `acceptanceCriteria` via search_vector. Display: displayId, title, snippet, status.
-  - OrgComponent full-text: search `apiName`, `label` via search_vector. Display: apiName as title, label as snippet, componentType as status.
-  - BusinessProcess full-text: search `name`, `description` via search_vector. Display: name as title, description snippet.
-  - Add Story, OrgComponent, BusinessProcess to filtered search (status filters).
-  - Semantic mode toggle: add a "Smart Search" toggle to the command palette. When off (default), only run layers 1+2. When on, also run layer 3. This avoids unnecessary embedding API costs on every keystroke.
-  - The tsvector columns and triggers for Story, OrgComponent, and BusinessProcess need to exist (either already created by Phase 6 migrations or created here). If they don't exist, this task adds the migration.
-  - Note: semantic search (layer 3) still only covers KnowledgeArticle in V1. The toggle controls whether layer 3 runs at all, not which entities it covers.
-- **Files:** `src/lib/search/global-search.ts` (add 3 entity types to all layers + mode param), `src/components/search/command-palette.tsx` (add mode toggle + new result groups), `prisma/migrations/` (add search_vector columns/triggers if not present)
-- **Gaps addressed:** GAP-DASH-019, GAP-DASH-021
+  - Adapter contract: `global-search.ts` exports `globalSearch(options: SearchOptions): Promise<GroupedSearchResults>`. Internally it calls `search_project_kb({ projectId, query, entities, semantic })` for Question, Decision, Requirement, Risk, Story, annotations; and `search_org_kb({ query, entities, semantic })` for OrgComponent, BusinessProcess, KnowledgeArticle. The adapter does NOT write its own `to_tsvector` / `to_tsquery` SQL -- the substrate functions own BM25/hybrid retrieval.
+  - `SearchEntityType` union: `"question" | "decision" | "requirement" | "risk" | "story" | "orgComponent" | "businessProcess" | "knowledgeArticle"`.
+  - `GroupedSearchResults` includes `questions`, `decisions`, `requirements`, `risks`, `stories`, `orgComponents`, `businessProcesses`, `knowledgeArticles` arrays.
+  - Risk is included in full-text scope per PRD-17-20. Substrate's tsvector covers Risk's `title` + `description` + `mitigationStrategy`.
+  - Envelope handling per DECISION-05: `search_project_kb` / `search_org_kb` return `SearchResponse` with `_meta: { not_implemented?: boolean }`. Adapter branches on `_meta.not_implemented` (not on array length) and, if set, surfaces the substrate's pending state to the UI.
+  - Search response envelope `SearchResponse<T>`: `{ results: T[], _meta: { not_implemented?: boolean, layerUsed: 1 | 2 | 3, totalResults: number } }`.
+  - **Smart Search toggle:** command palette has a "Smart Search" toggle. When on, adapter passes `semantic: true` to both substrates. Default off to control embedding cost.
+  - **Layer 3 auto-activation (PRD-17-21):** if the toggle is off AND the combined Layer 1+2 `totalResults` across all entity groups is fewer than `SMART_SEARCH_AUTO_THRESHOLD = 5`, the adapter re-issues the call with `semantic: true`. The UI shows a chip: "Few keyword results -- semantic results included." The threshold is a TypeScript constant in `src/lib/search/global-search.ts`.
+  - **Layer 3 V1 coverage (resolves contradiction with the prior V1 note):** Semantic in V1 covers KnowledgeArticle, OrgComponent, and annotations through `search_org_kb`. Project entities (Story, Question, Decision, Requirement, Risk) get Layer 1/2 only in V1; their embedding tables roll out in Phase 11 per Addendum §5.4. When Smart Search is on and only project-entity results return, the UI shows a secondary chip: "Semantic search is not yet available for these entity types -- rolling out in a later phase."
+  - **tsvector migrations (pre-embedding BM25):** Task 1 retains tsvector column/trigger work for entities not yet covered by Phase 11 embedding tables. These columns are consumed by the substrate, not by `global-search.ts`.
+- **Files:** `src/lib/search/global-search.ts` (rewrite as thin adapter; must not reference `to_tsvector` or `to_tsquery`), `src/components/search/command-palette.tsx` (add toggle + chips + 8 result groups), `prisma/migrations/` (tsvector columns/triggers where missing, consumed by substrate)
+- **Gaps addressed:** GAP-DASH-019, GAP-DASH-021, PHASE-7-GAP-02, PHASE-7-GAP-06
 
 ### 2.10 Execution Plan Tab Improvements (REQ-DASH-010)
 
@@ -215,9 +276,11 @@ These amendments integrate PRD Addendum v1 into Phase 7. They are additive — e
 - **Files:** `prisma/schema.prisma` (add AuditLog model), `src/lib/audit/write-audit-log.ts` (new utility), `src/actions/stories.ts`, `src/actions/questions.ts`, `src/actions/members.ts`, `src/actions/sprints.ts`, `src/actions/risks.ts`, `src/actions/decisions.ts` (add writeAuditLog calls to key mutations)
 - **Gaps addressed:** GAP-RBAC-014
 
-### 2.13 Per-Project Cost Caps (REQ-DASH-013)
+### 2.13 Cost Caps -- Per-Project (Blocking), Per-Member (Blocking), Firm-Wide (Advisory) (REQ-DASH-013)
 
-- **What it does:** Adds configurable monthly cost caps per project with pre-flight enforcement in the agent harness and alert notifications when thresholds are crossed.
+**REQ-IDs traced:** PRD-23-03. **Decisions cited:** DECISION-08 (firm-wide orphan assigned to Phase 7), DECISION-09 (firm-wide advisory only in V1).
+
+- **What it does:** Adds configurable monthly cost caps per project (blocking), optional per-member daily session limit (blocking), and a firm-wide monthly advisory alert (alert-only, does NOT block execution per DECISION-09). Pre-flight enforcement in the agent harness for per-project and per-member. Firm-wide runs on a daily cron.
 - **Inputs:** Project cost cap configuration. Current month's usage from SessionLog.
 - **Outputs:** Blocked AI execution when cap exceeded. Notification alerts at 80% and 100% thresholds.
 - **Business rules:**
@@ -233,8 +296,66 @@ These amendments integrate PRD Addendum v1 into Phase 7. They are additive — e
   - Cost cap settings are configurable in project settings (SA/PM only). Simple form with monthly cap amount and optional per-member daily limit.
   - Alert notifications: at 80% of cap, send warning. At 100%, send critical alert and block further AI calls. Both fire `NOTIFICATION_SEND` events.
   - A "cap exceeded" state is recoverable: SA can increase the cap or wait for the next billing month.
-- **Files:** `prisma/schema.prisma` (add fields), `src/lib/agent-harness/cost-cap.ts` (new -- check function), `src/lib/agent-harness/engine.ts` (add pre-flight call), `src/actions/project-settings.ts` (add cost cap update action), `src/components/settings/cost-cap-form.tsx` (new)
-- **Gaps addressed:** GAP-RBAC-016
+  - **Concurrency safety (PHASE-7-GAP-05):** The 99%-cap race is closed by a Postgres advisory lock keyed on `projectId` around the read-check-debit path. `checkCostCap` acquires `pg_advisory_xact_lock(hashtext('cost-cap:' || projectId))` inside the same transaction that reads the month-to-date total. Cap decisions made inside the lock are authoritative; concurrent calls serialize.
+  - **Multi-stage pipeline (PHASE-7-GAP-05):** Cap check runs per pipeline stage, not once per invocation. A pipeline may be admitted at Stage 1 and rejected at Stage 3 if aggregate spend crosses the cap. Callers handle `CostCapExceededError` between stages and surface a resumable state.
+  - **Cap raised mid-cycle (PHASE-7-GAP-05):** When `monthlyCostCapCents` is changed, `Project.costCapAlertFiredAt` (new nullable column on Project, added in Task 1) is cleared so the 80% alert can fire again for the new cap value. A matching clear occurs on `firmCostCapAlertFiredAt` when the firm config changes.
+  - **Time zone (PHASE-7-GAP-05):** "Current calendar month" is UTC. "Start of day" for the daily session limit is UTC midnight. Documented in code comments and the form help text.
+  - **Aborted sessions (PHASE-7-GAP-05):** Aborted SessionLog rows count toward the daily session limit (the user still consumed an AI slot). Cost rollup for the monthly cap uses actual token usage recorded on the row (zero if the request never hit the model).
+  - **Firm-wide advisory (PRD-23-03, DECISION-09):** `checkFirmCostCap()` runs on a daily Inngest cron at 06:00 UTC. Reads `FIRM_MONTHLY_COST_CAP_CENTS` from `src/lib/config/cost-caps.ts` (TypeScript constant fallback + env override `FIRM_MONTHLY_COST_CAP_CENTS`). Aggregates SessionLog across all projects for the current UTC calendar month. Emits `FIRM_COST_THRESHOLD_WARNING` at 80%, `FIRM_COST_CAP_EXCEEDED` at 100%. Advisory only -- does NOT call `checkCostCap` or short-circuit `executeTask`. Recipients: users with role `FIRM_ADMIN` (or PM/SA if no `FIRM_ADMIN` role is defined at V1 -- document the fallback). Optional forward-compatible flag `firmCapBlocksExecution` (default `false`) reserved for a future V2 tightening; V1 ignores it.
+  - **`CostCapExceededError` interface (pinned):**
+    ```ts
+    export class CostCapExceededError extends Error {
+      code: "COST_CAP_EXCEEDED"
+      projectId: string
+      currentCents: number
+      capCents: number
+      userMessage: string
+      scope: "project" | "member_daily"
+    }
+    ```
+    Serialized to the UI as `{ code, scope, userMessage, capCents, currentCents }`. Action handlers catch and convert to a 409-style response.
+  - **`NOTIFICATION_SEND` payload shape for cost alerts (pinned):**
+    ```ts
+    type CostNotification = {
+      type: "COST_THRESHOLD_WARNING" | "COST_CAP_EXCEEDED"
+          | "FIRM_COST_THRESHOLD_WARNING" | "FIRM_COST_CAP_EXCEEDED"
+      projectId?: string   // omitted for firm-wide
+      thresholdPct: 80 | 100
+      currentCents: number
+      capCents: number
+      recipients: string[] // user IDs
+    }
+    ```
+    **Dedupe window:** 24 hours per `(projectId, type)` within the current UTC calendar month, tracked via `Project.costCapAlertFiredAt` + `Project.costCapAlertType`. Firm-wide uses a `FirmCostState` table row keyed by `YYYY-MM` with analogous fields.
+- **Files:** `prisma/schema.prisma` (add `monthlyCostCapCents`, `dailySessionLimit`, `costCapAlertFiredAt`, `costCapAlertType`, `FirmCostState` table), `src/lib/agent-harness/cost-cap.ts` (`checkCostCap` with advisory lock), `src/lib/agent-harness/engine.ts` (per-stage pre-flight), `src/lib/inngest/functions/firm-cost-check.ts` (new daily cron), `src/lib/config/cost-caps.ts` (new -- firm cap config), `src/actions/project-settings.ts`, `src/components/settings/cost-cap-form.tsx`
+- **Gaps addressed:** GAP-RBAC-016, PHASE-7-GAP-04, PHASE-7-GAP-05
+
+### 2.14 Briefing/Status Pipeline Integration (REQ-DASH-014)
+
+**REQ-IDs traced:** ADD-5.2.4-01, ADD-5.2.4-02, ADD-5.2.4-03, ADD-5.2.4-04, ADD-5.2.4-05, PRD-6-21, PRD-6-22, PRD-17-03, PRD-17-05. **Decision cited:** DECISION-08 (PRD-17-05 Current Focus consumed here; Phase 2 emits).
+
+- **What it does:** Replaces the legacy `src/lib/agent-harness/tasks/dashboard-synthesis.ts` narrative path with explicit calls into the Phase 2 Briefing/Status Pipeline. All Phase 7 AI-generated briefing content (Current Focus narrative, Recommended Focus ranked list, discovery gap summaries, weekly status prose) is produced by the pipeline and read from its cache. Phase 7 does not call Sonnet directly.
+- **Inputs:** `projectId`, `briefingType`, optional `bypassCache` flag.
+- **Outputs:** `CachedBriefing` rows per `(projectId, briefingType)` containing `currentFocus: string | null`, `recommendedFocus: Array<{ rank, questionId, questionDisplayId, questionText, reasoning }> | null`, `generatedAt`, `inputsHash`.
+- **Business rules:**
+  - **Briefing-type mapping (carry-forward #4 -- do NOT add new enum values):**
+    - Discovery dashboard Current Focus narrative → `daily_standup`
+    - Discovery dashboard Recommended Focus ranked list → `weekly_status`
+    - PM dashboard Current Focus → `daily_standup`
+    - Discovery gap summary (optional pipeline type already in Phase 2 scope) → `discovery_gap_report` if and only if Phase 2 exposes it; otherwise discovery gap narrative is served from `weekly_status` output.
+    - Sprint dashboard AI narrative (if any rendered) → reuses `weekly_status`. No `sprint_health` type added in Phase 7.
+  - **Caller contract:** Phase 2 exposes `invokeBriefingPipeline(projectId: string, briefingType: BriefingType, opts?: { bypassCache?: boolean }): Promise<CachedBriefing>`. Phase 7 imports this function; it does not re-implement any pipeline stage.
+  - **Cache consumption:** Dashboard pages read `CachedBriefing` rows directly for read paths (fast, no AI cost). Writes happen only through the pipeline.
+  - **Stage 4 validator (ADD-5.2.4-04):** The pipeline's deterministic Stage 4 validator (forbidden phrases/typography, numeric parity with deterministic metrics from Stage 1) runs on Sonnet output. If validation fails the pipeline does NOT write the cache row; the prior cached row remains authoritative. Phase 7 surfaces a non-blocking "narrative pending" state to the UI when no cache row exists.
+  - **Stage 5 cache (ADD-5.2.4-05):** Cache row includes `generated_at` and `inputs_hash` (SHA-256 over the canonicalized Stage 1 deterministic metrics input). Phase 7 never writes these fields directly.
+  - **TTL + debounce + manual refresh interaction (PHASE-7-GAP-09):**
+    - `PROJECT_STATE_CHANGED` events enqueue a debounced regeneration at a 30-second window per `(projectId, briefingType)` (debounce already in Phase 2).
+    - On regeneration, the pipeline recomputes `inputs_hash`. If unchanged AND the cache row is younger than 5 minutes (ADD-5.2.4-02 TTL), Stages 2-4 are skipped; the pipeline bumps `generated_at` and returns the existing row (Stage 1 metrics always re-read).
+    - Manual refresh: Phase 7 calls `invokeBriefingPipeline(..., { bypassCache: true })`. This ignores TTL and `inputs_hash` equality, always runs Stages 2-4, and emits `BRIEFING_REGENERATED` on success (listed in §5 Integration Points).
+    - If `PROJECT_STATE_CHANGED` fires while a regeneration is in flight, the new job is enqueued behind the in-flight one (no dedupe against in-flight).
+  - **Legacy path removal:** `src/lib/agent-harness/tasks/dashboard-synthesis.ts` is either deleted or reduced to a thin shim that delegates to `invokeBriefingPipeline` with `briefing_type = daily_standup` (or `weekly_status`) and throws if Phase 2 is not deployed. Task 5 no longer edits this file's prompt.
+- **Files:** `src/lib/pipelines/briefing-status/invoke.ts` (published by Phase 2; imported here), `src/lib/dashboard/briefing-loader.ts` (new -- reads `CachedBriefing` and invokes pipeline on manual refresh), `src/app/(dashboard)/projects/[projectId]/dashboard/page.tsx` (sources Current Focus + Recommended Focus from `CachedBriefing`), `src/app/(dashboard)/projects/[projectId]/pm-dashboard/page.tsx` (same), `src/lib/agent-harness/tasks/dashboard-synthesis.ts` (removed or shimmed)
+- **Gaps addressed:** PHASE-7-GAP-01, PHASE-7-GAP-09
 
 ---
 
@@ -253,6 +374,7 @@ The work is organized into functional areas that can be developed somewhat indep
 5. **Search expansion** (Task 9): Expanding the global search system.
 6. **Execution plan + auto-refresh** (Tasks 10-11): UI polish and event wiring.
 7. **Infrastructure** (Tasks 12-15): Schema migration, audit logging, cost caps.
+8. **Briefing/Status Pipeline integration** (Task 16): Replace legacy `dashboard-synthesis` prompt path with calls into the Phase 2 pipeline (§2.14).
 
 ### 3.2 File Structure
 
@@ -303,7 +425,11 @@ src/actions/*.ts                         -- Audit log calls + event wiring
 
 **Schema additions:**
 - `AuditLog` model (new table)
+- `event_audit` model (new table -- Inngest event fire log; columns: `id`, `projectId` nullable, `eventName`, `firedAt`, GIN/index on `(projectId, firedAt)`, `(eventName)`)
+- `FirmCostState` model (new table -- key `yearMonth` (e.g., `2026-04`), fields `firmCostCapAlertFiredAt`, `firmCostCapAlertType`)
 - `Project.monthlyCostCapCents` (Int, nullable)
+- `Project.costCapAlertFiredAt` (DateTime, nullable)
+- `Project.costCapAlertType` (String, nullable -- `"COST_THRESHOLD_WARNING" | "COST_CAP_EXCEEDED"`)
 - `ProjectMember.dailySessionLimit` (Int, nullable)
 
 **Schema modifications:**
@@ -334,6 +460,18 @@ src/actions/*.ts                         -- Audit log calls + event wiring
 | Sprint with no cachedAnalysis for conflict alerts | Show "Run sprint analysis to see conflicts" message |
 | Milestone with null targetDate | Show "TBD" in deadline list, sort to bottom |
 | Execution plan with stories that have no phase mapping | Show in "Unphased" group |
+| Concurrent `executeTask` at 99% of per-project cap | `checkCostCap` wraps read + decision in a Postgres advisory lock `pg_advisory_xact_lock(hashtext('cost-cap:'||projectId))`; concurrent callers serialize and the last-admitted call that pushes over the cap raises `CostCapExceededError` |
+| Multi-stage pipeline mid-flight when cap crosses | Cap check runs per stage. Stage 1 admit does not exempt Stage 3; callers catch `CostCapExceededError` between stages and surface resumable state |
+| Cap value raised after an alert already fired | On `monthlyCostCapCents` change, clear `costCapAlertFiredAt` + `costCapAlertType` so the 80% warning can fire again for the new value. Same for firm-wide via `FirmCostState` |
+| "Current calendar month" time zone | UTC. Documented in form help text. Daily session limit window is also UTC (midnight to midnight) |
+| Aborted sessions and the daily session limit | Counted toward daily session limit (slot consumed). Cost rollup uses actual tokens on the row (0 if request never reached the model) |
+| Semantic search toggled on but only project-entity results returned | Surface chip "Semantic search is not yet available for these entity types -- rolling out in a later phase"; still return Layer 1/2 hits |
+| Briefing pipeline regeneration event fires while a prior regeneration is in flight | Enqueue behind the in-flight job; do NOT dedupe against in-flight. The 30s debounce applies to fresh enqueues, not to in-flight workers |
+| Manual briefing refresh from UI | Phase 7 calls `invokeBriefingPipeline(..., { bypassCache: true })`. Pipeline ignores TTL + `inputs_hash` equality, runs Stages 2-4, emits `BRIEFING_REGENERATED` |
+| Stage 4 validator fails on Sonnet output | Pipeline does NOT overwrite the cache row; prior row remains authoritative. Phase 7 surfaces non-blocking "narrative pending" |
+| `search_project_kb` / `search_org_kb` return `_meta.not_implemented = true` (Phase 11 not yet deployed) | Adapter branches on `_meta.not_implemented` (per DECISION-05), surfaces pending state chip in the UI, and falls back to empty grouped results for the affected entity family |
+| Audit log write failure (duplicate row above) | Log error but do not block the mutation (non-critical path) |
+| Inngest middleware fails to write to `event_audit` | Middleware swallows the error and logs; never blocks the event handler. Event volume may undercount during incidents |
 
 ---
 
@@ -342,15 +480,21 @@ src/actions/*.ts                         -- Audit log calls + event wiring
 ### From Prior Phases
 
 - **Phase 1 (RBAC):** Role checking functions (`requireRole`, `getCurrentMember`) used by Usage & Costs RBAC and settings forms. Deferred gaps GAP-RBAC-010/014/016 are addressed here.
-- **Phase 2 (Agent Harness):** `executeTask` in engine.ts receives cost cap pre-flight check. Dashboard synthesis task definition receives prompt updates.
-- **Phase 3 (Discovery):** Question model fields (`askedDate`, `ownerDescription`, `scope`) used by health score signals and client-items queries. Question impact assessment results feed into recommended focus.
-- **Phase 4 (Work Management):** Story model fields, acceptance criteria validation, story components used by sprint dashboard missing-fields check.
-- **Phase 5 (Sprint):** Sprint `cachedAnalysis` JSON with conflicts used by dashboard conflict alerts. Developer attribution in sprint intelligence used by workload view.
-- **Phase 6 (Org/Knowledge):** OrgComponent and BusinessProcess models and their search_vector columns used by search expansion.
+- **Phase 2 (Agent Harness + Briefing/Status Pipeline):** `executeTask` in engine.ts receives per-stage cost cap pre-flight check. Phase 2 publishes `invokeBriefingPipeline(projectId, briefingType, { bypassCache? })` and the `BriefingType` enum (including `daily_standup`, `weekly_status`, and, if present, `discovery_gap_report`). Phase 2 also emits `BRIEFING_REGENERATED` after a successful regeneration. Phase 7 consumes these; it does NOT re-implement pipeline stages. Phase 7 does NOT add new briefing-type enum values.
+- **Phase 3 (Discovery):** Question model fields (`askedDate`, `ownerDescription`, `scope`) used by health score signals and client-items queries. Question impact assessment results feed into Phase 2 pipeline inputs.
+- **Phase 4 (Work Management):** Story model fields, acceptance criteria validation, story components used by sprint dashboard missing-fields check. QuestionStory join (or equivalent) consumed by affected-stories rendering in §2.4.
+- **Phase 5 (Sprint):** Sprint `cachedAnalysis` JSON with conflicts used by dashboard conflict alerts. Developer attribution in sprint intelligence used by workload view. Completed-sprint point totals feed §2.6 velocity.
+- **Phase 6 (Org/Knowledge):** OrgComponent and BusinessProcess models; KnowledgeArticle embedding (per DECISION-05). Consumed via `search_org_kb`.
+- **Phase 11 (Hybrid Retrieval):** Publishes `search_project_kb` and `search_org_kb` per Addendum §5.4. Phase 7 §2.9 is a thin adapter. Phase 11 must expose the `SearchResponse` envelope with `_meta.not_implemented` flag per DECISION-05 so Phase 7 can branch deterministically before project-entity embeddings land.
+
+### Published Events and Notification Types (consumed downstream)
+
+- `BRIEFING_REGENERATED` -- emitted by Phase 2 pipeline on successful regeneration; Phase 7 triggers via manual refresh in §2.14.
+- `NOTIFICATION_SEND` types added by Phase 7: `COST_THRESHOLD_WARNING`, `COST_CAP_EXCEEDED`, `FIRM_COST_THRESHOLD_WARNING`, `FIRM_COST_CAP_EXCEEDED`. Payload shape pinned in §2.13.
 
 ### For Future Phases
 
-- **Phase 8 (Documents, Notifications):** `HEALTH_SCORE_CHANGED` notification sender (deferred from Phase 8) can now be implemented since health score model is correct. Cost threshold notifications use the `NOTIFICATION_SEND` event pattern.
+- **Phase 8 (Documents, Notifications):** `HEALTH_SCORE_CHANGED` notification sender (deferred from Phase 8) can now be implemented since health score model is correct. Phase 8 notification receiver must handle all four cost notification types defined in §2.13.
 - **Phase 9 (QA, Archival):** Audit log infrastructure is available for QA workflow logging. Archived project cost data preserved in AuditLog.
 - **V2:** Audit log UI (admin panel for querying logs). Semantic search expansion to all entity types. AI-generated milestone summaries. Dependency chain Gantt visualization. Inngest event volume tracking. Full read-path access logging.
 
@@ -368,8 +512,10 @@ src/actions/*.ts                         -- Audit log calls + event wiring
 ### Briefing
 - [ ] Header shows: health badge, open questions (blocking count), blocked items, roadmap progress, requirements (unmapped count)
 - [ ] Epic status section shows per-epic phase, story counts, completion percentage
-- [ ] Blocking questions show age (days) and owner
-- [ ] Recommended focus is structured ranked list with question IDs and reasoning
+- [ ] Blocking questions show age (days), owner, and affected-stories list (linked by displayId)
+- [ ] Recommended focus is structured ranked list with question IDs and reasoning, sourced from Phase 2 Briefing/Status Pipeline
+- [ ] Current Focus narrative sourced from Phase 2 pipeline (briefing_type = `daily_standup` per carry-forward mapping)
+- [ ] Legacy `src/lib/agent-harness/tasks/dashboard-synthesis.ts` prompt path removed or shimmed to pipeline
 
 ### Sprint Dashboard
 - [ ] Missing mandatory fields section identifies stories without acceptance criteria or components
@@ -380,19 +526,23 @@ src/actions/*.ts                         -- Audit log calls + event wiring
 - [ ] Risk register summary shows risks by severity with top 5 open risks
 - [ ] Upcoming deadlines shows next 5 milestones with progress and days remaining
 - [ ] Client-facing items shows questions past follow-up threshold
+- [ ] Team velocity card shows completed points for up to 3 past sprints plus average (PRD-17-15)
 
 ### Usage & Costs
 - [ ] Standalone settings tab visible only to SA and PM
 - [ ] Date range filter with presets works correctly
 - [ ] Per-member breakdown shows token usage and cost per team member
-- [ ] Trend chart displays daily cost over selected range
+- [ ] Trend chart displays daily / weekly / monthly cost based on range (≤31 / 32-120 / >120 days) with optional manual override
+- [ ] Event Volume card shows Inngest event fire counts over selected range (PRD-23-12)
 - [ ] No duplicate pricing logic -- single source in ai-pricing.ts
 
 ### Search
-- [ ] Story, OrgComponent, BusinessProcess appear in global search results
-- [ ] Full-text search works for all 8 entity types
-- [ ] Semantic mode toggle present in command palette
-- [ ] Semantic search only runs when toggle is on
+- [ ] `src/lib/search/global-search.ts` is a thin adapter over `search_project_kb` + `search_org_kb`; contains no `to_tsvector` / `to_tsquery` SQL (unit test enforces)
+- [ ] All 8 entity types (Question, Decision, Requirement, Risk, Story, OrgComponent, BusinessProcess, KnowledgeArticle) appear in grouped results
+- [ ] Smart Search toggle present in command palette; default off
+- [ ] Layer 3 auto-activates when Layer 1+2 `totalResults < 5` (constant `SMART_SEARCH_AUTO_THRESHOLD = 5`)
+- [ ] Informational chip shows when semantic is requested for entity types not yet covered by embeddings
+- [ ] Adapter branches on `SearchResponse._meta.not_implemented` (not array length) per DECISION-05
 
 ### Execution Plan
 - [ ] Stories grouped by phase within each epic
@@ -408,11 +558,14 @@ src/actions/*.ts                         -- Audit log calls + event wiring
 - [ ] Audit log writes do not block mutations on failure
 
 ### Cost Caps
-- [ ] monthlyCostCapCents configurable per project in settings
-- [ ] Pre-flight check blocks AI execution when cap exceeded
-- [ ] 80% threshold warning notification fires
+- [ ] `monthlyCostCapCents` configurable per project in settings (blocking)
+- [ ] Per-stage pre-flight check blocks AI execution when cap exceeded; advisory lock closes the 99% race
+- [ ] 80% threshold warning notification fires (dedupe 24h per project/type in current UTC month)
 - [ ] 100% cap exceeded notification fires
-- [ ] Per-member daily session limit enforced
+- [ ] Per-member daily session limit enforced (UTC midnight window; aborted sessions count)
+- [ ] Firm-wide advisory alert fires at 80% and 100% via daily cron; does NOT block execution (DECISION-09)
+- [ ] `CostCapExceededError` and `NOTIFICATION_SEND` cost payload shapes match §2.13 pinned interfaces
+- [ ] Cap raised mid-cycle clears `costCapAlertFiredAt` so alerts can re-fire for the new cap value
 
 ---
 
@@ -426,8 +579,22 @@ src/actions/*.ts                         -- Audit log calls + event wiring
 
 ---
 
+## 8. Outstanding for Deep-Dive Coordination
+
+These items require explicit sign-off with the owning phase before Phase 7 execution lands. Each is referenced inline above; listed here for tracking.
+
+1. **Phase 2 pipeline signature.** Phase 2 must publish `invokeBriefingPipeline(projectId, briefingType, { bypassCache? })` and the `BriefingType` enum. Phase 7 does NOT add enum values. Coordinate with Phase 2 deep-dive before Task 16 starts. (Ref: §2.14; REQ IDs ADD-5.2.4-01..05)
+2. **Phase 11 `search_project_kb` / `search_org_kb` signature + envelope.** Must return `SearchResponse<T>` with `_meta.not_implemented` flag (DECISION-05). Phase 7 Task 10 depends on both being merged (or on the envelope returning `not_implemented = true` so the adapter branches cleanly). (Ref: §2.9; REQ ID ADD-5.4-01)
+3. **`FIRM_MONTHLY_COST_CAP_CENTS` config location.** Confirm canonical location: TypeScript constant in `src/lib/config/cost-caps.ts` with env override `FIRM_MONTHLY_COST_CAP_CENTS`. (Ref: §2.13; DECISION-09)
+4. **`FIRM_ADMIN` role.** If not defined in Phase 1 RBAC, Phase 7 falls back to PM/SA recipients for firm-wide alerts. Document the fallback in the Task 14 rollout notes. (Ref: §2.13)
+5. **`discovery_gap_report` briefing type.** Phase 7 prefers this type for the discovery gap narrative if Phase 2 exposes it; otherwise it falls back to `weekly_status` output per the carry-forward mapping. Coordinate with Phase 2 deep-dive. (Ref: §2.14)
+
+---
+
 ## Revision History
 
 | Date | Change |
 |------|--------|
 | 2026-04-10 | Initial spec created. 29 gaps analyzed, 15 tasks defined. 4 gaps deferred to V2 (GAP-DASH-008, GAP-DASH-018, GAP-DASH-020, GAP-DASH-023 visualization). |
+| 2026-04-13 | Addendum v1 amendments applied (briefing routing, search substrate, deterministic dashboard metrics). |
+| 2026-04-14 | Wave 3 audit-fix (10 gaps from `phase-07-audit.md`): added §0 Traceability, §2.14 Briefing/Status Pipeline Integration (GAP-01, GAP-09), rewrote §2.9 as substrate adapter (GAP-02, GAP-06), added firm-wide cost alert + concurrency / TZ edge cases + `CostCapExceededError` / `NOTIFICATION_SEND` interfaces (GAP-04, GAP-05), brought GAP-DASH-018 Inngest event volume into V1 (GAP-03), added velocity to PM dashboard (GAP-03), added affected-stories to blocking questions (GAP-08), added weekly/monthly trend bucketing (GAP-10), added §8 Outstanding. Citations: DECISION-05, DECISION-08, DECISION-09. Briefing-type carry-forward mapping applied (reuse `daily_standup` / `weekly_status`). |
