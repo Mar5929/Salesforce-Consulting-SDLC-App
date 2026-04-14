@@ -12,8 +12,8 @@
 
 Fix the question ID scheme to match the PRD's `Q-{SCOPE}-{NUMBER}` format, correct the lifecycle enum (replace `REVIEWED` with `IMPACT_ASSESSED`, remove phantom `ESCALATED`), unify the two impact assessment paths into one with conflict detection and downstream write actions, implement the two headline AI features (gap detection and readiness assessment), populate the `QuestionAffects` table for cross-cutting questions, complete the question data model (`source` field, client/TBD owner), wire pagination, and fill in the 3 missing discovery dashboard sections.
 
-**In scope:** 14 of 14 domain gaps -> 13 tasks
-**Moved out:** None. All gaps addressed in this phase.
+**In scope:** 14 of 14 domain gaps -> 14 tasks (Task 14 added per Addendum v1 amendment for Answer Logging Pipeline wiring + question embeddings)
+**Moved out:** None. All gaps addressed in this phase. Project Health Score (PRD-8-25) deferred to Phase 7 with a placeholder region reserved on the discovery dashboard.
 
 ---
 
@@ -41,6 +41,9 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
 - **Inputs:** Database migration
 - **Outputs:** Updated enum values, new field available on all Question records
 - **Business rules:** Default `MANUAL` for source is correct — manually entered questions are the baseline. Transcript processing and chat paths will explicitly set their source. Migrating `REVIEWED` to `ANSWERED` (not `IMPACT_ASSESSED`) is correct because those questions had their answer recorded but never went through a real impact assessment.
+- **Naming reconciliation (PRD-9-01):** The `OPEN` enum value is the internal representation of PRD §9.1 lifecycle state `RAISED`. Retained for compatibility with existing Phase 1 production data and to avoid a breaking string-literal migration across Phase 1/2 code. Lifecycle order is semantically equivalent: `OPEN` (= `RAISED`) → `SCOPED` → `OWNED` → `ANSWERED` → `IMPACT_ASSESSED`, with terminal `PARKED`. All PRD/Addendum references to `RAISED` map 1:1 to `OPEN` in this codebase.
+
+Traces: REQ-DISC-001 → PRD-9-01, PRD-9-09
 - **Files:** `prisma/schema.prisma`, migration SQL
 
 ### 2.2 Fix Question Display ID Scheme (REQ-DISC-002)
@@ -59,6 +62,8 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
   - Epic prefix uniqueness within a project is already enforced by the `@@unique([epicId, prefix])` constraint on Feature and the epic prefix field. No additional validation needed.
 - **File:** `src/lib/display-id.ts` (major rework of Question path), migration for existing IDs
 
+Traces: REQ-DISC-002 → PRD-9-07, PRD-9-08
+
 ### 2.3 Clean Up ESCALATED References (REQ-DISC-003)
 
 - **What it does:** Removes the phantom `ESCALATED` status from agent task code where it references a value that doesn't exist in the database enum.
@@ -66,6 +71,8 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
 - **Outputs:** No more latent runtime error risk
 - **Business rules:** `ESCALATED` was never a valid state. In `question-answering.ts`, remove `ESCALATED` from the `update_question_status` tool's allowed enum values (keep `ANSWERED` and `PARKED`). In `dashboard-synthesis.ts`, remove the `escalatedCount` filter (always produced 0). If a question truly needs escalation, it should be `PARKED` with a parkedReason explaining why.
 - **Files:** `src/lib/agent-harness/tasks/question-answering.ts` (line 189), `src/lib/agent-harness/tasks/dashboard-synthesis.ts` (line 39)
+
+Traces: REQ-DISC-003 → PRD-9-01 (lifecycle hygiene)
 
 ### 2.4 Wire Source Field in Creation Paths (REQ-DISC-004)
 
@@ -78,6 +85,12 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
   - `create_question` agent tool during chat/conversation: `source: "CHAT"`
   - The tool needs to know the session context (transcript vs chat). The `metadata.taskType` on the session provides this. If `taskType === "TRANSCRIPT_PROCESSING"`, set `TRANSCRIPT`. If the task is a chat-originated session, set `CHAT`. Default to `MANUAL` as fallback.
 - **Files:** `src/actions/questions.ts` (createQuestion), `src/lib/agent-harness/tools/create-question.ts`
+
+**Question text clarity (PRD-9-10):** `createQuestion` validates `questionText.length >= 15` and rejects text matching `^(yes|no|tbd|\?+)$` (case-insensitive). The `create_question` tool sets `needsReview = true` when extracted question text is `< 25` chars or lacks terminal `?` punctuation, surfacing it for human review before lifecycle progression.
+
+**Scope-required for AI-created questions (PRD-9-02):** The `create_question` tool input schema requires `scope: 'ENGAGEMENT' | 'EPIC' | 'FEATURE'` and conditionally `scopeEpicId` (for EPIC/FEATURE) and `scopeFeatureId` (for FEATURE). The tool handler rejects calls missing required fields so AI-created questions never arrive with null scope and never break Task 2's display-ID generator.
+
+Traces: REQ-DISC-004 → PRD-9-02, PRD-9-09, PRD-9-10
 
 ### 2.5 Enable Client/TBD Owner Assignment (REQ-DISC-005)
 
@@ -92,6 +105,8 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
   - Status transition to `OWNED` is valid when either `ownerId` or `ownerDescription` is set.
 - **Files:** `src/actions/questions.ts`, `src/components/questions/question-form.tsx`, `src/components/questions/question-detail.tsx`, question list component
 
+Traces: REQ-DISC-005 → PRD-9-03
+
 ### 2.6 Render parkedReason + QuestionAffects on Detail Page (REQ-DISC-006)
 
 - **What it does:** Adds two missing UI sections to the question detail page:
@@ -102,6 +117,8 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
 - **Business rules:** Parked Reason section is conditionally rendered only for PARKED questions. Affects section is rendered only for ENGAGEMENT-scope questions (though it could also render for any question that has affects records). If no affects records exist, display "No cross-cutting relationships identified" with a note that the AI will detect these automatically.
 - **Files:** `src/app/(dashboard)/projects/[projectId]/questions/[questionId]/page.tsx` (add `questionAffects` to include), `src/components/questions/question-detail.tsx`
 
+Traces: REQ-DISC-006 → PRD-5-32, PRD-9-09
+
 ### 2.7 Wire Pagination to Questions List Page (REQ-DISC-007)
 
 - **What it does:** Replaces the direct `db.question.findMany` (which loads all questions) with the existing paginated `getQuestions` server action.
@@ -110,45 +127,33 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
 - **Business rules:** The `getQuestions` action in `src/actions/questions.ts` (lines 315-354) already implements pagination with `page`/`pageSize` parameters. The page just needs to call it instead of querying directly. Default page size: 25. Use `nuqs` for URL state management (already in the stack).
 - **Files:** `src/app/(dashboard)/projects/[projectId]/questions/page.tsx`
 
-### 2.8 Unify Impact Assessment + Add Downstream Actions (REQ-DISC-008)
+Traces: REQ-DISC-007 → PRD-8-15
 
-- **What it does:** This is the largest requirement. It unifies the two divergent impact assessment paths and adds the four PRD-mandated downstream write operations.
+### 2.8 Status Advancement on Pipeline Completion (REQ-DISC-008)
 
-  **Routing unification:**
-  - The `questionImpactAssessmentFunction` (triggered by `ENTITY_CONTENT_CHANGED` with `action=answered`) is deprecated.
-  - The `answerQuestion` server action now fires `QUESTION_IMPACT_REQUESTED` instead of `ENTITY_CONTENT_CHANGED`.
-  - All answered questions route through `questionImpactFunction` (the hybrid function with conflict detection).
+- **What it does:** Phase 3 does NOT own impact assessment. The Answer Logging Pipeline (Phase 2, ADD-5.2.2-04) owns Stage 4 — unblocks, contradictions, new-question creation, design-change flags, and structured output validation. Phase 3's responsibility is reduced to: (a) firing `ANSWER_LOGGING_REQUESTED` from the `answerQuestion` UI action (see §2.14 / Task 14), (b) subscribing to `QUESTION_IMPACT_COMPLETED` emitted by the pipeline, and (c) advancing the question's status from `ANSWERED` to `IMPACT_ASSESSED` in that subscriber while persisting the pipeline's `summary` to `Question.impactAssessment`.
 
-  **Structured output:**
-  - The impact assessment agent task is modified to produce structured JSON output (not prose string):
-    ```json
-    {
-      "summary": "Impact analysis text...",
-      "designChanges": [{"entityType": "Decision", "entityId": "...", "description": "..."}],
-      "unblockedItems": [{"entityType": "Story", "entityId": "..."}],
-      "newQuestions": [{"questionText": "...", "scope": "EPIC", "scopeEpicId": "..."}],
-      "contradictions": [{"existingDecisionId": "...", "description": "...", "severity": "HIGH"}]
-    }
-    ```
-  - The `questionImpactFunction` Inngest function parses this and executes downstream writes.
+  This collapse resolves Wave 0 contradiction A: Addendum v1 §2 locks pipeline-first architecture; the legacy Phase-3-owned `questionImpactFunction` and `questionImpactAssessmentFunction` are removed.
 
-  **Downstream actions (4 from PRD Section 9.1 step 5):**
-  1. **Update designs/assumptions:** Flag affected decisions for review by setting `needsReview: true` with reason.
-  2. **Unblock items:** Remove `QuestionBlocksStory`/`QuestionBlocksEpic`/`QuestionBlocksFeature` records for the answered question, triggering `WORK_ITEM_UNBLOCKED` notifications.
-  3. **Create follow-up questions:** Persist `newQuestions[]` as actual Question records with `source: "CHAT"` and scope from the parent question context.
-  4. **Flag contradictions:** For each contradiction, use the existing `flag_conflict` tool or create a Decision with `needsReview: true`.
+  **Listener contract (consumed):**
+  - Event: `QUESTION_IMPACT_COMPLETED` (emitted by Phase 2 pipeline after Stage 4 completes)
+  - Payload: `{ projectId, questionId, summary, designChanges[], unblockedItems[], newQuestions[], contradictions[] }`
+  - Listener action: update `Question.status = IMPACT_ASSESSED`, set `Question.impactAssessment = payload.summary`. Do not re-execute downstream writes; they are already applied by the pipeline.
 
-  **Status advancement:**
-  - After all downstream actions complete, advance the question's status to `IMPACT_ASSESSED`.
+  **Cross-phase coordination (Phase 2 owns):**
+  - Confirms `ANSWER_LOGGING_REQUESTED` event contract (see §2.14 Task 14).
+  - Emits `QUESTION_IMPACT_COMPLETED` with the payload above.
+  - Implements structured-output validator (designChanges, unblockedItems, newQuestions, contradictions) inside the pipeline stage.
+  - Owns concurrency key for serializing pipeline runs per project; Phase 3's listener is idempotent on repeated `QUESTION_IMPACT_COMPLETED` events.
 
-- **Inputs:** Any question being answered (via UI form or chat)
-- **Outputs:** Complete impact assessment with all downstream side effects executed
+- **Inputs:** `QUESTION_IMPACT_COMPLETED` event from Phase 2 Answer Logging Pipeline
+- **Outputs:** `Question.status = IMPACT_ASSESSED`, `Question.impactAssessment` populated
 - **Business rules:**
-  - If the AI's structured output fails validation, store the raw text as `impactAssessment` (fallback) but skip downstream actions. Log the validation failure.
-  - Downstream question creation uses the parent question's scope unless the AI explicitly specifies a different scope.
-  - Unblocking is automatic — if a question that blocked Story X is answered, the blocking record is removed. The story doesn't automatically change status.
-  - Race condition prevention: The Inngest concurrency key `project-{projectId}-QUESTION_ANSWERING` ensures only one impact assessment runs per project at a time.
-- **Files:** `src/actions/questions.ts` (change event from ENTITY_CONTENT_CHANGED to QUESTION_IMPACT_REQUESTED), `src/lib/inngest/functions/question-impact.ts` (add downstream action steps), `src/lib/inngest/functions/question-impact-assessment.ts` (deprecate/remove), `src/lib/agent-harness/tasks/question-impact.ts` (structured output schema)
+  - Listener is idempotent: re-receiving the same `QUESTION_IMPACT_COMPLETED` for a question already in `IMPACT_ASSESSED` is a no-op.
+  - If the pipeline failed validation upstream, it does NOT emit `QUESTION_IMPACT_COMPLETED`; the Phase 3 listener never runs and status stays at `ANSWERED`. Pipeline error surfacing is Phase 2's responsibility.
+- **Files:** `src/lib/inngest/functions/question-impact-completed-listener.ts` (CREATE). Removed: `src/lib/inngest/functions/question-impact.ts`, `src/lib/inngest/functions/question-impact-assessment.ts`, `src/lib/agent-harness/tasks/question-impact.ts`.
+
+Traces: REQ-DISC-008 → ADD-5.2.2-04, PRD-9-04, PRD-9-05, PRD-9-06 (delegated to Phase 2 per pipeline-first architecture)
 
 ### 2.9 Populate QuestionAffects via AI + Manual UI (REQ-DISC-009)
 
@@ -162,7 +167,9 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
   - The `tag_question_affects` tool accepts `questionId` and an array of `{epicId?, featureId?}` pairs.
   - Manual tagging is available on all questions regardless of scope but is most useful for engagement-scope questions.
   - Duplicate affects records (same question + epic/feature) are silently ignored (upsert).
-- **Files:** New tool `src/lib/agent-harness/tools/tag-question-affects.ts`, `src/lib/agent-harness/tasks/transcript-processing.ts` (add tool to available tools), `src/lib/agent-harness/tasks/question-impact.ts` (add tool), question form component, `src/actions/questions.ts` (add updateQuestionAffects action)
+- **Files:** New tool `src/lib/agent-harness/tools/tag-question-affects.ts`, `src/lib/agent-harness/tasks/transcript-processing.ts` (add tool to available tools), question form component, `src/actions/questions.ts` (add updateQuestionAffects action). NOTE: `question-impact.ts` is removed per §2.8; the tool is registered on the Phase 2 Answer Logging Pipeline task instead (cross-phase coordination).
+
+Traces: REQ-DISC-009 → PRD-5-32, PRD-8-03, PRD-9-11
 
 ### 2.10 Implement Gap Detection Analysis (REQ-DISC-010)
 
@@ -197,6 +204,8 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
 - **Inngest function:** Triggered by `GAP_ANALYSIS_REQUESTED` event.
 - **Files:** New `src/lib/agent-harness/tasks/gap-detection.ts`, new `src/lib/inngest/functions/gap-detection.ts`, `src/lib/inngest/events.ts` (new event)
 
+Traces: REQ-DISC-010 → PRD-8-16, PRD-8-18, ADD-5.3-04 (`get_discovery_gaps` consumer surface owned by Phase 2 freeform agent; Phase 3 produces the cached data)
+
 ### 2.11 Implement Readiness Assessment (REQ-DISC-011)
 
 - **What it does:** Implements the PRD's "Readiness Assessment" AI feature — the AI evaluates whether enough discovery information exists to begin creating user stories for each epic.
@@ -227,6 +236,8 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
 - **Inngest function:** Triggered by `READINESS_ASSESSMENT_REQUESTED` event. Can also be chained after gap detection completes.
 - **Files:** New `src/lib/agent-harness/tasks/readiness-assessment.ts`, new `src/lib/inngest/functions/readiness-assessment.ts`, `src/lib/inngest/events.ts` (new event)
 
+Traces: REQ-DISC-011 → PRD-8-17
+
 ### 2.12 Build Blocking-Priority Question Ranking (REQ-DISC-012)
 
 - **What it does:** Aggregates blocking counts from `QuestionBlocksStory`, `QuestionBlocksEpic`, and `QuestionBlocksFeature` to produce a ranked priority queue of unanswered questions.
@@ -243,6 +254,10 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
   - This is a pure database query — no AI involved. It provides the data that the dashboard uses for structured follow-up recommendations.
 - **Files:** New `src/lib/dashboard/queries/blocking-priority.ts`, wire into dashboard page
 
+**Reasoning field (PRD-8-21):** Each row also includes a `reasoning: string` built from a templated format: `"Blocks {totalBlocks} work item(s): {blocksStories} stories, {blocksEpics} epics, {blocksFeatures} features. Asked {ageDays} day(s) ago. Owner: {owner}."` This populates the dashboard follow-up cards (REQ-DISC-013) so PRD-8-21 ("AI follow-up questions with reasoning") is satisfied without requiring a separate AI call.
+
+Traces: REQ-DISC-012 → PRD-8-19, PRD-8-21
+
 ### 2.13 Complete Discovery Dashboard Sections (REQ-DISC-013)
 
 - **What it does:** Adds the 3 missing sections and upgrades 2 degraded sections on the discovery dashboard to match all 7 PRD-specified sections (Section 8.4).
@@ -250,14 +265,36 @@ These amendments integrate PRD Addendum v1 into Phase 3. They are additive — e
   1. **Recently Answered Questions + Impact** — Shows last 10 answered questions with their impact assessment summary and what changed.
   2. **Per-Epic Discovery Progress** — Visual progress bars per epic showing question coverage (answered/total) with gap severity indicators. Sourced from `cachedGapAnalysis`.
   3. **Unmapped Requirements** — Requirements with `status: CAPTURED` that aren't yet linked to epics/stories. Quick-link to map them.
+  4. **Blocked Work Items** — Lists stories/epics/features currently blocked by open questions, sourced from `QuestionBlocksStory/Epic/Feature`. Component: `blocked-work-items.tsx`. Query joins blocking tables on questions with status in (`OPEN`, `SCOPED`, `OWNED`); rows: `workItemType`, `workItemDisplayId`, `blockingQuestionDisplayId`, `blockingQuestionText`, `ageDays`. Limit 25.
 - **Sections to upgrade:**
-  4. **Outstanding Questions** — Currently shows aggregate counts. Upgrade to per-scope breakdown with owner, age in days, and filtering by scope.
-  5. **Follow-Up Recommendations** — Currently prose from briefing. Upgrade to structured question cards from the blocking-priority ranking (REQ-DISC-012), showing question ID, text, blocking count, and owner.
+  5. **Outstanding Questions** — Currently shows aggregate counts. Upgrade to per-scope breakdown with owner, age in days, and filtering by scope.
+  6. **Follow-Up Recommendations** — Currently prose from briefing. Upgrade to structured question cards from the blocking-priority ranking (REQ-DISC-012), showing question ID, text, blocking count, owner, and `reasoning` field (PRD-8-21).
+- **Section deferred to Phase 7:**
+  7. **Project Health Score** — Owned by Phase 7 (PRD-17-16 inputs: stale questions >7 days, client-owned >3 days, blocked >5 days, active high-severity risks without mitigation). Phase 3 reserves a placeholder region in the dashboard layout that Phase 7 fills. No Phase 3 component or computation.
 - **Business rules:**
   - Gap analysis and readiness assessment sections show cached results with "Last updated: {time}" and "Refresh" button.
   - If no gap analysis has been run, show a prompt: "Run your first gap analysis to see discovery coverage by epic."
   - The dashboard auto-refreshes on SWR polling (existing pattern), not on push.
-- **Files:** `src/app/(dashboard)/projects/[projectId]/dashboard/page.tsx`, new components in `src/components/dashboard/`
+- **Files:** `src/app/(dashboard)/projects/[projectId]/dashboard/page.tsx`, new components in `src/components/dashboard/` including `blocked-work-items.tsx`.
+
+Traces: REQ-DISC-013 → PRD-8-20, PRD-8-21, PRD-8-22, PRD-8-23, PRD-8-24; PRD-8-25 explicitly out of scope (deferred to Phase 7)
+
+### 2.14 Answer Logging Pipeline Wiring + Question Embeddings (REQ-DISC-014)
+
+- **What it does:** Wires the UI answer-submission path to the Phase 2 Answer Logging Pipeline (per Addendum v1 §2 pipeline-first lock and §5.2.2 Answer Logging stages) and enqueues question embeddings on create/update via Phase 11 infrastructure (per ADD-5.2.2-05).
+- **Pipeline entry contract (Phase 2 publishes; Phase 3 consumes):**
+  - Event name: `ANSWER_LOGGING_REQUESTED`
+  - Payload: `{ projectId: string; userId: string; answerText: string; questionIdHint?: string; source: 'MANUAL' | 'CHAT' }` (per ADD-5.2.2-01)
+  - Response: async. UI displays `Submitting…` until `QUESTION_IMPACT_COMPLETED` arrives via the existing notification channel (SSE/polling per Phase 2 pattern). On arrival, the §2.8 listener advances status and the UI refreshes the question detail view.
+- **Embedding enqueue:**
+  - On `question.create` and `question.update` where `questionText` or `answerText` changes, call `enqueueEmbedding({ entity: 'Question', id, content: <computed> })` (Phase 11 surface).
+  - Compute `embeddingContentHash = hash({ questionText, answerText, scope })` and store on `Question.embeddingContentHash` (new field, see Task 1). Skip enqueue when hash unchanged. Status-only updates (e.g., `OPEN → SCOPED`) do not re-embed.
+- **Duplicate-answer dedup (PRD-19-13):** If the question is already in `ANSWERED` status with `answeredAt` within the last 5 minutes, the `answerQuestion` server action returns 409 with `code: DUPLICATE_ANSWER_CONFLICT` and does NOT fire `ANSWER_LOGGING_REQUESTED`. Pipeline must also be defensive (Phase 2 owns final dedup). The duplicate condition surfaces a review banner on the question detail page.
+- **Inputs:** UI answer-submission form, Question entity create/update events
+- **Outputs:** `ANSWER_LOGGING_REQUESTED` Inngest event; `enqueueEmbedding` queue write; populated `embeddingContentHash`
+- **Files:** `src/actions/questions.ts` (answerQuestion, createQuestion, updateQuestion), `src/lib/embeddings/enqueue.ts` (Phase 11 helper, consumed)
+
+Traces: REQ-DISC-014 → ADD-5.2.2-01, ADD-5.2.2-02, ADD-5.2.2-05, PRD-4-04, PRD-8-07, PRD-8-15, PRD-19-13
 
 ---
 
@@ -286,21 +323,24 @@ src/actions/
 src/lib/agent-harness/
   tasks/
     question-answering.ts               — MODIFY (remove ESCALATED from tool enum)
-    question-impact.ts                  — MODIFY (structured output schema, tag_question_affects tool)
     transcript-processing.ts            — MODIFY (add tag_question_affects tool)
     dashboard-synthesis.ts              — MODIFY (remove ESCALATED filter)
     gap-detection.ts                    — CREATE (new agent task)
     readiness-assessment.ts             — CREATE (new agent task)
+    question-impact.ts                  — REMOVE (delegated to Phase 2 Answer Logging Pipeline per DECISION pipeline-first)
   tools/
     tag-question-affects.ts             — CREATE (new tool)
-    create-question.ts                  — MODIFY (add source field from session context)
+    create-question.ts                  — MODIFY (add source field from session context, require scope/scopeEpicId/scopeFeatureId per PRD-9-02)
 src/lib/inngest/
-  events.ts                             — MODIFY (add GAP_ANALYSIS_REQUESTED, READINESS_ASSESSMENT_REQUESTED)
+  events.ts                             — MODIFY (add GAP_ANALYSIS_REQUESTED, READINESS_ASSESSMENT_REQUESTED). NOTE: ANSWER_LOGGING_REQUESTED and QUESTION_IMPACT_COMPLETED are owned/published by Phase 2; Phase 3 only sends/subscribes.
   functions/
-    question-impact-assessment.ts       — REMOVE (deprecated, merged into question-impact.ts)
-    question-impact.ts                  — MODIFY (add downstream action steps)
+    question-impact-assessment.ts       — REMOVE (legacy; replaced by Phase 2 pipeline)
+    question-impact.ts                  — REMOVE (legacy; replaced by Phase 2 pipeline)
+    question-impact-completed-listener.ts — CREATE (subscribes to QUESTION_IMPACT_COMPLETED, advances status, persists summary)
     gap-detection.ts                    — CREATE (new Inngest function)
     readiness-assessment.ts             — CREATE (new Inngest function)
+src/lib/embeddings/
+  enqueue.ts                            — CONSUME (Phase 11 surface; called from question create/update)
 src/lib/dashboard/queries/
   blocking-priority.ts                  — CREATE (blocking count aggregation query)
 src/components/
@@ -311,7 +351,8 @@ src/components/
     recently-answered.tsx               — CREATE (new dashboard section)
     epic-discovery-progress.tsx         — CREATE (new dashboard section)
     unmapped-requirements.tsx           — CREATE (new dashboard section)
-    blocking-priority-cards.tsx         — CREATE (structured follow-up recommendation cards)
+    blocked-work-items.tsx              — CREATE (lists work items blocked by open questions; PRD-8-23)
+    blocking-priority-cards.tsx         — CREATE (structured follow-up recommendation cards w/ reasoning; PRD-8-21)
     outstanding-questions-detail.tsx    — CREATE (upgraded outstanding questions section)
 src/app/(dashboard)/projects/[projectId]/
   questions/page.tsx                    — MODIFY (wire pagination)
@@ -343,9 +384,24 @@ enum QuestionSource {
 ```prisma
 model Question {
   // ... existing fields
-  source  QuestionSource @default(MANUAL)
+  source                 QuestionSource @default(MANUAL)
+  embeddingContentHash   String?        // SHA-256 of {questionText, answerText, scope}; gates re-embed (REQ-DISC-014)
 }
 ```
+
+**QuestionAffects partial unique indexes (PRD-5-32, GAP-08):**
+```sql
+-- NULL columns do not enforce uniqueness in standard composite unique constraints in Postgres.
+-- Two partial unique indexes guarantee no duplicate (questionId, epicId) or (questionId, featureId) rows.
+CREATE UNIQUE INDEX question_affects_epic_only
+  ON "QuestionAffects" ("questionId", "epicId")
+  WHERE "featureId" IS NULL;
+
+CREATE UNIQUE INDEX question_affects_feature_only
+  ON "QuestionAffects" ("questionId", "featureId")
+  WHERE "epicId" IS NULL;
+```
+Upsert paths in the `tag_question_affects` tool (Task 9) MUST query-then-create rather than rely on a single composite-key upsert, because Prisma's `upsert` cannot target the conditional partial index.
 
 **Project model additions:**
 ```prisma
@@ -380,6 +436,12 @@ model Project {
 | `ownerDescription` and `ownerId` both provided | Validation error in server action. Mutually exclusive. | 400: "Cannot set both ownerId and ownerDescription" |
 | Readiness assessment for project with 0 epics | Return empty assessment with message "No epics defined yet" | N/A |
 | Blocking priority query on project with 0 blocking records | Return empty array. Dashboard shows "No blocking dependencies found." | N/A |
+| Same question answered twice within 5 minutes (different users or pipeline replay) — PRD-19-13 | Second submission does NOT overwrite. `answerQuestion` returns 409 `code: DUPLICATE_ANSWER_CONFLICT` and does not fire the pipeline. Pipeline (Phase 2) records `duplicate_answer_conflict` on SessionLog and surfaces a review banner on the question detail page. Status stays `ANSWERED` pending human resolution. | 409 with code |
+| Gap analysis runs on project with 0 epics | Return empty `epics[]` with `recommendation: "Define epics before running gap analysis."` Cache result. | N/A |
+| Readiness AI call fails after context load (beyond `maxRetries=2`) | No cache update. Inngest function returns 502 to caller. Dashboard shows "Analysis failed, try again." | 502 |
+| Manual `updateQuestionAffects` collides with in-flight AI `tag_question_affects` upsert | Both paths acquire `pg_advisory_xact_lock(hash('question_affects_'||questionId))` before mutating. Second waiter merges (does not full-replace AI-written records). | N/A — serialized |
+| Question created at FEATURE scope with `scopeFeatureId = null` | `create_question` tool rejects with validation error before insert. UI form requires feature selection when scope = FEATURE. | 400 validation |
+| Status-only update (e.g., OPEN → SCOPED) with unchanged questionText/answerText | Embedding enqueue is SKIPPED (hash unchanged). | N/A |
 
 ---
 
@@ -417,17 +479,22 @@ model Project {
 - [ ] Parked questions display their `parkedReason` on the detail page
 - [ ] `QuestionAffects` records are displayed on the question detail page
 - [ ] Questions list page is paginated (default 25 per page)
-- [ ] All answered questions route through the hybrid impact function with conflict detection
-- [ ] Impact assessment creates follow-up Question records when the AI identifies them
-- [ ] Impact assessment removes blocking records when a blocking question is answered
-- [ ] Impact assessment flags contradictions with existing decisions
-- [ ] Question status advances to `IMPACT_ASSESSED` after successful impact processing
+- [ ] `answerQuestion` server action fires `ANSWER_LOGGING_REQUESTED` (not a Phase-3-owned impact event); pipeline-first per Addendum v1 §2
+- [ ] `question-impact-completed-listener` subscribes to `QUESTION_IMPACT_COMPLETED`, advances Question.status to `IMPACT_ASSESSED`, and persists `summary` to `Question.impactAssessment`
+- [ ] Phase-3-owned `questionImpactFunction` and `questionImpactAssessmentFunction` files are deleted; Inngest registrations removed
+- [ ] Duplicate-answer dedup: re-submission within 5 minutes returns 409 `DUPLICATE_ANSWER_CONFLICT` (PRD-19-13)
 - [ ] `QuestionAffects` is populated by AI during transcript processing and impact assessment
 - [ ] Gap detection analysis runs on demand and produces per-epic coverage data
 - [ ] Readiness assessment runs on demand and produces per-epic readiness data
-- [ ] Discovery dashboard shows all 7 PRD-specified sections
-- [ ] Follow-up recommendations show structured question cards with blocking counts (not prose)
+- [ ] Discovery dashboard shows 6 of 7 PRD-specified sections (Project Health Score deferred to Phase 7; Phase 3 reserves placeholder region)
+- [ ] Blocked Work Items section renders up to 25 items, each showing work-item ID, blocking question ID, and age (PRD-8-23)
+- [ ] Follow-up recommendation cards include `reasoning` string per PRD-8-21
 - [ ] Discovery dashboard shows per-epic progress bars with gap severity indicators
+- [ ] Question text validation rejects text shorter than 15 chars or matching `^(yes|no|tbd|\?+)$` (PRD-9-10)
+- [ ] `create_question` tool rejects calls missing `scope` or required scope-id fields (PRD-9-02)
+- [ ] `enqueueEmbedding` is called on question.create/update only when `embeddingContentHash` changes (PRD-8-07, ADD-5.2.2-05)
+- [ ] Two partial unique indexes on `QuestionAffects` exist; `tag_question_affects` upsert never produces duplicates
+- [ ] Voyage 50-pair quality test gating Phase 11 has been completed before Phase 3 merge (DECISION-03 carry-forward; embedding consumer)
 - [ ] No regressions — existing question CRUD, search, and chat flows continue working
 
 ---
@@ -443,3 +510,4 @@ None — all scoping decisions resolved during deep dive.
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Created via `/bef:deep-dive 3`. All 14 gaps addressed. REVIEWED replaced with IMPACT_ASSESSED. Two impact assessment functions unified. Four new files created (gap detection, readiness assessment, tag-question-affects tool, blocking priority query). |
+| 2026-04-14 | Wave 2 audit fixes | Applied 15 gap fixes per `docs/bef/audits/2026-04-13/phase-03-audit.md`. Resolves Wave 0 contradiction A: §2.8 collapsed to a status-advancement listener; Phase 2 Answer Logging Pipeline owns Stage 4 (cites pipeline-first lock per AUDIT_DECISIONS DECISION-01 derivation and Addendum v1 §2). Health Score deferred to Phase 7 (PRD-8-25). Blocked Work Items component added (PRD-8-23). PRD-9-10 clarity validation, PRD-9-02 scope-required, PRD-19-13 duplicate-answer 409, embedding hash gate, partial unique indexes for QuestionAffects, and reasoning field on follow-up cards added. New §2.14 wires the Answer Logging Pipeline contract. Trace lines added to all §2.x blocks. |
