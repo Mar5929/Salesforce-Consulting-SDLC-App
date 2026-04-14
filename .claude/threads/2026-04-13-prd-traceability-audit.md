@@ -207,6 +207,44 @@ Do NOT run verifiers in isolated worktrees (Wave 3 showed isolation unreliable; 
 - `git worktree remove` fails with untracked/modified files in the worktree (agents copy audit references). Use `--force` after commits are merged.
 - Agents respect "do not create Linear tickets" cleanly; keep that rule.
 
+## Step 4b completed (2026-04-14)
+
+Four parallel read-only verifier agents cross-checked all 10 fixed phases + cross-phase contracts against the 442-row PRD + Addendum requirement index.
+
+### Verifier verdicts
+
+- **Verifier A** (PRD §1-10 + Add §1-4, Phases 1/2/3/11): 125 MATCH, 14 PARTIAL (all documented deferrals), 0 MISMATCH, 0 ORPHAN. Minor follow-ups: Phase 3 DECISION-11 citation, `BRIEFING_REQUESTED` event name not pinned, `QUESTION_IMPACT_COMPLETED` payload cross-check.
+- **Verifier B** (PRD §11-17 + Add §5, Phases 4/5/6/10): 89 MATCH, 22 PARTIAL (AC-clarification level), 0 MISMATCH, 5 documented orphans. Verdict PROCEED.
+- **Verifier C** (PRD §18-23 + Add §6-8, Phases 7/8/9): 80 MATCH, 8 PARTIAL, 1 MISMATCH on Phase 8. Flagged 4 Phase 8 gaps. **3 of 4 were false positives** (Wave 3 commit `9caf710` had already closed them); only SA-bypass AC on hard-gate branding was real.
+- **Verifier D** (cross-phase contracts + DECISION compliance): 2 blockers — Phase 2 Briefing publication gap (no pinned `invokeBriefingPipeline` signature / `BriefingType` enum / `BRIEFING_REQUESTED` payload) + Phase 3 docs did not cite DECISION-11 directly. All other contracts (`search_org_kb` envelope, `assertProjectWritable` consumer wiring, `KnowledgeArticle.source = 'PHASE_4_BOOTSTRAP'`, `article_entity_refs` ownership, `event_audit` ownership) MATCH.
+
+### Micro-wave fixes (3 parallel agents)
+
+- `3b42bd4 audit-fix(phase-02): publish Briefing Pipeline contract per Step 4b verifier` — added §3.4 Published Interfaces subsection pinning `BriefingType` enum, `BriefingOptions`, `BriefingOutput`, `invokeBriefingPipeline` signature, and `BRIEFING_REQUESTED` Inngest event. Agent caught task-numbering error in dispatch (Briefing is Task 14, not 16) and applied ACs correctly.
+- `17cde05 audit-fix(phase-03): cite DECISION-11 directly for pipeline listener collapse` — 3 occurrences patched (PHASE_SPEC §2.8 Traces line, revision history, TASKS Task 8 Scope).
+- `0c19525 audit-fix(phase-08): apply Step 4b verifier amendments` — agent found 3 of 4 Verifier-C amendments were already in the file; only added SA-bypass AC + audit log on hard-gate branding validation (§2.8 + Task 8).
+
+### Final verdict: PROCEED
+
+All 10 phases verifier-approved. No outstanding blockers.
+
+### Carry-forward items (non-blocking)
+
+1. `QUESTION_IMPACT_COMPLETED` event payload cross-check between Phase 2 Task 12 and Phase 3 §2.8 (Verifier A flag).
+2. 22 PARTIAL items across Phases 4/5/6/10 are AC-clarification level — resolvable during execution.
+3. Em-dash consistency: user explicitly deferred during this sweep. Pre-existing em dashes in files untouched.
+4. DECISION-12 (attachment storage backend) still intentionally deferred to Phase 4 execution time.
+5. Ephemeral-file cleanup from PROJECT_STATE §"Ephemeral files": move `REQUIREMENT_INDEX.md` out of audits folder; decide on `GAP-ANALYSIS-INDEX.md`.
+
+### Lesson learned: verifier false positives
+
+Verifier C flagged 4 Phase 8 amendments; 3 were already fixed in Wave 3. Likely cause: Verifier C read the `phase-08-audit.md` gap list but did not fully re-read the post-fix `PHASE_SPEC.md` / `TASKS.md`. Future verifier prompts should emphasize: "confirm the gap is STILL present in the current file, not just documented in the audit."
+
+### Next session
+
+1. Phase 6 re-dive (Stage 4 Step 3 last item). Blocker: resolve `KnowledgeArticle.embedding` migration path before Task 1.
+2. After Phase 6 re-dive complete: Stage 5 execution begins.
+
 ## Discipline notes (user preferences relevant to next session)
 
 - Always update the thread file with decisions as they happen (from `feedback_thread_updates` memory).

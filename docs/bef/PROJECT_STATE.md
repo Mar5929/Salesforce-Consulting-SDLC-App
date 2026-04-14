@@ -2,7 +2,7 @@
 
 ## Status
 
-**Active step:** Step 4b — Post-gap-closure verifier sweep. Waves 1 + 2 + 3 merged (all 10 audited phases: 2, 3, 4, 5, 6, 7, 8, 9, 10, 11). 137 audit gaps closed. See `.claude/threads/2026-04-13-prd-traceability-audit.md` for carry-forward decisions and Wave 3 completion notes.
+**Active step:** Phase 6 re-dive prep. Step 4b verifier sweep COMPLETE (2026-04-14) — verdict PROCEED after 3-commit micro-wave (`3b42bd4`, `17cde05`, `0c19525`) closed the cross-phase blockers from Verifier D. See `.claude/threads/2026-04-13-prd-traceability-audit.md` for the full 4-verifier consolidation and micro-wave notes.
 **Last updated:** 2026-04-14
 **Visual companion:** `docs/bef/PROJECT_STATE_VISUAL.md` — Mermaid diagrams of pipeline, phase graph, and current focus. Keep in sync when editing this file.
 
@@ -16,9 +16,8 @@
 
 ### What's next, in order
 
-1. **Step 4b — Post-gap-closure verifier sweep (ACTIVE).** Dispatch a verifier-agent team (pattern matches Step 2's 4-verifier sweep from 2026-04-13) to cross-check all 10 fixed phases against PRD + Addendum. Verdict PROCEED is required before Stage 5 execution can begin. Watch the 8 Wave 3 agent-report flags documented in the thread (em-dash policy, Phase 2 publish gates, DECISION-10 consumer wiring, etc.).
-2. **Phase 6 re-dive** (Five-Layer Org KB). Depends on Phase 11 + Phase 2 (both locked) AND Step 4b verdict.
-   Resolve `KnowledgeArticle.embedding` migration path before Task 1.
+1. **Phase 6 re-dive (ACTIVE).** Five-Layer Org KB. Depends on Phase 11 + Phase 2 (both locked) and Step 4b verdict (PROCEED, 2026-04-14). Resolve `KnowledgeArticle.embedding` migration path before Task 1.
+2. **Stage 5 execution start.** All 11 phases now verifier-approved. Execution order per PHASE_PLAN.md.
 
 Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for deep-dive" section. Consolidated inventory in `VERIFICATION-STEP-2.md`:
 
@@ -40,6 +39,8 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
 
 
 ## Recently Completed
+
+- **Step 4b verifier sweep + micro-wave** (2026-04-14). Four parallel read-only verifier agents cross-checked all 10 fixed phases + cross-phase contracts against the 442-row PRD + Addendum requirement index. Verdicts: Verifier A (P1/2/3/11): 125 MATCH, 14 PARTIAL, 0 MISMATCH. Verifier B (P4/5/6/10): 89 MATCH, 22 PARTIAL, 0 MISMATCH. Verifier C (P7/8/9): 80 MATCH, 8 PARTIAL, 1 MISMATCH. Verifier D (cross-phase): 2 blockers (Phase 2 Briefing publication gap, Phase 3 DECISION-11 citation). Targeted 3-commit micro-wave closed both: `3b42bd4` (Phase 2 §3.4 publishes `invokeBriefingPipeline` / `BriefingType` / `BRIEFING_REQUESTED` contract), `17cde05` (Phase 3 cites DECISION-11 directly), `0c19525` (Phase 8 adds SA-bypass AC on hard-gate branding validation). Verifier C's other 3 Phase 8 flags were false positives (Wave 3 commit `9caf710` had already closed them). Final verdict: PROCEED to Phase 6 re-dive + Stage 5.
 
 - **Wave 3 audit fixes** (2026-04-14). Phase 5 (12 gaps), Phase 7 (10 gaps), Phase 8 (12 gaps), Phase 9 (13 gaps), Phase 10 (11 gaps) applied by 5 parallel fix agents, merged to `main`. 58 gaps closed. Commits: `7f72017` (phase-05, cites DECISION-05/08/10), `5351627` (phase-07, cites DECISION-05/08/09), `09dc21b` (phase-08, cites DECISION-04/07/08/10), `dd6b5de` (phase-09, cites DECISION-08/10), `a086464` (phase-10, cites DECISION-06). Merge commits `152e611` + `9caf710` for Phase 5 + Phase 8 (other three were direct-on-main). Phase 8 also absorbed `KnowledgeArticle.source = 'PHASE_4_BOOTSTRAP'` into Phase 6 schema (Wave 2 flag 3 closed). Pre-dispatch: minted `DECISION-11` (Phase 3 pipeline listener collapse retro-doc) + amended `DECISION-03` scope (covers Phase 3/4/6 embedding path). All 137 audit gaps now closed across Waves 1 + 2 + 3. Next: Step 4b post-gap-closure verifier sweep.
 
@@ -67,18 +68,18 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
   - [x] Step 2 (arch portion): Integrate addendum into `docs/bef/01-architecture/TECHNICAL_SPEC.md`
 - [x] Stage 3: Phase Plan — Complete. All 11 phases reflect addendum; verifier sweep produced `docs/bef/03-phases/VERIFICATION-STEP-2.md` with verdict to proceed.
   - [x] Step 2 (phase-plan portion): Execute integration plan across `docs/bef/03-phases/*` + 4-verifier agent team sweep — verdict: PROCEED with 7 critical findings carried into Step 3
-- [ ] Stage 4: Phase Deep Dive — In Progress (active stage)
+- [~] Stage 4: Phase Deep Dive — In Progress (active stage; Phase 6 re-dive remaining)
   - [~] Step 3: Deep-dive sessions for affected phases — 2/3 done
     - [x] Phase 11 deep-dive (2026-04-13)
     - [x] Phase 2 deep-dive (2026-04-13)
-    - [ ] Phase 6 re-dive (next — blocker: resolve `KnowledgeArticle.embedding` migration path)
-  - [~] Step 3b: PRD traceability audit + gap closure — Waves 1 + 2 merged, Wave 3 ready
+    - [ ] Phase 6 re-dive (ACTIVE — blocker: resolve `KnowledgeArticle.embedding` migration path)
+  - [x] Step 3b: PRD traceability audit + gap closure — all 137 gaps closed
     - [x] Wave 0: user-decision queue from cross-phase summary
     - [x] Wave 1: Phase 11 + Phase 2 audit fixes merged (2026-04-14)
     - [x] Wave 2: Phase 3 + 4 + 6 audit fixes merged (2026-04-14, 48 gaps closed)
     - [x] Wave 3: Phase 5 + 7 + 8 + 9 + 10 audit fixes merged (2026-04-14, 58 gaps closed)
   - [x] Step 4a: Initial verifier sweep (2026-04-13) — verdict PROCEED with 7 critical findings
-  - [ ] Step 4b: Post-gap-closure verifier sweep (active — required before Stage 5)
+  - [x] Step 4b: Post-gap-closure verifier sweep (2026-04-14) — verdict PROCEED after micro-wave (commits `3b42bd4`, `17cde05`, `0c19525`)
 - [ ] Stage 5: Execute — Blocked on Stage 4 (Phase 1 previously complete before Addendum replan)
   - [ ] Step 5: Execute phase code with agent teams (wave-based, per phase)
   - [ ] Step 6: Iterate until shipped
