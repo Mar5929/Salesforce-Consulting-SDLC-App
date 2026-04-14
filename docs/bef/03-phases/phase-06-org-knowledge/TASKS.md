@@ -2,8 +2,8 @@
 
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
 > Pre-Addendum Tasks: [TASKS.pre-addendum.md](./TASKS.pre-addendum.md)
-> Last Updated: 2026-04-13
-> Status: Draft (populated from integration plan — deep-dive still required)
+> Last Updated: 2026-04-14
+> Status: Ready for execute (deep-dive complete via 2026-04-14 audit-fix wave)
 
 ---
 
@@ -41,7 +41,7 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 **Acceptance:**
 - [ ] `domains` table with new enums and fields exists.
-- [ ] `domain_memberships` table exists.
+- [ ] `domain_memberships` table exists with `confidence numeric(3,2) NULL` column (cites ADD-4.4-02; closes GAP-09b).
 - [ ] All existing `DomainGrouping` rows migrated; memberships derived from `OrgComponent.domainGroupingId`.
 - [ ] `OrgComponent.domainGroupingId` dropped after verification.
 
@@ -59,6 +59,7 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] `annotations` table created with polymorphic `entity_type + entity_id`.
 - [ ] All existing `BusinessContextAnnotation` rows migrated with fidelity.
 - [ ] Old `BusinessContextAnnotation` table dropped after verification.
+- [ ] BEFORE INSERT/UPDATE trigger on `annotations` enforces polymorphic consistency (entity_type vs entity_id existence in target table); raises constraint violation on mismatch (cites ADD-4.5-03; closes GAP-08b).
 
 ---
 
@@ -78,32 +79,38 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 ---
 
-### Task 4: Resolve `KnowledgeArticle.embedding` fate (deep-dive output)
+### Task 4: Migrate `KnowledgeArticle.embedding` → `knowledge_article_embeddings` (cites DECISION-05)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Decision: retain inline / migrate to parallel / deprecate. Implement chosen path. |
-| **Depends On** | Deep-dive decision |
-| **Complexity** | S–M (depends on decision) |
+| **Scope** | Create `knowledge_article_embeddings` parallel table mirroring `component_embeddings` shape (`vector(512)` per DECISION-02). Back-fill from existing inline `KnowledgeArticle.embedding` column (build `embedded_text` from `title + summary + content`, hash). 7-day max dual-write window. Cut over Task 34 readers. Drop inline column. Closes GAP-02. |
+| **Depends On** | Phase 11 schema (or Phase 6 owns the migration if Phase 11 schema is closed) |
+| **Complexity** | M |
 
 **Acceptance:**
-- [ ] Decision documented in `PHASE_SPEC.md` §6.4.
-- [ ] Migration implemented per decision.
+- [ ] `knowledge_article_embeddings` table exists with `vector(512)` embedding column and HNSW cosine index.
+- [ ] All non-null `KnowledgeArticle.embedding` values back-filled into the new table with hashes.
+- [ ] Dual-write verified for ≤ 7 days.
+- [ ] Task 34 (two-pass retrieval) reads from new table.
+- [ ] `KnowledgeArticle.embedding` column dropped after cut-over.
 
 ---
 
-### Task 5: Create new tables (`component_history`, `annotation_embeddings`, `org_health_reports`)
+### Task 5: Create new tables (`component_history`, `annotation_embeddings`, `org_health_reports`, `article_entity_refs`) + Phase 11 schema reconciliation
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Add Prisma models + migrations for three net-new tables. `domain_memberships` covered in Task 1. |
+| **Scope** | Add Prisma models + migrations for net-new tables. `domain_memberships` covered in Task 1. `knowledge_article_embeddings` covered in Task 4. **Reconcile Phase 11 schema** to add `component_edges.edge_metadata jsonb` (closes GAP-08a) and extend `component_type` enum with LWC, AURA, PERMSET, PROFILE, PERMSET_GROUP, CONNECTED_APP, NAMED_CREDENTIAL, REMOTE_SITE, INSTALLED_PACKAGE (closes GAP-01). |
 | **Depends On** | None |
-| **Complexity** | S |
+| **Complexity** | M |
 
 **Acceptance:**
 - [ ] `component_history` created with `component_id`, `change_type`, old/new value columns, `source`, `created_at`.
-- [ ] `annotation_embeddings` created mirroring `component_embeddings` shape.
+- [ ] `annotation_embeddings` created mirroring `component_embeddings` shape with `vector(512)` (cites DECISION-02).
 - [ ] `org_health_reports` created with summary, findings JSON, remediation backlog, cost, duration, status fields.
+- [ ] **`article_entity_refs` table created** (carry-forward decision #3) with columns `(id, article_id, entity_type, entity_id, ref_kind, created_at)`, UNIQUE constraint, polymorphic trigger, and `(entity_type, entity_id)` index. Phase 2 staleness hook (Tasks 11/12) depends on this.
+- [ ] `component_edges.edge_metadata jsonb` column present in Phase 11 schema.
+- [ ] `component_type` enum extended; reconciliation note in Phase 11 changelog.
 
 ---
 
@@ -123,6 +130,8 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] Components not seen in sync are soft-archived with reason.
 - [ ] Managed-package components flagged `is_managed = true`.
 - [ ] Existing fixtures pass; new rename fixture passes.
+- [ ] Large-org chunked mode triggers when SF returns > 10,000 custom fields OR > 500 Apex classes; page size 500, 1-second inter-page sleep (closes GAP-18).
+- [ ] On each sync, count components SF returned without durable metadata IDs; if > 0 emit single `sync.durable_id_missing` warning log + `SYNC_DATA_QUALITY` notification once per run (closes GAP-16, ADD-4.7-02).
 
 ---
 
@@ -136,11 +145,16 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 **Acceptance:**
 - [ ] `component_edges` populated during every sync.
-- [ ] Lookup / master-detail relationships captured as edges.
-- [ ] Apex class/trigger references captured.
+- [ ] Lookup / master-detail relationships captured as edges with `edge_metadata.relationship_name` and `cascade_delete` (closes GAP-08a).
+- [ ] Apex class/trigger references captured (`extends`, `implements`, `references`).
 - [ ] Flow invocations and field access captured.
 - [ ] Validation rule formula references captured.
+- [ ] LWC / Aura references captured (closes GAP-01).
+- [ ] Permission Set / Profile / Permission Set Group grants captured as `grants_access_to` edges with `edge_metadata.access` (read/edit/delete).
+- [ ] Connected App, Named Credential, Remote Site Settings inventoried with `references` edges to scopes/endpoints/URLs in `edge_metadata`.
+- [ ] Installed-package namespace linked via `installed_by` edges.
 - [ ] Managed-package edges recorded (but flagged).
+- [ ] Acceptance fixture: a sandbox with one of each metadata family fully populates `org_components` + `component_edges`.
 
 ---
 
@@ -171,8 +185,11 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 **Acceptance:**
 - [ ] Embedded-text builder produces deterministic output per component type (spec §2.5).
+- [ ] Default rule includes `api_name + label + description + help_text + inline_help` (closes GAP-09a, ADD-4.3-02).
+- [ ] Builder covers LWC/Aura, Permission Set, Connected App per §2.5 (closes GAP-01).
 - [ ] Re-embed skipped when `embedded_text_hash` unchanged.
 - [ ] `embedding_model` field recorded.
+- [ ] All embeddings written as `vector(512)` (cites DECISION-02).
 
 ---
 
@@ -186,6 +203,8 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 **Acceptance:**
 - [ ] Sync triggers embedding generation for new or changed components only.
+- [ ] Embedding batch size = 50 components per provider call; max 20 parallel workers (closes GAP-18).
+- [ ] Provider 429 handled with exponential backoff 1s/2s/4s/8s, max 4 retries; final failures recorded `status='failed'` and retried next sync.
 - [ ] Failures do not break sync; retried next cycle.
 - [ ] HNSW cosine index present and used by `search_org_kb`.
 
@@ -205,6 +224,8 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] Architect can view, confirm, edit, reject, archive domains.
 - [ ] Membership add/remove supported.
 - [ ] Bulk confirm available.
+- [ ] Reject sets `status='archived', archived_reason='rejected_by_architect', archived_at=now()` (closes GAP-10, ADD-4.4-04).
+- [ ] Project Settings → Salesforce → "Include managed-package components in AI domain proposals" toggle exposed (default OFF) per §7 item 3 (closes GAP-20-3).
 
 ---
 
@@ -218,10 +239,13 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 **Acceptance:**
 - [ ] Managed Agent produces domain proposals with rationales.
-- [ ] Proposals written with correct source/status enums.
+- [ ] Proposals written with correct source/status enums and `confidence` numeric (closes GAP-09b).
 - [ ] Managed-package components excluded unless project override set.
 - [ ] `pipeline_runs` entry records cost + duration.
 - [ ] Architect review UI surfaces proposals.
+- [ ] Re-runs honor rejection-suppression rule (skip `(component_id, domain_id)` pairs archived as `rejected_by_architect` unless `org_components.metadata_hash` changed since `archived_at`) (closes GAP-10).
+- [ ] No invocation runs on user-facing HTTP path; verified via Inngest dispatch (closes GAP-19, ADD-4.8-03).
+- [ ] V1 default: manual review for ALL proposals (no auto-confirm) per §7 item 5 (closes GAP-20-5).
 
 ---
 
@@ -287,20 +311,41 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 ## Layer 5: Query & Retrieval
 
-### Task 17: Implement `search_org_kb` SQL function + Prisma wrapper
+### Task 17: Implement `search_org_kb` SQL function + Prisma wrapper (returns `SearchResponse`)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Implement the `search_org_kb` function body (signature from Phase 11). BM25 over api_name/label/raw_metadata/annotations.content. Vector over `component_embeddings.embedding` + `annotation_embeddings.embedding`. RRF merge. Filters. Optional 1-hop neighbor expansion via `component_edges`. Prisma wrapper at `src/lib/salesforce/search-org-kb.ts`. |
-| **Depends On** | Tasks 7, 10, 15 |
+| **Scope** | Implement the `search_org_kb` function body (signature from Phase 11). BM25 over api_name/label/raw_metadata/annotations.content. Vector over `component_embeddings.embedding` + `annotation_embeddings.embedding`. **RRF merge with k=60 constant** (cites ADD-4.6-02). Filters incl. mandatory `project_id`. Active-row filter excludes archived components/memberships/annotations. Neighbor expansion now accepts `{depth, direction}`. Prisma wrapper at `src/lib/salesforce/search-org-kb.ts` returns typed `SearchResponse` with `_meta.not_implemented` envelope (carry-forward decision #2). **Composes `src/lib/retrieval/hybrid.ts` shared primitive — does not re-implement BM25+vector+RRF math** (cites ADD-2-05). |
+| **Depends On** | Tasks 7, 10, 15, 17b (traverse function) |
 | **Complexity** | L |
 
 **Acceptance:**
-- [ ] Function returns correctly-scored hits (BM25 + vector + RRF).
-- [ ] Filters by entity_types, component_types, domain_ids work.
-- [ ] `expand_neighbors=true` returns 1-hop neighbors.
-- [ ] Graceful degradation if no embeddings (BM25 only).
+- [ ] Function returns correctly-scored hits (BM25 + vector + RRF with k=60 pinned).
+- [ ] Filters by entity_types, component_types, domain_ids work; `project_id` always applied.
+- [ ] Archived rows excluded from active query results (closes GAP-07, GAP-10).
+- [ ] `expand_neighbors` accepts `{depth: int, direction: 'forward'|'reverse'|'both'}` (boolean accepted for backwards compat → `{depth:1, direction:'both'}`).
+- [ ] Wrapper returns `SearchResponse` typed as `{ hits, query_type, total, _meta: { not_implemented?, rrf_k:60, project_id } }`. Callers must branch on `_meta.not_implemented`, NOT `hits.length` (carry-forward decision #2).
+- [ ] Wrapper composes `src/lib/retrieval/hybrid.ts`; no duplicated BM25/RRF logic in Phase 6 code (closes GAP-06).
+- [ ] Graceful degradation if no embeddings: BM25-only result with `_meta.not_implemented = { reason: 'no_embeddings', missing_layers: ['layer_2'] }`.
 - [ ] Phase 5 Context Package Assembly can call this end-to-end.
+
+---
+
+### Task 17b: Implement `traverse_component_graph` recursive-CTE function
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | New SQL function `traverse_component_graph(project_id, root_component_id, direction text, max_depth int, edge_types text[])` returning `(component_id, depth, path)` rows. Implemented as recursive CTE over `component_edges`. Forward/reverse/both directions. Excludes archived components. Cites ADD-4.2-03. Closes GAP-03. |
+| **Depends On** | Task 7 |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Function exists with the documented signature; default `max_depth=3`, hard cap 5.
+- [ ] Forward walk from an object returns all fields/triggers/flows referencing it up to depth N.
+- [ ] Reverse walk from a field returns every Apex class/flow that reads or writes it.
+- [ ] `direction='both'` supports domain-walk pattern.
+- [ ] Archived components excluded.
+- [ ] Phase 11 function-signature contract amended to include `traverse_component_graph` (or Phase 6 owns the function explicitly).
 
 ---
 
@@ -316,8 +361,11 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 **Acceptance:**
 - [ ] Articles created: one per BusinessProcess, one per confirmed domain with >5 components.
-- [ ] References stored in `KnowledgeArticleReference`.
-- [ ] Embedding enqueued (pending Task 4 decision).
+- [ ] References stored in `KnowledgeArticleReference` AND `article_entity_refs` (carry-forward decision #3).
+- [ ] AI-drafted articles default to `authorType=AI_GENERATED, confidence ∈ {LOW, MEDIUM}` (closes GAP-04, PRD-13-21). AI never writes HIGH.
+- [ ] Embedding enqueued to `knowledge_article_embeddings` (Task 4; cites DECISION-05).
+- [ ] Initial brownfield ingestion budget: 30–90 minutes for a large org; progress surfaced as percent-complete every 60 seconds in ingestion UI (closes GAP-18, ADD-4.7-14).
+- [ ] PRD-13-14 placeholder KnowledgeArticle seeded at project initialization (idempotent) (orphan owner per DECISION-08).
 
 ---
 
@@ -334,6 +382,7 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] No-op when zero targets.
 - [ ] Writes Layer 3/4 rows with correct source/status.
 - [ ] Refresh button visible to SA/PM.
+- [ ] Every content rewrite bumps `KnowledgeArticle.version` and writes a `KnowledgeArticleVersion` snapshot row `(id, article_id, version, content, embedded_at)` (closes GAP-14, PRD-13-24).
 
 ---
 
@@ -363,6 +412,8 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 | **Complexity** | XL |
 
 **Acceptance:**
+- [ ] **Seven** analyzers (test-coverage, governor, sharing, fls, hardcoded-ids, tech-debt, **unresolved-references**) — closes GAP-17, ADD-4.7-10.
+- [ ] Unresolved-references analyzer reads the `unresolved_references` materialized view; produces structured findings (severity = info|warn based on count).
 - [ ] Each analyzer runs independently and returns structured findings.
 - [ ] Analyzers are pure functions over fetched org data (no AI calls).
 - [ ] Unit-tested with sample fixtures.
@@ -393,9 +444,9 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 | **Complexity** | M |
 
 **Acceptance:**
-- [ ] Architect can trigger run + override ceiling.
+- [ ] Architect can trigger run + override ceiling via input field in trigger dialog (default $25 pre-filled) — closes GAP-20-6.
 - [ ] Overrun hard-stops with partial report (`status=partial`).
-- [ ] Progress UI shows step-by-step status.
+- [ ] Progress UI shows step-by-step status with polling (1s interval, 60s timeout backoff).
 - [ ] Notification emitted on completion.
 - [ ] Cost tracked in `pipeline_runs`.
 
@@ -417,6 +468,8 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] Semantic fallback routes through `search_org_kb` vector-only.
 - [ ] Response includes correct `queryType` indicator.
 - [ ] Auth, rate limit unchanged.
+- [ ] Caller branches on `SearchResponse._meta.not_implemented` envelope, NOT on `hits.length` (carry-forward decision #2).
+- [ ] `?synthesize=true` (or body `{synthesize:true}`) invokes Haiku-class LLM with hits + query and returns 100–200-word `response.narrative`; cost logged to `pipeline_runs` (closes GAP-15, ADD-4.6-06).
 
 ---
 
@@ -489,6 +542,87 @@ Unchanged. Depends on Task 18 + Task 4 decision (KnowledgeArticle embedding fate
 
 ---
 
+## Audit-Fix Tasks (added 2026-04-14)
+
+### Task 6b: Soft-archive cascade implementation (closes GAP-07, ADD-4.1-02 / 4.5-04 / 4.5-05)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Implement cascade rules from §2.16: when an `org_components` row transitions to `status='archived'`, mark dependent rows in `domain_memberships`, `annotations`, `annotation_embeddings` as archived with `archived_reason`. `component_embeddings` retained. `component_edges` retained but excluded by `search_org_kb` and `traverse_component_graph`. Reactivation reverses cascade for `archived_reason ∈ {component_archived, entity_archived}` (NOT `rejected_by_architect`). Phase 9 calls a Phase-6-owned `cascadeArchiveProject(projectId)` helper for project-level archive. |
+| **Depends On** | Task 5, Task 6 |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Archiving a component in fixture leaves all related rows in place, marked archived, and excluded from `search_org_kb` results.
+- [ ] Reactivating the component restores rows to `active` (except `rejected_by_architect`).
+- [ ] `cascadeArchiveProject(projectId)` exported helper exists; consumed by Phase 9.
+- [ ] No hard-deletes outside of project permanent-delete path.
+
+---
+
+### Task 11b: Domain re-proposal suppression rule (closes GAP-10, ADD-4.4-04 / 4.7-08)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Implement the rejection-suppression rule in the brownfield Managed Agents flow (Task 12) and the biweekly review pass (Task 12c): skip any `(component_id, domain_id)` pair already archived as `rejected_by_architect` UNLESS `org_components.metadata_hash` has changed since `archived_at`. On metadata change the pair becomes eligible for re-proposal. |
+| **Depends On** | Task 11, Task 12 |
+| **Complexity** | S |
+
+**Acceptance:**
+- [ ] Fixture: reject proposal → re-run proposal → no new row.
+- [ ] Mutate `metadata_hash` → re-run → proposal reappears.
+- [ ] Archived memberships excluded from `search_org_kb` and Context Package Assembly active queries.
+
+---
+
+### Task 12b: Greenfield AI membership suggestions (closes GAP-11, ADD-4.4-06)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Sonnet-class LLM step inside the incremental sync pipeline (NOT Managed Agents) that, for every newly added component without a domain membership, proposes 0–N memberships with `rationale` and `confidence`. Writes `source=ai_proposed, status=proposed`. Batched per sync. Respects the rejection-suppression rule (Task 11b). |
+| **Depends On** | Task 6, Task 11, Task 11b |
+| **Complexity** | S |
+
+**Acceptance:**
+- [ ] Triggered automatically in incremental sync when greenfield mode (project flag) is set.
+- [ ] Model: Sonnet via the Phase 2 model router; cost logged.
+- [ ] Confidence threshold honored.
+- [ ] Architect reviews via existing UI (Task 11).
+
+---
+
+### Task 12c: Biweekly domain review pass (closes GAP-11, ADD-4.4-07)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Inngest cron `{ cron: "0 3 */14 * *" }` runs a Managed Agents session scoped to components whose `metadata_hash` changed in the last 14 days OR were added in the last 14 days. Emits proposal diffs for architect review. Respects suppression rule (Task 11b). |
+| **Depends On** | Task 12, Task 11b |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Cron registered.
+- [ ] Scope filter limits Managed Agents input to recently-changed/added components.
+- [ ] Proposal diffs surfaced in domain review UI.
+- [ ] Cost logged in `pipeline_runs`.
+
+---
+
+### Task 18b: BusinessProcess + BusinessProcessComponent persistence (closes GAP-04, PRD-13-16/20/21/23)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Persist `BusinessProcess` rows produced by Phase-3 synthesis with PRD-mandated defaults (`isAiSuggested=true, isConfirmed=false, status=DISCOVERED, complexity ∈ {LOW,MEDIUM,HIGH,CRITICAL}`). Persist `BusinessProcessComponent` join rows. Extend Task 30 confirmation UI to BusinessProcess. Cites DECISION-08 orphan owners. |
+| **Depends On** | Task 12 |
+| **Complexity** | M |
+
+**Acceptance:**
+- [ ] Rows created with specified defaults.
+- [ ] BusinessProcessComponent rows link process → components.
+- [ ] BusinessProcess status enum `{DISCOVERED, DOCUMENTED, CONFIRMED, DEPRECATED}` and complexity `{LOW, MEDIUM, HIGH, CRITICAL}` enforced (closes GAP-13, PRD-5-27).
+- [ ] Architect can confirm/edit/reject in confirmation UI.
+
+---
+
 ## Summary
 
 | # | Title | Depends On | Complexity |
@@ -529,6 +663,12 @@ Unchanged. Depends on Task 18 + Task 4 decision (KnowledgeArticle embedding fate
 | 34 | Two-pass semantic retrieval (preserved) | 18, 4 | M |
 | 35 | Domain review nudge: new-fields-on-domain-object detection (integration plan §244) | 6, 11, 13 | S |
 | 36 | Rename-collision edge-case fixture authorship (Addendum §8.F, integration plan §425) | 6 | S |
+| 6b | Soft-archive cascade implementation | 5, 6 | M |
+| 11b | Domain re-proposal suppression rule | 11, 12 | S |
+| 12b | Greenfield AI membership suggestions (Sonnet) | 6, 11, 11b | S |
+| 12c | Biweekly domain review pass (Inngest cron + Managed Agents) | 12, 11b | M |
+| 17b | `traverse_component_graph` recursive-CTE function | 7 | M |
+| 18b | BusinessProcess + BusinessProcessComponent persistence | 12 | M |
 
 ---
 

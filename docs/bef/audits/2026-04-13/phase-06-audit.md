@@ -535,3 +535,30 @@ Requirements drawn from the REQUIREMENT_INDEX rows whose Phase-hint contains 6, 
 - [x] Every fix plan has a concrete definition of done
 - [x] No gap uses vague remediation language
 - [x] Overall verdict matches scorecard (Ready-after-fixes; R3 and R8 are Fail; R1, R2, R4, R5, R6 Partial; R7 Pass)
+
+---
+
+## 6. Fixes Applied (2026-04-14)
+
+All 20 gaps closed by Wave 2 audit-fix agent. Edits in `PHASE_SPEC.md` and `TASKS.md`. Cites DECISION-02, DECISION-05, DECISION-08, DECISION-10 and carry-forward decisions #2 (`SearchResponse` envelope) and #3 (`article_entity_refs` table).
+
+- [x] GAP-01 metadata coverage (LWC/Aura/PermSet/CA/NC/RSS/InstalledPkg) — §2.4 + §2.5 + Task 5/7/9 ACs.
+- [x] GAP-02 KA embedding fate — §6.4 LOCKED to parallel `knowledge_article_embeddings` (DECISION-05); Task 4 rewritten.
+- [x] GAP-03 recursive-CTE traversal — §2.8 + new Task 17b `traverse_component_graph`.
+- [x] GAP-04 BusinessProcess persistence — §2.9 + new Task 18b.
+- [x] GAP-05 Phase 3+4 single-context — §2.9.1 added; narrow PRD-13-18 supersession noted.
+- [x] GAP-06 RRF k=60 + shared primitive — §2.8 + Task 17 AC.
+- [x] GAP-07 soft-archive cascade — new §2.16 + new Task 6b.
+- [x] GAP-08 schema details (`edge_metadata jsonb`, polymorphic trigger) — §2.4, §2.7, Task 2/5/7 ACs.
+- [x] GAP-09 inline_help + confidence — §2.5, §2.6, Task 1/9/12 ACs.
+- [x] GAP-10 rejection suppression + archived-membership exclusion — §2.6 + new Task 11b.
+- [x] GAP-11 greenfield + biweekly domain review — §2.6 + new Tasks 12b, 12c.
+- [x] GAP-12 JWT/read-only/encryption — §2.1 + §8 ACs.
+- [x] GAP-13 BusinessProcess enums — Task 18b AC + §8.
+- [x] GAP-14 KA versioning — Task 19 AC.
+- [x] GAP-15 Org Query LLM synthesis — §2.13 + Task 24 AC.
+- [x] GAP-16 durable-ID warning — Task 6 AC.
+- [x] GAP-17 unresolved-references analyzer — §2.15 + Task 21 AC (now 7 analyzers).
+- [x] GAP-18 chunking + batching + budget — §2.2, §2.5, Task 6/10/18 ACs.
+- [x] GAP-19 explicit invariants (no MA on user path; project_id scoping) — §8 ACs.
+- [x] GAP-20 close §7 deep-dive — §7 rewritten; all 6 items resolved; Status flipped to "Ready for execute".
