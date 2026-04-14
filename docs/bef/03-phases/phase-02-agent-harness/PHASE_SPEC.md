@@ -122,13 +122,14 @@ Harden the existing harness engine (10 harness requirements) AND replace the gen
 - **Outputs:** Context window includes answered discovery questions, scoped decisions, and org components for the target epic.
 - **File:** `src/lib/agent-harness/tasks/story-generation.ts` OR the pipeline stage-1 assembler.
 
-### 2.9 General Chat History Window (REQ-HARNESS-009)
+### 2.9 General Chat History Window (REQ-HARNESS-009, PRD-8-10)
 
-- **What it does:** Loads recent chat message history into the freeform agent's system prompt. Queries ChatMessage table: last 50 messages OR 7 days, whichever is smaller.
-- **Inputs:** Any freeform agent invocation
+- **What it does:** Loads recent chat message history for the **PRD-8-10 general-chat path** (non-agent /api/chat endpoint). Queries ChatMessage table: last 50 messages OR 7 days, whichever is smaller. This is a separate code path from the freeform agent.
+- **Freeform agent history (Addendum §5.3-03):** the freeform agent uses a different window: **last N=20 agent turns** (default, configurable) loaded from `agent_messages` by `agent_conversation_id` plus the Tier 1 project summary. See Task 15 for the agent-side implementation.
+- **Inputs:** project-scoped chat history load
 - **Outputs:** System prompt includes a "Recent conversation history" section with prior chat messages
 - **Business rules:** Query is project-scoped, not conversation-scoped. Context enrichment, not conversational continuity. Window parameters hardcoded in V1 per PRD Section 8.2.
-- **File:** `src/app/api/chat/route.ts` (or the freeform agent's system-prompt builder)
+- **File:** `src/app/api/chat/route.ts` (general-chat branch) — the freeform agent lives in `src/lib/agent-freeform/` with its own window loader.
 
 ### 2.10 Needs Review Session-End UX (REQ-HARNESS-010)
 
@@ -139,6 +140,32 @@ Harden the existing harness engine (10 harness requirements) AND replace the gen
   - Frontend: Extraction cards component renders confidence tier summary bar and a "Needs Review" section with edit/confirm/discard actions per item
 - **Business rules:** Items in `pending_review` (confidence ≤ 0.85) and items with `needsReview === true` both surface here. If none, the Needs Review section is not rendered. Depends on REQ-HARNESS-001.
 - **Files:** `src/lib/inngest/functions/transcript-processing.ts` (save-to-conversation step), extraction cards UI component (TBD — locate during implementation)
+
+---
+
+### 2.11 Context-Window Budget Enforcement (PRD-6-07)
+
+- **What it does:** Before each Claude call, the engine/pipeline computes `totalInputTokens = system + context + messages`. If `totalInputTokens > 180_000` (90% of Sonnet 4.6 context window), truncate Layer 3 context blocks in a defined priority order: drop `recent_sessions` first, then `milestone_progress`, then `article_summaries`. Log the truncation event to `SessionLog.warnings` as `{type: 'context_truncated', droppedBlocks: string[]}`.
+- **Business rules:** 180K is the soft ceiling; hard call to Claude is made with the truncated payload. If truncation cannot bring the total below 180K (e.g., the raw transcript itself is > 180K), stage fails with `chunk_too_large` / `transcript_too_large`.
+- **Traces to:** PRD-6-07, PRD-6-19. See Task 5 expansion.
+
+### 2.12 AI Output Sanitization (PRD-22-05)
+
+- **What it does:** Every tool `execute` function (`create_question`, `create_decision`, `create_requirement`, `create_risk`, plus any `update_*` tool that writes AI-supplied string fields) pipes each AI-supplied text field through a shared `sanitize()` helper before calling Prisma. The helper uses a server-side DOMPurify or an equivalent HTML/script allowlist-strip to remove `<script>`, `<iframe>`, event handlers, and inline JS URIs.
+- **File to create:** `src/lib/agent-harness/tools/sanitize.ts`
+- **Business rules:** sanitization is idempotent; it never alters code fences or backtick-quoted content (technical terms stay). Unit tests cover `<script>alert(1)</script>` injected into a question title; stored title contains no `<script>` tag.
+- **Traces to:** PRD-22-05, DECISION-08.
+
+### 2.13 Role-Scoped Tool Execution (PRD-6-02, REQ-RBAC-007)
+
+- **What it does:** Every tool's `execute` receives a `member: { id, role, projectId }` context from the engine's caller. Before any write or read, the tool consults the Phase 1 RBAC matrix. Calls where the caller's role lacks the required permission return `{ error: 'tool_unavailable', reason: 'role_scope' }` without writing to DB.
+- **Traces to:** PRD-6-02, REQ-RBAC-007, DECISION-10 (paired with `assertProjectWritable`).
+
+### 2.14 Archive Read-Only Gate (DECISION-10, PRD-21-01)
+
+- **What it does:** Every Phase 2 mutation entry point (tool writes, pipeline Apply / Propagate stages, freeform agent write tools, rate-limited invocations with side effects) imports `assertProjectWritable(projectId)` from Phase 9's published interface. Archived projects throw / return HTTP 409 from the entry point before any Prisma write.
+- **Coverage:** Transcript Pipeline stage 5 (Apply), Answer Logging stage 3 (Apply) + stage 5 (Propagate), Story Generation stage 7 (persist draft), Briefing Pipeline stage 5 (cache write), every `create_*` tool, every freeform agent write-tool.
+- **Traces to:** DECISION-10, PRD-21-01.
 
 ---
 
@@ -171,15 +198,30 @@ Replaces the generic `TRANSCRIPT_PROCESSING` harness task. Seven stages:
 | # | Stage | Implementation | Notes |
 |---|-------|----------------|-------|
 | 1 | Segment | Haiku (via model router) | Split into speaker turns, chunk to ~500 tokens |
-| 2 | Extract candidates | Haiku | Structured output: questions, answers, decisions, requirements, risks, action items, each with confidence score |
+| 2 | Extract candidates | Haiku | Structured output: questions, answers, decisions, requirements, risks, action items, **scope changes**, each with confidence score. Emits `suspicious_content` Risk candidate on prompt-injection / social-engineering content (PRD-22-10). |
 | 3 | Entity resolution | Deterministic + hybrid search | Retrieve top-K existing entities per candidate (pgvector + tsvector) |
 | 4 | Reconcile | Sonnet | For each candidate + matches: decide `create_new | merge_with_existing | update_existing` |
 | 5 | Apply | Deterministic | Auto-apply if confidence > 0.85 (V1 threshold — see §8). Below threshold → `pending_review` queue |
 | 6 | Impact assessment | Sonnet | Identify unblocked stories, contradicted decisions, new questions raised |
-| 7 | Log | Deterministic | Create `pipeline_runs` row + `session_log` entry |
+| 7 | Log | Deterministic | Create `pipeline_runs` row + `session_log` entry. Sets `article.isStale = true` and `staleReason` for any article referencing `entitiesModified` (PRD-13-28). |
 
-- **Inputs:** raw transcript text, projectId, userId, optional meetingId
-- **Outputs:** created/updated entity IDs, pending_review queue entries, impact summary, pipeline_run record
+- **Inputs:** `{ transcriptText: string, projectId: string, userId: string | null, meetingType: 'discovery' | 'planning' | 'review' | 'adhoc', attendees: string[], meetingDate: Date, meetingId?: string }` per Addendum §5.2.1-01. A null `userId` signals a background-job invocation (see §9).
+- **Outputs (return contract per Addendum §5.2.1-09, pinned):**
+  ```ts
+  {
+    applied_changes: EntityRef[],           // auto-applied entities (confidence > 0.85)
+    pending_review: PendingReviewRef[],     // candidates queued for human review
+    new_questions_raised: QuestionRef[],    // impact stage 6 new questions
+    blocked_items_unblocked: StoryRef[],    // stories unblocked by applied changes
+    conflicts_detected: ConflictRef[],      // conflicts_flagged rows written
+    session_log_id: string,
+    pipeline_run_id: string,
+  }
+  ```
+  Empty arrays allowed. JSON schema committed at `src/lib/pipelines/transcript-processing/contract.ts`. Stage 7 writes a SessionLog linked to the pipeline_run.
+- **Suspicious content (per PRD-22-10):** stage 2 emits a `suspicious_content` Risk candidate (confidence HIGH) for prompt-injection or social-engineering patterns (imperatives directed at the AI, base64 blobs, instruction-following constructions). No commands from transcript body are executed.
+- **End-of-loop article staleness (per PRD-13-28):** stage 7 queries `article_entity_refs` for any article referencing entities in `entitiesModified`; sets `article.isStale = true` and `article.staleReason = 'entity <X> modified in session <Y>'`. Phase 6 consumes the flag; Phase 2 wires the hook.
+- **Iteration + token budget (per PRD-6-19):** stage 2 processes in chunks such that a single Claude call receives ≤ 20K input tokens; total iterations ≤ 8 per transcript; exceeding either fails the run with `transcript_too_large`.
 - **Model routing:** stages 1, 2 → Haiku; stages 4, 6 → Sonnet; all via `model_router.resolve_model(intent)`
 - **Idempotency:** stage `(pipeline_run_id, stage_name)` unique. Re-running a stage produces the same outputs given the same inputs.
 - **Confidence cutoff (locked 2026-04-13):** strict `> 0.85` for auto-apply. Values `≤ 0.85` (including exactly 0.85) route to `pending_review`. Recalibrate after first 100 real transcripts.
@@ -191,11 +233,11 @@ Handles free-text answers from users (not a replacement — net-new scope from a
 
 | # | Stage | Implementation | Notes |
 |---|-------|----------------|-------|
-| 1 | Retrieve candidate questions | Deterministic + hybrid search | pgvector + tsvector over open questions |
+| 1 | Retrieve candidate questions | Deterministic + hybrid search | pgvector + tsvector over open questions. K=5 locked (Addendum §5.2.2-02). |
 | 2 | Match | Sonnet | Best matching question OR "standalone decision" |
 | 3 | Apply | Deterministic | Update question (mark answered) or create a new decision |
 | 4 | Impact assessment | Sonnet | Unblocked items, contradicted decisions, new questions raised |
-| 5 | Propagate | Deterministic | Apply impacts, create conflict records |
+| 5 | Propagate | Deterministic | Apply impacts, create conflict records. Sets `article.isStale = true` and `staleReason` for any article referencing `entitiesModified` (PRD-13-28). |
 | 6 | Annotate org KB | Sonnet | Propose Layer 4 annotations when Salesforce components are mentioned |
 
 - **Inputs:** free-text answer, projectId, userId, optional targetQuestionId (if user pre-linked)
@@ -215,7 +257,7 @@ Replaces the generic `STORY_GENERATION` harness task. Seven stages:
 | # | Stage | Implementation | Notes |
 |---|-------|----------------|-------|
 | 1 | Assemble context | Deterministic | Epic/feature, requirements, Q&A via hybrid search, candidate components via `search_org_kb`. Consumes REQ-HARNESS-008 context expansion |
-| 2 | Draft story | Sonnet | Structured output per mandatory field schema |
+| 2 | Draft story | Sonnet | Structured output. Mandatory field schema (per Addendum §5.2.3-02, PRD-10-08): `persona` (free-text, "As a ..." format), `description`, `acceptanceCriteria[]` (Given/When/Then), `parentEpicId` OR `parentFeatureId`, `estimatedStoryPoints` (AI-suggested), `testCaseStubs[]` (generated from AC), `impactedComponents[]` (free-text or OrgComponent refs). |
 | 3 | Validate mandatory fields | Deterministic | Ensure all required fields present (title, description, AC, components, etc.) |
 | 4 | Component cross-reference | Deterministic + hybrid search | Verify referenced components exist; flag unknowns |
 | 5 | Resolve conflicts | Sonnet (conditional) | Only runs if stage 4 flagged unknowns or mismatches |
@@ -238,10 +280,11 @@ Replaces the generic `BRIEFING` harness task. Five stages:
 | 1 | Fetch metrics | Deterministic SQL | Per briefing type. 5-minute cache keyed by (projectId, briefingType) |
 | 2 | Assemble narrative context | Deterministic | Combine metrics with Layer 3 context |
 | 3 | Synthesize | Sonnet | Narrative prose per briefing-type template |
-| 4 | Validate | Deterministic | Typography, branding, AI-phrase strip (via REQ-HARNESS-003) |
+| 4 | Validate | Deterministic | Typography, branding, AI-phrase strip (via REQ-HARNESS-003). **Numeric accuracy (Addendum §5.2.4-04):** extract numeric tokens from narrative via regex `\d+(\.\d+)?%?`; assert each appears in stage 1 metrics; on mismatch, re-run stage 3 once; if the retry still disagrees, fail with `metric_hallucination`. |
 | 5 | Cache and return | Deterministic | Compute `inputs_hash` for cache invalidation |
 
 - **Briefing types:** `daily_standup`, `weekly_status`, `executive_summary`, `blocker_report`, `discovery_gap_report`, `sprint_health`
+- **Dashboard tile mapping (per PRD-5-30, PRD-17-05):** `daily_standup` produces the "Current Focus" narrative consumed by the Phase 7 dashboard tile; `weekly_status` produces the "Recommended Focus" narrative for the matching tile. Phase 2 emits; Phase 7 consumes.
 - **Inputs:** projectId, briefingType, optional recipientRole
 - **Outputs:** briefing text, cache metadata, inputs_hash
 - **Model routing:** stage 3 → Sonnet via router
@@ -291,7 +334,9 @@ The project-brain chat. One agent loop in the system. Built at the end of Phase 
 
 **Principle:** the freeform agent suggests and captures intent; pipelines execute deterministic work. The agent does NOT invoke pipelines — write tools go through the standard tool layer directly (no pipeline entry).
 
-**Persistence (per integration plan §399):** reuse the existing `Conversation` / `ChatMessage` / `ConversationType` models from `prisma/schema.prisma`. Add a new `ConversationType` enum value (e.g., `FREEFORM_AGENT`) or reuse `GENERAL_CHAT`. No new top-level `agent_conversations` or `agent_messages` table is introduced unless agent-specific metadata demands it during deep-dive. Any agent-specific metadata that does not fit the existing columns goes into a JSON column on `ChatMessage` rather than a new table.
+**Persistence (per DECISION-01, Addendum §5.3-07 and §7):** every freeform agent turn is persisted to the new tables `agent_conversations(id, project_id, user_id, started_at, closed_at)` and `agent_messages(id, conversation_id, role, content_json, token_in, token_out, model_used, created_at)`. Phase 11 owns table creation (per DECISION-01); Phase 2 consumes them in Task 15. Resuming a conversation by `agent_conversation_id` rehydrates the stored messages. The existing `Conversation` / `ChatMessage` models remain available for general-chat (PRD-8-10) use cases but are NOT used by the freeform agent.
+
+Traces to: ADD-5.3-07, ADD-7-06 (DECISION-01).
 
 ---
 
@@ -302,6 +347,7 @@ Retrofit every existing direct Claude API call in `engine.ts` and under `src/lib
 - **Scope:** engine.ts, all existing task files, all four new pipelines (as they are built), the freeform agent.
 - **Intent taxonomy:** defined in Phase 11. Phase 2 consumes it; it does not redefine it. At minimum this phase needs intents for: `transcript_segment`, `transcript_extract`, `transcript_reconcile`, `transcript_impact`, `answer_match`, `answer_impact`, `answer_org_annotate`, `story_draft`, `story_conflict_resolve`, `briefing_synthesize`, `freeform_chat`, `freeform_chat_deep`.
 - **Verification:** grep across `src/lib/agent-harness/` and `src/lib/pipelines/` for any literal `"claude-"` or `anthropic.messages.create` outside the router module. Result: zero hits.
+- **Return shape (pinned):** `resolve_model(intent: string): { model: string, maxOutputTokens: number, contextWindow: number, costPer1KInput: number, costPer1KOutput: number }`. Callers read `costPer1KInput` / `costPer1KOutput` for rate-limiter cost math (Task 5). Phase 11 owns the router; Phase 2 consumes this signature.
 
 ---
 
@@ -397,7 +443,52 @@ aiMonthlyCostCap Decimal?
 - `pending_review` — low-confidence candidates held for human review: `{id, projectId, pipelineRunId, entityType, candidateJson, confidence, reason, createdAt, resolvedAt, resolution}`
 - `conflicts_flagged` — written by Transcript stage 6 + Answer stage 4; Phase 11 schema.
 
-**Optional Phase 2 addition (decide during Task 14):** `briefing_cache` table — only if an existing cache infra is not reusable. Shape: `{projectId, briefingType, inputsHash, briefingText, generatedAt}` with unique `(projectId, briefingType)`.
+**Phase 2 new tables (pinned per GAP-10):**
+
+```prisma
+model CostAlertLog {
+  id             String   @id @default(cuid())
+  projectId      String
+  calendarMonth  String   // YYYY-MM
+  alertType      AlertType // COST_APPROACHING_CAP | DAILY_LIMIT_WARNING
+  emittedAt      DateTime @default(now())
+  project        Project  @relation(fields: [projectId], references: [id])
+  @@unique([projectId, calendarMonth, alertType])
+  @@index([projectId, calendarMonth])
+}
+
+enum AlertType {
+  COST_APPROACHING_CAP
+  DAILY_LIMIT_WARNING
+}
+
+model BriefingCache {
+  projectId    String
+  briefingType BriefingType
+  inputsHash   String
+  briefingText String   @db.Text
+  generatedAt  DateTime @default(now())
+  project      Project  @relation(fields: [projectId], references: [id])
+  @@id([projectId, briefingType])
+  @@index([projectId, briefingType, inputsHash])
+}
+```
+
+The prior "reuse existing cache infra vs. create table" fork is resolved: Phase 2 owns the `BriefingCache` table.
+
+**`COST_APPROACHING_CAP` event payload (pinned):**
+```ts
+{
+  projectId: string,
+  thresholdPct: 80,
+  currentCostUsd: number,
+  capUsd: number,
+  calendarMonth: string, // YYYY-MM
+}
+```
+Phase 8 consumes the event to render the notification template. Payload contract must match Phase 8 template inputs.
+
+Traces to: REQ-HARNESS-005, REQ-PIPELINE-004, PRD-23-03.
 
 Pipeline status enum (Phase 11 owned, consumed here): `queued`, `running`, `completed`, `completed_with_warnings`, `failed`.
 
@@ -476,6 +567,14 @@ Enum values removed in Phase 2 (Task 18). Grep CI check: any reference to these 
 | 80% monthly cost threshold crossed | Emit `COST_APPROACHING_CAP` notification event to PM; pipeline continues | N/A — soft alert |
 | Model router returns no model for an intent | Engine falls back to Sonnet default and logs a warning | N/A — Phase 11 behavior |
 | Tool returns no entity tracking data | Engine treats as empty tracking. SessionLog still created | N/A — backwards compatible |
+| Server restart / Inngest cancellation / user abort during pipeline run (PRD-8-12) | Inngest `pipeline.cancelled` handler marks `pipeline_run.status='failed'`, matching `SessionLog.status='FAILED'`. All completed `pipeline_stage_runs` and `inputJson` preserved. No partial apply of the in-flight stage. | N/A — persisted state |
+| UTC day-boundary rollover during an active pipeline run (Task 5) | Daily limit counts the invocation against the UTC day at `executeTask` entry time; later stages do not recount. | N/A |
+| Both `aiDailyLimit` and `aiMonthlyCostCap` null (Task 5) | No enforcement; no warning logged. `null` = unlimited on both axes. | N/A |
+| Concurrent duplicate transcript upload (Task 11) | Stage 1 computes `inputsHash = sha256(transcriptText)`. If a `pipeline_runs` row exists for `(projectId, inputsHash)` with status in (`queued`, `running`, `completed`) within the last 1h, API returns the existing `pipeline_run_id` (idempotency). | N/A |
+| Transcript chunk exceeds Haiku context after paragraph chunking (Task 11) | Stage 1 fails with `chunk_too_large` after attempting paragraph-level split. | HTTP 422 |
+| Invalid `briefingType` passed to Briefing Pipeline | Validated at API layer before stage 1. | HTTP 400 |
+| Empty transcript / zero-token input (Task 11) | Rejected at API layer before Claude call. | HTTP 400 |
+| Pipeline invoked without interactive user (webhook/batch, `userId: null`) — PRD-6-25 | Low-confidence items (confidence ≤ 0.85) all auto-route to `pending_review`; no inline clarifying question; `SessionLog.userId = 'SYSTEM'`. | N/A |
 
 ---
 
@@ -484,7 +583,8 @@ Enum values removed in Phase 2 (Task 18). Grep CI check: any reference to these 
 ### From Phase 1
 - **REQ-RBAC-001** (getCurrentMember auth fix) — auth foundation for every pipeline and the freeform agent.
 - **REQ-RBAC-012** (prompt injection defense) — covers GAP-AGENT-005.
-- **REQ-RBAC-007 secondary gap** (AI tool call role enforcement) — tools modified in this phase must respect the calling user's role via member context. Evaluate during implementation.
+- **REQ-RBAC-007 secondary gap** (AI tool call role enforcement) — committed in §2.13. Every tool `execute` receives a `member` context and rejects calls where the role lacks the required permission (Phase 1 RBAC matrix). See Task 4 AC.
+- **DECISION-10 published helper** (`assertProjectWritable(projectId)`) — imported from Phase 9 at every Phase 2 mutation entry point. See §2.14.
 
 ### From Phase 11
 - **Model router** — `model_router.resolve_model(intent)` API. REQ-HARNESS-011 depends on it.
@@ -514,7 +614,20 @@ Enum values removed in Phase 2 (Task 18). Grep CI check: any reference to these 
 - [ ] `getRecentSessions` and `getMilestoneProgress` implemented and exported
 - [ ] Transcript pipeline context includes recent sessions (and article summaries if available)
 - [ ] Story Generation Pipeline stage 1 includes epic-scoped questions, decisions, org components
-- [ ] Freeform agent system prompt includes 50-message / 7-day chat history
+- [ ] Freeform agent system prompt includes (1) Tier 1 project summary, (2) last **20 agent turns** (Addendum §5.3-03 default), (3) firm rules addendum, (4) dynamically retrieved tool outputs. The 50-message / 7-day window is a separate PRD-8-10 general-chat path, not the freeform agent.
+- [ ] Agent turns persisted to `agent_conversations` + `agent_messages` (per DECISION-01); resuming a conversation rehydrates messages
+- [ ] Every tool `execute` receives a `member: { id, role, projectId }` context; role-scoped checks reject unauthorized calls with `tool_unavailable`
+- [ ] Every mutation entry point calls `assertProjectWritable(projectId)` from Phase 9; archived-project calls throw / return 409 (DECISION-10)
+- [ ] Every AI-supplied string field routed through `sanitize()` before Prisma write (PRD-22-05)
+- [ ] Context-window budget: Claude calls with total input > 180K trigger defined truncation priority; if still over, stage fails with `transcript_too_large` / `chunk_too_large` (PRD-6-07, PRD-6-19)
+- [ ] Transcript Pipeline return payload matches the 7-key contract in `src/lib/pipelines/transcript-processing/contract.ts` (Addendum §5.2.1-09)
+- [ ] Transcript stage 2 emits `suspicious_content` Risk candidate on prompt-injection content (PRD-22-10)
+- [ ] Transcript stage 7 and Answer Logging stage 5 set `article.isStale = true` + `staleReason` for articles referencing `entitiesModified` (PRD-13-28)
+- [ ] Interruption (server restart, Inngest cancel, user abort) marks `pipeline_run.status = 'failed'` and `SessionLog.status = 'FAILED'`; no partial apply of in-flight stage (PRD-8-12)
+- [ ] Background-job invocation (`userId: null`) routes all low-confidence items to `pending_review`; no inline clarifying questions; `SessionLog.userId = 'SYSTEM'` (PRD-6-25)
+- [ ] Briefing Pipeline stage 4 numeric-accuracy check re-runs stage 3 once on mismatch; second mismatch fails with `metric_hallucination` (Addendum §5.2.4-04)
+- [ ] `daily_standup` drives Phase 7 "Current Focus" tile; `weekly_status` drives "Recommended Focus" tile (PRD-5-30, PRD-17-05)
+- [ ] `CostAlertLog`, `BriefingCache` tables migrated; `COST_APPROACHING_CAP` event payload matches pinned shape
 - [ ] Transcript pipeline completion surfaces confidence tiers and Needs Review items in UX
 
 **Pipelines + agent + router + eval (new):**
