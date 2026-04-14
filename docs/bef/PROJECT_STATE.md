@@ -2,7 +2,7 @@
 
 ## Status
 
-**Active step:** Step 3 — Gap-closure pass. Wave 1 merged (Phase 11 + Phase 2). Wave 2 (Phase 6, 3, 4) ready to dispatch. See `.claude/threads/2026-04-13-prd-traceability-audit.md` for 5 carry-forward decisions from Wave 1 agent reports.
+**Active step:** Step 3 — Gap-closure pass. Waves 1 + 2 merged (Phases 11, 2, 6, 3, 4). Wave 3 (Phase 5, 7, 8, 9, 10) ready to dispatch. See `.claude/threads/2026-04-13-prd-traceability-audit.md` for carry-forward decisions.
 **Last updated:** 2026-04-14
 **Visual companion:** `docs/bef/PROJECT_STATE_VISUAL.md` — Mermaid diagrams of pipeline, phase graph, and current focus. Keep in sync when editing this file.
 
@@ -54,7 +54,7 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
 
 ## Pipeline Progress
 
-> Stage 5 shows "In Progress" because Phase 1 executed before the PRD Addendum v1 triggered the Step 2 refactor. Stages 4–5 are now blocked on Phase 11 / 2 / 6 deep-dives completing.
+> Stage 4 is the active stage. Stage 5 is blocked on Stage 4 completing. Phase 1 previously executed in Stage 5 before the PRD Addendum v1 triggered the Step 2 refactor; no other Stage 5 work is active.
 
 - [x] Stage 1: PRD — Complete (existing: `docs/bef/00-prd/PRD.md` + addendum `docs/bef/00-prd/PRD-ADDENDUM-v1-Intelligence-Layer.md`)
   - [x] Step 1: Addendum integration / phase refactor plan (complete; fully executed in Step 2)
@@ -62,10 +62,19 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
   - [x] Step 2 (arch portion): Integrate addendum into `docs/bef/01-architecture/TECHNICAL_SPEC.md`
 - [x] Stage 3: Phase Plan — Complete. All 11 phases reflect addendum; verifier sweep produced `docs/bef/03-phases/VERIFICATION-STEP-2.md` with verdict to proceed.
   - [x] Step 2 (phase-plan portion): Execute integration plan across `docs/bef/03-phases/*` + 4-verifier agent team sweep — verdict: PROCEED with 7 critical findings carried into Step 3
-- [ ] Stage 4: Phase Deep Dive — Incomplete (re-deep-dive into phases that need it due to refactoring from addendum)
-  - [ ] Step 3: Deep-dive sessions for affected phases (Phase 11 new, Phase 2 re-dive, Phase 6 re-dive)
-  - [ ] Step 4: Agent team verification of all deep-dive specs against PRD + addendum
-- [ ] Stage 5: Execute — In Progress (Phase 1 complete)
+- [ ] Stage 4: Phase Deep Dive — In Progress (active stage)
+  - [~] Step 3: Deep-dive sessions for affected phases — 2/3 done
+    - [x] Phase 11 deep-dive (2026-04-13)
+    - [x] Phase 2 deep-dive (2026-04-13)
+    - [ ] Phase 6 re-dive (next — blocker: resolve `KnowledgeArticle.embedding` migration path)
+  - [~] Step 3b: PRD traceability audit + gap closure — Wave 1 merged, Wave 2 active
+    - [x] Wave 0: user-decision queue from cross-phase summary
+    - [x] Wave 1: Phase 11 + Phase 2 audit fixes merged (2026-04-14)
+    - [ ] Wave 2: Phase 6, 3, 4 audit fixes (ready to dispatch)
+    - [ ] Wave 3: Phase 5, 7, 8, 9 audit fixes
+  - [x] Step 4a: Initial verifier sweep (2026-04-13) — verdict PROCEED with 7 critical findings
+  - [ ] Step 4b: Post-gap-closure verifier sweep (required after Wave 2/3 land)
+- [ ] Stage 5: Execute — Blocked on Stage 4 (Phase 1 previously complete before Addendum replan)
   - [ ] Step 5: Execute phase code with agent teams (wave-based, per phase)
   - [ ] Step 6: Iterate until shipped
 

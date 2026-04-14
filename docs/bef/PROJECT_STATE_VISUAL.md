@@ -2,7 +2,7 @@
 
 > Hand-maintained mirror of `PROJECT_STATE.md`. If anything here disagrees with `PROJECT_STATE.md`, that file wins. Update this file whenever phase status, current step, or next actions change.
 >
-> **Last synced:** 2026-04-14 — Wave 1 merged, Wave 2 (Phase 6, 3, 4) ready to dispatch.
+> **Last synced:** 2026-04-14 — Pipeline section re-aligned with PROJECT_STATE.md. Wave 1 merged, Wave 2 (Phase 6, 3, 4) ready to dispatch.
 
 ---
 
@@ -13,7 +13,7 @@ flowchart LR
     S1["Stage 1<br/>PRD<br/>Complete"]:::done
     S2["Stage 2<br/>Architecture<br/>Complete"]:::done
     S3["Stage 3<br/>Phase Plan<br/>Complete"]:::done
-    S4["Stage 4<br/>Phase Deep Dive<br/>In Progress"]:::active
+    S4["Stage 4<br/>Phase Deep Dive<br/>In Progress (active)"]:::active
     S5["Stage 5<br/>Execute<br/>Blocked on Stage 4"]:::blocked
 
     S1 --> S2 --> S3 --> S4 --> S5
@@ -23,7 +23,27 @@ flowchart LR
     classDef blocked fill:#adb5bd,stroke:#495057,color:#000
 ```
 
-**Active step:** Step 3 — Gap-closure pass (Wave 2: Phase 6, 3, 4).
+### Stage 4 breakdown (active stage)
+
+```mermaid
+flowchart TD
+    subgraph S4["Stage 4 — Phase Deep Dive"]
+        direction TB
+        Step3["Step 3: Deep-dive sessions<br/>2/3 done"]:::partial
+        Step3b["Step 3b: PRD audit + gap closure<br/>Wave 1 merged · Wave 2 active"]:::partial
+        Step4a["Step 4a: Initial verifier sweep<br/>Done (2026-04-13, verdict PROCEED)"]:::done
+        Step4b["Step 4b: Post-gap-closure verifier sweep<br/>Pending (after Wave 2/3)"]:::blocked
+
+        Step3 --> Step3b --> Step4b
+        Step4a -.->|superseded by| Step4b
+    end
+
+    classDef done fill:#2d6a4f,stroke:#081c15,color:#fff
+    classDef partial fill:#e9c46a,stroke:#6a4c00,color:#000
+    classDef blocked fill:#adb5bd,stroke:#495057,color:#000
+```
+
+**Active step:** Step 3 (Phase 6 re-dive, next) + Step 3b (Wave 2 audit fixes, ready to dispatch). Phase 1 previously executed in Stage 5 before the Addendum replan; no other Stage 5 work is active.
 
 ---
 
