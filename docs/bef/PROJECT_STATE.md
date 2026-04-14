@@ -2,15 +2,16 @@
 
 ## Status
 
-**Active step:** Step 3 — Deep-dives (Phase 11 done; Phase 2 done; Phase 6 re-dive next)
-**Last updated:** 2026-04-13
+**Active step:** Step 3 — Gap-closure pass. Wave 1 merged (Phase 11 + Phase 2). Wave 2 (Phase 6, 3, 4) ready to dispatch. See `.claude/threads/2026-04-13-prd-traceability-audit.md` for 5 carry-forward decisions from Wave 1 agent reports.
+**Last updated:** 2026-04-14
 
 ### Start here (fresh session)
 
 1. Read this file end-to-end. This is the source of truth for status.
-2. Read `docs/bef/03-phases/VERIFICATION-STEP-2.md` — verifier verdict and the 7 critical findings carried forward.
-3. Read the latest file in `.claude/threads/` for conversation context.
-4. Run `/bef:deep-dive 6` when ready to begin Phase 6 re-dive.
+2. Read `docs/bef/audits/2026-04-13/CROSS_PHASE_SUMMARY.md` — blocker roll-up, cross-phase contradictions, and Wave 0 user-decision queue.
+3. Per-phase gap + fix plans live in `docs/bef/audits/2026-04-13/phase-NN-audit.md` (10 files, Phases 2–11; Phase 1 out of scope).
+4. Read `docs/bef/03-phases/VERIFICATION-STEP-2.md` for prior verifier context (superseded in substance by the new audit).
+5. Read the latest file in `.claude/threads/` for conversation context.
 
 ### What's next, in order
 
@@ -29,7 +30,20 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
 
 - Phase 4 deep-dive must add 6 SF dev guardrails to story-generation prompts (GAP-WORK-006). Blocks Phase 5/6 from delivering full developer context.
 
+### Ephemeral files that will eventually be deleted after their contents are implemented/planned
+1. docs\bef\03-phases\verification\*
+2. docs\bef\03-phases\VERIFICATION-STEP-2.md
+3. docs\bef\audits\* - EXCEPT FOR docs\bef\audits\2026-04-13\REQUIREMENT_INDEX.md. I like this file. See if we can move that to the PRD folder or make it a bef top-level file
+4. docs\bef\02-phase-plan\GAP-ANALYSIS-INDEX.md - NOT SURE. DO WE STILL NEED THIS?
+
+
 ## Recently Completed
+
+- **Wave 1 audit fixes** (2026-04-14). Phase 11 (13 gaps) + Phase 2 (18 gaps) applied by parallel fix agents in isolated worktrees, merged to `main`. Commits: `15ba83e` (phase-11, cites DECISION-01/02/03), `895d58d` (phase-02, cites DECISION-01/08/09/10), `73c3196` (merge). 5 carry-forward decisions logged in the session thread. Next: Wave 2 (Phase 6, 3, 4).
+
+- **PRD traceability + developer-readiness audit** (2026-04-13). 10 phases audited from scratch (Phase 1 excluded) against a 442-row PRD + Addendum requirement index. Verdict: 0 Ready, 4 Ready-after-fixes (Phase 3, 6, 10, 11), 6 Not-ready (Phase 2, 4, 5, 7, 8, 9). 137 total gaps: 25 Blocker, 82 Major, 30 Minor. 8 cross-phase contradictions (6 resolvable via Addendum-wins rule, 2 require user decision). 10 Wave 0 items require user sign-off before any fix agent dispatches. Artifacts: `docs/bef/audits/2026-04-13/` — `REQUIREMENT_INDEX.md`, `_TEMPLATE_phase-audit.md`, `phase-02-audit.md` through `phase-11-audit.md`, `CROSS_PHASE_SUMMARY.md`.
+
+
 
 - **Phase 2 deep-dive** (2026-04-13). All 10 outstanding items resolved. Unified (no 2a/2b split). 9 orphan TaskTypes dispositioned + new Task 18 removes enum values with grep CI check. Per-stage error behavior locked (non-blocking stages: Transcript s6, Answer s4, Story s5). Transcript strict `> 0.85` auto-apply; Answer tiered 0.85/0.70. Freeform agent has 8 read tools (added `get_recent_sessions` + `get_milestone_progress`). Orchestration modes: Transcript=async, Answer=sync, Story=async, Briefing=sync+cache. Hybrid cost cap (80% soft event + 100% hard 429). Task 11/12 ACs now complete 20 Phase 11 eval stubs. Task 17 adds 10 Briefing fixtures. PHASE_SPEC.md §8.1 (orphan disposition matrix) + §8.2 (cross-pipeline integration matrix) added. 18 tasks total. Added global project rule in `CLAUDE.md`: every phase must trace to PRD + PRD Addendum requirements.
 - **Phase 11 deep-dive** (2026-04-13). All 5 open decisions resolved (provider, retrieval safety, HNSW, RRF k, fixture authorship) plus 5 addendum-coverage gaps closed (pgvector extension, Voyage data-handling AC, `agent_conversations`/`agent_messages` pre-scaffold, golden-corpus snapshot, $0.50 CI cost ceiling). Schema dimension corrected to `vector(512)` to match Voyage. PHASE_SPEC.md and TASKS.md updated in `docs/bef/03-phases/phase-11-ai-infrastructure/`.
