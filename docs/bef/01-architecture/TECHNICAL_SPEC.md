@@ -1468,7 +1468,9 @@ There is exactly one agent loop in the system. Scoped to open-ended conversation
 
 **Context window.** Last N turns (N = 20 initial default) plus the project's Tier 1 summary plus any dynamically retrieved context returned by the tools below.
 
-**Persistence.** Reuses the existing `Conversation` and `ChatMessage` models from `prisma/schema.prisma`. A new `ConversationType` enum value (`FREEFORM_AGENT`) distinguishes agent conversations from other chat surfaces. Agent-specific metadata rides on a JSON column on `ChatMessage`. No separate `agent_conversations` or `agent_messages` tables are introduced.
+**Persistence.** Freeform agent state persists in the dedicated `agent_conversations` and `agent_messages` tables created in Phase 11 per Addendum §5.3 and §7 (row ADD-7-06). `agent_conversations` holds thread metadata (id, project_id, user_id, title, created_at, updated_at). `agent_messages` holds individual turns (id, conversation_id, role, content, metadata jsonb, created_at). This resolves the prior "reuse existing `Conversation`/`ChatMessage`" wording per AUDIT_DECISIONS.md DECISION-01 (2026-04-13); the Addendum wins per the CLAUDE.md hard rule. Phase 2 builds the freeform agent against these tables. The existing `Conversation`/`ChatMessage` models remain for other chat surfaces and are not extended with a `FREEFORM_AGENT` type.
+
+Traces to: PRD-5-10, ADD-7-06.
 
 **Read tools (no confirmation required).**
 - `search_project_kb(query, entity_types, filters)`: hybrid search across questions, decisions, requirements, risks, stories, annotations, components.
@@ -2821,13 +2823,15 @@ All seven share the same shape:
   embedded_text         text not null     -- the text that was embedded
   embedded_text_hash    text not null     -- SHA-256 of embedded_text
   embedding_model       text not null     -- e.g. 'voyage-3-lite', 'text-embedding-3-small'
-  embedding             vector            -- dimension determined by embedding_model
+  embedding             vector(512)       -- V1 hardcoded to 512 dims (Voyage voyage-3-lite); see below
   created_at            timestamptz not null default now()
   updated_at            timestamptz not null default now()
   unique (entity_id)
 ```
 
-**Embedding dimensions.** Dimension is determined by `embedding_model`, not hardcoded in the schema. Provider choice is a **Decision Deferred: Phase 11 deep-dive** (candidates: Voyage AI `voyage-3-lite`, OpenAI `text-embedding-3-small`; see Phase 11 §7.1). The `vector` column type accepts the dimension at row-write time; migrations do not need to specify it per entity.
+**Embedding dimensions.** V1 hardcodes `vector(512)` on every embedding table. Voyage `voyage-3-lite` (512-dim) is locked per Phase 11 §7.1 and AUDIT_DECISIONS.md DECISION-02 (2026-04-13). A future provider migration to a different-dimension model is a deliberate, documented schema amendment (not a runtime config): the dual-write playbook in Phase 11 §7.3 creates a parallel set of embedding columns at the new dimension, back-fills, and cuts readers over before the old columns are dropped. The `embedding_model` column remains on every table so rows self-describe which provider produced them during any such migration window.
+
+Traces to: ADD-7-02, ADD-3.1-02, ADD-7-01.
 
 **Provider migration path.** `embedding_model` enables side-by-side dual-write: a migration enables the new provider, the embedding job dual-writes for a window, a back-fill job populates old rows, readers cut over, the old rows are dropped. The migration playbook is owned by Phase 11 §7.3 and expands here before the first swap happens.
 

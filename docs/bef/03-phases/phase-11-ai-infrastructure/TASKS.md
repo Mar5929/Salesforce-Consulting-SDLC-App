@@ -1,8 +1,8 @@
 # Phase 11 Tasks: AI Infrastructure Foundation
 
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
-> Total Tasks: 10
-> Status: 0/10 complete
+> Total Tasks: 11 (Task 2a added per AUDIT_DECISIONS.md DECISION-03)
+> Status: 0/11 complete
 > Last Updated: 2026-04-13
 
 ---
@@ -12,6 +12,7 @@
 ```
 Task 1 (schema migration)
   ├── Task 2 (model router)              ─┐
+  │    └── Task 2a (Voyage quality test — blocks Phase 11 merge)
   └── Task 3 (audit existing search)      │ parallel after Task 1
        └── Task 4 (extract search primitive + refactor call sites)
             └── Task 5 (embedding Inngest job)
@@ -71,13 +72,40 @@ Task 1 (schema migration)
 - [ ] Override parameter supports per-call model/provider escalation
 - [ ] Unknown override model throws at resolution (no silent default fall-through)
 - [ ] Unit tests cover each intent + the override path + the unknown-model error
-- [ ] Grep CI check added: no file outside `src/lib/ai/` contains a hardcoded Claude model string
+- [ ] Grep CI check added (GAP-07 / ADD-2-07): no file outside `src/lib/ai/` contains a hardcoded model name string matching the pattern `/(claude-(sonnet|haiku|opus)-[0-9.-]+|voyage-[a-z0-9-]+|text-embedding-[a-z0-9-]+)/`. Allow-list via trailing comment `// model-name-ok: <reason>`. Traces to: ADD-2-07, ADD-5.5-01.
 - [ ] Voyage data handling agreement (no retention, no training) confirmed and summarized in `TECHNICAL_SPEC.md` under "Data Handling Posture — Embeddings"
 
 **Files touched:**
 - `src/lib/ai/model-router.ts` (create)
 - `src/lib/ai/model-router.test.ts` (create)
 - `.github/workflows/hardcoded-model-check.yml` (create, or add step to existing CI)
+
+---
+
+### Task 2a: Voyage 50-pair quality test (DECISION-03, GAP-02)
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Execute the Addendum §3.1-02 / §8.A 50-pair quality test before Phase 11 merges. Build 50 labeled component-to-query pairs drawn from `docs/org/` if present, or synthesize from Salesforce-domain vocabulary. Run Voyage `voyage-3-lite` (512-dim) and OpenAI `text-embedding-3-small` on the same corpus. Score nDCG@10 for both. Lock Voyage if within 5% of OpenAI; escalate otherwise. Rescinds the prior waiver per AUDIT_DECISIONS.md DECISION-03. Traces to: ADD-3.1-02. |
+| **Depends On** | Task 2 (model router needed to call both providers) |
+| **Complexity** | M |
+| **Requirement** | REQ-AIINFRA-002 (NEW); Traces to: ADD-3.1-02 |
+| **Status** | Not started |
+| **Linear ID** | — |
+
+**Acceptance Criteria:**
+- [ ] 50 labeled component-to-query pairs checked in at `/evals/embedding-quality/pairs.json` with documented source (synthesized or `docs/org/`-derived)
+- [ ] Runner script at `/evals/embedding-quality/run-quality-test.ts` calls both providers via the model router and scores nDCG@10
+- [ ] Results report written to PHASE_SPEC §7.1 with nDCG@10 for each provider, absolute delta, and lock/escalate decision
+- [ ] If Voyage nDCG@10 is within 5% of OpenAI: Voyage lock stands and §7.1 records sign-off
+- [ ] If outside the 5% band: task is blocked and the user is notified for a decision (do not silently lock)
+- [ ] Phase 11 PR description links to this task's results file; merge is blocked until the task is Done
+
+**Files touched:**
+- `evals/embedding-quality/pairs.json` (create)
+- `evals/embedding-quality/run-quality-test.ts` (create)
+- `evals/embedding-quality/results-[date].json` (create)
+- `docs/bef/03-phases/phase-11-ai-infrastructure/PHASE_SPEC.md` §7.1 (update with results)
 
 ---
 
@@ -119,8 +147,8 @@ Task 1 (schema migration)
 - [ ] Golden-corpus snapshot captured BEFORE refactor: 10–20 representative queries run against current `globalSearch()`, results written to `docs/bef/03-phases/phase-11-ai-infrastructure/GOLDEN_CORPUS.json`
 - [ ] `src/lib/ai/search.ts` exports `search_project_kb(project_id, query, options)` and `search_org_kb(project_id, query, options)`
 - [ ] RRF scoring implemented with `k = 60` per the formula in PHASE_SPEC §2.3
-- [ ] `search_project_kb` handles entity_types filter for questions, decisions, requirements, risks, stories
-- [ ] `search_org_kb` returns empty array with `not_implemented` flag (no silent noop)
+- [ ] `search_project_kb` handles entity_types filter for questions, decisions, requirements, risks, stories. `session_logs` are deliberately excluded per PHASE_SPEC §2.3 / GAP-09. Traces to: ADD-6.1-04 (documented deviation).
+- [ ] `SearchHit` and `SearchResponse` interfaces implemented per PHASE_SPEC §2.3 (GAP-13). `search_org_kb` returns `{ hits: [], _meta: { not_implemented: true, query_ms } }` envelope. Callers branch on `_meta.not_implemented`, not on hit-level flags.
 - [ ] `src/lib/search/global-search.ts` refactored to call the new primitive; all current call sites work unchanged
 - [ ] `src/lib/agent-harness/context/smart-retrieval.ts` refactored to call the new primitive; all current call sites work unchanged
 - [ ] Post-refactor golden-corpus diff is zero (within documented RRF tolerance)
@@ -155,6 +183,7 @@ Task 1 (schema migration)
 - [ ] Fan-out step pattern supports batch back-fill
 - [ ] Retries: 3 attempts with exponential backoff; final failure logs to `pipeline_runs` with status `error` and does not block the originating entity write
 - [ ] Unit tests cover: hash-match skip, hash-miss embed, provider timeout retry, final-failure logging
+- [ ] Latency from Inngest event to embedding row write is recorded on `pipeline_stage_runs`; p95 under 30s on a 10-fixture test batch (GAP-05). Traces to: ADD-5.4-03.
 
 **Files touched:**
 - `src/inngest/functions/embed-entity.ts` (create)
@@ -181,10 +210,14 @@ Task 1 (schema migration)
 - [ ] `pnpm eval [pipeline]` runs a single pipeline; exits non-zero on any fixture regression
 - [ ] `pnpm eval all` runs every pipeline; exits non-zero on any failure
 - [ ] Output format: human-readable console summary + JSON report written to `/evals/reports/[pipeline]-[timestamp].json`
+- [ ] Runner output includes `latency_ms` per fixture alongside `cost_usd`, in both console summary and JSON report (GAP-05). Traces to: ADD-5.6-03.
+- [ ] `evals/shared/assertions.ts` exists and exports `assertContainsAllKeys`, `assertSemanticSimilarity(actual, gold, threshold=0.85)`, `assertNoForbiddenPhrases(text, phrases)`, `assertPipelineNonError(result)` (GAP-04). Unit tests cover each helper with a passing and a failing case. Traces to: ADD-5.6-01.
 
 **Files touched:**
 - `evals/shared/run-all.ts` (create)
 - `evals/shared/runner-base.ts` (create — shared runner logic)
+- `evals/shared/assertions.ts` (create — shared semantic + structural helpers)
+- `evals/shared/assertions.test.ts` (create)
 - `package.json` (modify — add `eval` script)
 
 ---
@@ -207,6 +240,7 @@ Task 1 (schema migration)
 - [ ] `runner.ts` imports the pipeline (stub until Phase 2), runs each fixture, reports pass/fail
 - [ ] `pnpm eval transcript-processing` runs against all 10 fixtures and passes (stubs trivially pass)
 - [ ] Phase 2 hand-off note added to `evals/transcript-processing/README.md` listing which fixtures each Phase 2 pipeline task must complete
+- [ ] Every fixture JSON conforms to the `Fixture` type in PHASE_SPEC §2.5.1 (`name`, `input`, `expected_properties: {}`, optional `gold_output`) (GAP-03/06). Runner validates at load time. Traces to: ADD-5.6-02.
 
 **Files touched:**
 - `evals/transcript-processing/fixtures/01-*.json` through `10-*.json` (create)
@@ -233,6 +267,7 @@ Task 1 (schema migration)
 - [ ] `runner.ts` imports the pipeline (stub until Phase 2), runs each fixture, reports pass/fail
 - [ ] `pnpm eval answer-logging` runs against all 10 fixtures and passes (stubs trivially pass)
 - [ ] Phase 2 hand-off note added to `evals/answer-logging/README.md` listing which fixtures each Phase 2 pipeline task must complete
+- [ ] Every fixture JSON conforms to the `Fixture` type in PHASE_SPEC §2.5.1 (`name`, `input`, `expected_properties: {}`, optional `gold_output`) (GAP-03/06). Runner validates at load time. Traces to: ADD-5.6-02.
 
 **Files touched:**
 - `evals/answer-logging/fixtures/01-*.json` through `10-*.json` (create)
@@ -257,9 +292,13 @@ Task 1 (schema migration)
 - [ ] Aggregate report shows per-pipeline pass/fail + total cost
 - [ ] Exit code non-zero if any pipeline has any failing fixture
 - [ ] `README.md` has an "Evals" section with usage examples
+- [ ] `evals/README.md` includes a "Bug-to-fixture convention" section stating every production pipeline bug must be reproduced as a new fixture in the same PR that ships the fix (GAP-08). Traces to: ADD-5.6-05.
+- [ ] `.github/pull_request_template.md` adds a checkbox: `[ ] If this fixes a pipeline bug, a new eval fixture reproducing it is included.` Traces to: ADD-5.6-05.
 
 **Files touched:**
 - `evals/shared/run-all.ts` (modify — register pipelines)
+- `evals/README.md` (create — includes Bug-to-fixture convention)
+- `.github/pull_request_template.md` (create or modify — add bug-to-fixture checkbox)
 - `README.md` (modify)
 
 ---
@@ -294,6 +333,7 @@ Task 1 (schema migration)
 |------|-------|-----------|------------|--------|
 | 1 | Schema migration — pgvector, 13 tables, materialized view, HNSW indexes | — | L | Not started |
 | 2 | Model router module | — | S | Not started |
+| 2a | Voyage 50-pair quality test (DECISION-03 / GAP-02) | 2 | M | Not started |
 | 3 | Audit existing hybrid search implementation | 1 | M | Not started |
 | 4 | Extract search primitive and refactor call sites | 3 | L | Not started |
 | 5 | Embedding Inngest job with hash-based skip | 1, 2, 4 | M | Not started |

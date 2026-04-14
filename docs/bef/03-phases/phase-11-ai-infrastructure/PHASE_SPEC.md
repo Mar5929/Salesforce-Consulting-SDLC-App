@@ -19,7 +19,7 @@ The substrate covers the five-layer retrieval model: structured entities, BM25 t
 
 **In scope:** pgvector extension enable, schema migration (13 tables + 1 materialized view), model router module, hybrid retrieval primitive (generalized from existing code), Inngest embedding job, eval harness scaffold with seeded input fixtures + stubbed expectations, and CI gate.
 
-**Deferred:** `eval_runs` DB persistence (file-only V1). Full `search_org_kb` implementation (Phase 6). Eval fixture expectations for the two V1 pipelines are completed during Phase 2 pipeline implementation (Phase 11 creates inputs + stubs only).
+**Deferred:** `eval_runs` DB persistence (file-only V1). Full `search_org_kb` implementation (Phase 6). Eval fixture expectations for the two V1 pipelines are completed during Phase 2 pipeline implementation (Phase 11 creates inputs + stubs only, per the §2.5.1 forward-compatible schema).
 
 **Note:** `org_components` already exists in `prisma/schema.prisma` (line 815) from prior work — Phase 11 only adds `component_edges` to complete Layer 1 schema.
 
@@ -47,8 +47,8 @@ The substrate covers the five-layer retrieval model: structured entities, BM25 t
 | `pipeline_stage_runs` | Per-stage trace within a pipeline run. Stage name, model used, tokens in/out, cost, duration, status. |
 | `pending_review` | Pipeline items awaiting human confirmation (polymorphic: `entity_type` + `entity_id` + `proposed_change` JSON). |
 | `conflicts_flagged` | Contradictions detected by impact assessment. Links to source decision + contradicting entity. |
-| `agent_conversations` | Freeform agent ("Project Brain Chat") conversation thread metadata. Pre-scaffolded here; consumed by Phase 2 freeform agent. |
-| `agent_messages` | Individual messages within an agent conversation. Pre-scaffolded here; consumed by Phase 2 freeform agent. |
+| `agent_conversations` | Freeform agent ("Project Brain Chat") conversation thread metadata. Columns: `id` (uuid pk), `project_id` (uuid fk), `user_id` (uuid fk), `title` (text), `created_at`, `updated_at`. Created in Phase 11 per DECISION-01; consumed by Phase 2 freeform agent. Traces to: PRD-5-10, ADD-7-06. |
+| `agent_messages` | Individual messages within an agent conversation. Columns: `id` (uuid pk), `conversation_id` (uuid fk → agent_conversations), `role` (enum: user, assistant, system, tool), `content` (text), `metadata` (jsonb), `created_at`. Created in Phase 11 per DECISION-01; consumed by Phase 2 freeform agent. Traces to: PRD-5-10, ADD-7-06. |
 
 - **Materialized view:** `unresolved_references` — `SELECT * FROM component_edges WHERE target_component_id IS NULL`. Surfaces dynamic SOQL / Apex callouts. Feeds the Org Health findings module in Phase 6.
 - **HNSW indexes:** Created via raw SQL in the Prisma migration (`CREATE INDEX ... USING hnsw (embedding vector_cosine_ops)`) on every embedding table.
@@ -95,12 +95,36 @@ async function search_org_kb(
   project_id: string,
   query: string,
   options?: { entity_types?: OrgEntityType[]; limit?: number }
-): Promise<SearchHit[]>  // signature only — full impl in Phase 6
+): Promise<SearchResponse>  // signature only; full impl in Phase 6
 ```
+
+- **`SearchHit` and `SearchResponse` interface (locked, per GAP-13 / DECISION reference):**
+```typescript
+interface SearchHit {
+  entity_type: string
+  entity_id: string
+  score: number
+  snippet?: string
+  source: 'bm25' | 'vector' | 'fused'
+  flags?: { not_implemented?: true }
+}
+
+interface SearchResponse {
+  hits: SearchHit[]
+  _meta: {
+    not_implemented?: true     // set true on the envelope when search_org_kb stub returns
+    query_ms: number
+  }
+}
+```
+
+`search_project_kb` returns `SearchHit[]` directly (no envelope, since it is fully implemented in Phase 11). `search_org_kb` returns a `SearchResponse` envelope with `hits: []` and `_meta.not_implemented = true` until Phase 6 completes the implementation. Phase 2 callers branch on `_meta.not_implemented`, never on hit-level flags, for the stub path.
+
 - **Business rules:**
   - BM25 via Postgres `tsvector` + pgvector cosine similarity. Reciprocal rank fusion combines both.
   - RRF formula: `score = Σ (1 / (k + rank_i))` where `k = 60`.
-  - `search_project_kb` covers all project KB entities (questions, decisions, requirements, risks, stories).
+  - `search_project_kb` covers all project KB entities: questions, decisions, requirements, risks, stories.
+  - `session_logs` are deliberately excluded from `search_project_kb` in V1 per GAP-09. They are structured audit records, not discoverable knowledge: exposing them via semantic search risks leaking internal pipeline traces into user-facing retrieval. Revisit in Phase 2 if the freeform agent surfaces a concrete query-over-history use case. Traces to: ADD-6.1-04 (documented deviation).
   - `search_org_kb` stubbed for Phase 6 with final signature locked now so Phase 2 callers compile.
 
 - **Audit-first directive:** Existing code at `src/lib/search/global-search.ts` already implements a three-layer hybrid (structured + tsvector + pgvector), consumed by `src/lib/agent-harness/context/smart-retrieval.ts`. **Generalize and relocate — do not rewrite.** Required order of operations:
@@ -123,6 +147,9 @@ async function search_org_kb(
   - If changed, call the provider via the model router (`intent: 'embed'`), upsert row, record `embedding_model`.
   - Fan-out parallel processing for batch back-fill.
   - Retry with Inngest default (3 attempts, exponential backoff).
+  - **Latency SLO (GAP-05):** p95 latency from entity write event to vector-available must stay <30s under normal load. Every job run emits a `latency_ms` metric on the corresponding `pipeline_stage_runs` row. Traces to: ADD-5.4-03.
+- **Checkpointing (GAP-10):** `embed-entity` is a single-logical-step job (hash-check → call-or-skip → upsert). Inngest `step.run` checkpointing is not used because the job is short (<30s) and idempotent on retry. PRD-5-07 (checkpointed step functions) applies to long-running back-fill / sync jobs, which are covered in Phase 6. Traces to: PRD-5-07.
+- **Batching vs. per-write triggers (GAP-11):** PRD-23-11 (batched events per agent invocation) is superseded for the live path by per-write triggers with hash-skip: event volume is bounded by unique-text change rate, not write rate, so per-write is already cheap. Batched events remain in use only for back-fill via the fan-out step. Traces to: PRD-23-11 (documented supersession).
 - **Files touched:** `src/inngest/functions/embed-entity.ts` (new), `src/inngest/client.ts` (register).
 
 ### 2.5 Eval Harness Scaffold (REQ-AIINFRA-005)
@@ -141,6 +168,59 @@ async function search_org_kb(
   - **Phase 2:** each pipeline implementation task has an AC to replace the matching fixture stubs with real structural + semantic expectations. Rationale: whoever builds the pipeline knows its output shape best, and fixtures must exist before pipelines to keep the CI gate buildable in Phase 11.
 - **CI gate:** GitHub Actions workflow runs `pnpm eval all` on any PR touching `src/ai/`, `src/pipelines/`, `prompts/`, or `evals/`. Red gate blocks merge. Per-CI-run cost budget: **< $0.50** (fail the gate if exceeded).
 - **Persistence:** File-only report output in V1. `eval_runs` table deferred unless needed.
+
+#### 2.5.1 Fixture JSON Schema (locked, per GAP-03 / GAP-06)
+
+Every eval fixture JSON file conforms to the following TypeScript type. Traces to: ADD-5.6-02.
+
+```typescript
+type Fixture = {
+  name: string                                 // unique within its pipeline folder
+  input: unknown                               // pipeline-specific input payload
+  expected_properties: Record<string, unknown> // structural assertions (may be {} in Phase 11 stubs)
+  gold_output?: unknown                        // optional gold output for semantic-similarity checks
+}
+```
+
+Phase 11 seeds every fixture with `expected_properties: {}` and a `TODO(phase-2)` comment in the sibling `expectations.ts`. Phase 2 pipeline implementation tasks replace stubs with real structural + semantic assertions per Addendum §5.2.1 / §5.2.2 metrics. Each Phase 2 pipeline task has a gating AC: "Replace fixture stubs in `/evals/<pipeline>/expectations.ts` with structural + semantic assertions per Addendum §5.2.x metrics." See §5 Cross-Phase Handoffs.
+
+Example (transcript-processing):
+```json
+{
+  "name": "01-decision-capture",
+  "input": { "transcript_text": "...", "project_id": "..." },
+  "expected_properties": {}
+}
+```
+
+Example (answer-logging):
+```json
+{
+  "name": "02-semantic-match",
+  "input": { "answer_text": "...", "candidate_question_ids": ["..."] },
+  "expected_properties": {}
+}
+```
+
+#### 2.5.2 Shared Assertions Module (per GAP-04)
+
+The eval harness ships a shared assertions module at `evals/shared/assertions.ts` so per-pipeline `expectations.ts` files do not each re-implement semantic and structural checks. Traces to: ADD-5.6-01.
+
+Exports:
+- `assertContainsAllKeys(actual: object, keys: string[]): void`
+- `assertSemanticSimilarity(actual: string, gold: string, threshold?: number /* default 0.85 */): Promise<void>`
+- `assertNoForbiddenPhrases(text: string, phrases: string[]): void`
+- `assertPipelineNonError(result: unknown): void`
+
+Each helper has a unit test covering a passing case and a failing case.
+
+#### 2.5.3 Runner Output (per GAP-05)
+
+The runner records wall-clock latency per fixture in milliseconds. Both the console summary and the JSON report at `/evals/reports/[pipeline]-[timestamp].json` include a `latency_ms` field alongside `cost_usd`, per fixture and per aggregate. Traces to: ADD-5.6-03.
+
+#### 2.5.4 Bug-to-Fixture Convention (per GAP-08)
+
+V1 convention, enforced by PR template: every production bug reported against a pipeline must be reproduced as a new eval fixture in the same PR that ships the fix. The convention is captured in `evals/README.md` under "Bug-to-fixture convention" and referenced from `.github/pull_request_template.md` via a checkbox: `[ ] If this fixes a pipeline bug, a new eval fixture reproducing it is included.` Traces to: ADD-5.6-05.
 
 ---
 
@@ -184,6 +264,9 @@ evals/
     runner.ts                          — CREATE
   shared/
     run-all.ts                         — CREATE (eval-all orchestrator)
+    runner-base.ts                     — CREATE (shared runner logic)
+    assertions.ts                      — CREATE (shared semantic + structural helpers per §2.5.2)
+  README.md                            — CREATE (includes Bug-to-fixture convention per §2.5.4)
 .github/workflows/
   evals.yml                            — CREATE (CI gate)
 package.json                           — modify (add `eval` script)
@@ -217,9 +300,10 @@ package.json                           — modify (add `eval` script)
 - **Phase 10 (Work Tab UI):** Runs in parallel. No dependency either direction.
 
 ### Cross-Phase Handoffs
-- Embedding provider decision: document in `docs/bef/01-architecture/TECHNICAL_SPEC.md` before Phase 2 deep-dive begins.
+- Embedding provider decision: document in `docs/bef/01-architecture/TECHNICAL_SPEC.md` before Phase 2 deep-dive begins. Voyage `voyage-3-lite` locked in Phase 11 §7.1 pending 50-pair quality test (per DECISION-03 / Task 2a).
 - `pending_review` table surfaced to Phase 2 UI (Needs Review queue).
 - `unresolved_references` materialized view surfaced to Phase 6 Org Health findings.
+- **Fixture-stub closure (GAP-03):** every Phase 2 pipeline task has a gating AC to replace the corresponding `/evals/<pipeline>/expectations.ts` stubs with real structural + semantic assertions per Addendum §5.2.1 / §5.2.2 metrics. Phase 11 guarantees forward-compatible fixture JSON shape per §2.5.1.
 
 ---
 
@@ -239,17 +323,24 @@ package.json                           — modify (add `eval` script)
 - [ ] `pnpm eval transcript-processing` and `pnpm eval answer-logging` both run against 10 input fixtures each (stubbed expectations) and report pass/fail per fixture + aggregate cost
 - [ ] `pnpm eval all` runs every registered pipeline
 - [ ] CI workflow fails the PR when any eval fixture regresses on touched paths; per-run cost stays under $0.50
+- [ ] `embed-entity` p95 latency from entity write event to vector-available <30s on a 10-fixture test batch (GAP-05 / ADD-5.4-03)
+- [ ] Runner output includes `latency_ms` per fixture alongside `cost_usd` (GAP-05 / ADD-5.6-03)
+- [ ] `evals/shared/assertions.ts` exists and exports the four helpers in §2.5.2 with unit tests (GAP-04 / ADD-5.6-01)
+- [ ] Every Phase 11 fixture JSON conforms to the §2.5.1 schema (`name`, `input`, `expected_properties`, optional `gold_output`) (GAP-03/06 / ADD-5.6-02)
+- [ ] `SearchHit` and `SearchResponse` interfaces implemented per §2.3; `search_org_kb` returns `{ hits: [], _meta: { not_implemented: true, query_ms } }` (GAP-13)
+- [ ] Voyage 50-pair quality test executed; results recorded in §7.1 before Phase 11 merge (GAP-02 / DECISION-03)
+- [ ] `evals/README.md` includes "Bug-to-fixture convention" section and PR template checkbox added (GAP-08 / ADD-5.6-05)
 - [ ] No regression in Phase 1 test suites
 
 ---
 
 ## 7. Resolved Decisions and Deferrals
 
-### 7.1 Embedding Provider — RESOLVED
+### 7.1 Embedding Provider — RESOLVED (with mandatory quality test)
 
-- **Locked:** Voyage AI `voyage-3-lite` (512-dim).
+- **Locked candidate:** Voyage AI `voyage-3-lite` (512-dim).
 - **Rationale:** Anthropic stack alignment (Voyage acquired by Anthropic, 2024). Cost parity with OpenAI `text-embedding-3-small`. 3× smaller vectors (512 vs. 1536) means cheaper storage and faster HNSW. Single-vendor data posture is cleaner for consulting clients.
-- **50-pair quality test skipped:** For a V1 internal tool where both providers are qualitatively similar on English retrieval, the test's 3–5 day cost outweighs its decision value. If real-world retrieval quality proves insufficient, swap path is documented in §7.3.
+- **50-pair quality test — REQUIRED before Phase 11 merge (per AUDIT_DECISIONS.md DECISION-03 and Addendum §3.1-02 / §8.A):** Build 50 labeled component-to-query pairs drawn from `docs/org/` if present or Salesforce-domain vocabulary synthesis. Run Voyage `voyage-3-lite` and OpenAI `text-embedding-3-small` on the same corpus. Score nDCG@10. Record results in this section. If Voyage nDCG@10 is within 5% of OpenAI, the Voyage lock stands. If it falls outside that band, escalate for decision. The prior "test skipped" waiver is rescinded. Traces to: ADD-3.1-02. Owned by Task 2a.
 - **Gating item:** Voyage data handling contract (no retention, no training) must be confirmed before Task 2 is marked complete. Record summary in `TECHNICAL_SPEC.md`.
 
 ### 7.2 RRF `k` — LOCKED AT 60, RETUNE POST-PHASE 2
@@ -270,3 +361,4 @@ package.json                           — modify (add `eval` script)
 |------|--------|--------|
 | 2026-04-13 | Initial spec | Created from PRD Addendum v1 Phase 11 section during addendum integration |
 | 2026-04-13 | Deep-dive complete | Voyage `voyage-3-lite` (512-dim) locked as embedding provider; pgvector extension enable explicit; `agent_conversations` + `agent_messages` added (table count 11 → 13); HNSW params fixed at defaults (m=16, ef_construction=64); RRF k=60 locked with post-Phase 2 retune window; golden-corpus snapshot required before search refactor; fixture authorship split (Phase 11 inputs + stubs, Phase 2 real expectations); CI cost ceiling $0.50; Voyage data handling contract added as gating AC. |
+| 2026-04-13 | PRD-traceability audit fixes applied | Closed 13 gaps per `docs/bef/audits/2026-04-13/phase-11-audit.md`. DECISION-01: confirmed `agent_conversations` + `agent_messages` creation (TECHNICAL_SPEC §5.3 amended to drop reuse paragraph). DECISION-02: `vector(512)` hardcoded (TECHNICAL_SPEC §8.5 amended). DECISION-03: rescinded 50-pair test waiver, added Task 2a to run the test pre-merge. Added: `SearchHit`/`SearchResponse` interfaces (GAP-13), fixture JSON schema (GAP-03/06), `evals/shared/assertions.ts` (GAP-04), latency SLO + runner latency metric (GAP-05), broadened grep CI to all provider model names (GAP-07), bug-to-fixture convention (GAP-08), `session_logs` exclusion rationale (GAP-09), `embed-entity` checkpointing rationale (GAP-10), per-write vs. batched reconciliation (GAP-11). |
