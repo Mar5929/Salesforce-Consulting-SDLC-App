@@ -23,14 +23,15 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
 - **Phase 11:** RESOLVED — Voyage `voyage-3-lite` (512-dim) locked; pgvector extension + 13 tables in Task 1; golden-corpus snapshot guards search refactor; HNSW defaults (m=16, ef_construction=64); RRF k=60 with post-Phase 2 retune window; fixture inputs in Phase 11, expectations completed in Phase 2.
 - **Phase 2:** RESOLVED (deep-dive 2026-04-13) — Unified (no 2a/2b split); 9 orphan TaskTypes dispositioned + removed in new Task 18 with grep CI check; per-stage error behavior locked (non-blocking: Transcript s6, Answer s4, Story s5); Transcript strict > 0.85 auto-apply; Answer tiered 0.70/0.85; Story Gen no confidence gate; 8 freeform read tools (added get_recent_sessions + get_milestone_progress); Transcript=async, Answer=sync, Story=async, Briefing=sync+5min-cache; hybrid cost cap (80% soft alert + 100% hard 429, daily hard 100); cross-pipeline matrix documented in SPEC §8.2; Task 11/12 ACs extended to complete the 20 Phase 11 eval stubs with real expectations; Task 17 adds 10 Briefing fixtures. 18 tasks total.
 - **Phase 6:** KA.embedding migration, rename-collision fixture, managed-package override UX, domain proposal threshold, Org Health cost ceiling UX, Managed Agents progress/polling, edge circular-ref detection.
-- **Phase 4:** Add 6 SF dev guardrails to story generation prompts (GAP-WORK-006 — blocks Phase 5/6).
 - **Phase 3, 5, 7, 8, 9:** see each phase's `PHASE_SPEC.md` "Outstanding for deep-dive" section.
 
 ### Quick fixes (do anytime, ~5 min each)
 
-- Phase 4 deep-dive must add 6 SF dev guardrails to story-generation prompts (GAP-WORK-006). Blocks Phase 5/6 from delivering full developer context.
+- _None open._
 
 ## Recently Completed
+
+- **GAP-WORK-006 close-out verified** (2026-04-14). Phase 4 PHASE_SPEC.md §2.3 and TASKS.md Task 3 already author all 6 SF dev guardrails verbatim (Governor Limits, Bulkification, Test Class Requirements, Naming Conventions, Security Patterns, Sharing Model Enforcement), define the `SF_DEV_GUARDRAILS` module artifact at `src/lib/agent-harness/prompts/salesforce-guardrails.ts`, and pin three injection points (Phase 2 Stage 2 Sonnet prompt, `storyEnrichmentTask`, Tier-1 `getProjectSummary`). Trace confirmed against PRD §15.1-15.6 and Addendum line 711. Gap originally resolved by Wave 2 audit-fix commit `51faeb3` (2026-04-14); stale "Quick fixes" and "What's next" bullets removed. No longer a blocker for Phase 5/6.
 
 - **Step 4b verifier sweep + micro-wave** (2026-04-14). Four parallel read-only verifier agents cross-checked all 10 fixed phases + cross-phase contracts against the 442-row PRD + Addendum requirement index. Verdicts: Verifier A (P1/2/3/11): 125 MATCH, 14 PARTIAL, 0 MISMATCH. Verifier B (P4/5/6/10): 89 MATCH, 22 PARTIAL, 0 MISMATCH. Verifier C (P7/8/9): 80 MATCH, 8 PARTIAL, 1 MISMATCH. Verifier D (cross-phase): 2 blockers (Phase 2 Briefing publication gap, Phase 3 DECISION-11 citation). Targeted 3-commit micro-wave closed both: `3b42bd4` (Phase 2 §3.4 publishes `invokeBriefingPipeline` / `BriefingType` / `BRIEFING_REQUESTED` contract), `17cde05` (Phase 3 cites DECISION-11 directly), `0c19525` (Phase 8 adds SA-bypass AC on hard-gate branding validation). Verifier C's other 3 Phase 8 flags were false positives (Wave 3 commit `9caf710` had already closed them). Final verdict: PROCEED to Phase 6 re-dive + Stage 5.
 
