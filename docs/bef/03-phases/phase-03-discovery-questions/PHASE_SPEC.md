@@ -153,7 +153,7 @@ Traces: REQ-DISC-007 → PRD-8-15
   - If the pipeline failed validation upstream, it does NOT emit `QUESTION_IMPACT_COMPLETED`; the Phase 3 listener never runs and status stays at `ANSWERED`. Pipeline error surfacing is Phase 2's responsibility.
 - **Files:** `src/lib/inngest/functions/question-impact-completed-listener.ts` (CREATE). Removed: `src/lib/inngest/functions/question-impact.ts`, `src/lib/inngest/functions/question-impact-assessment.ts`, `src/lib/agent-harness/tasks/question-impact.ts`.
 
-Traces: REQ-DISC-008 → ADD-5.2.2-04, PRD-9-04, PRD-9-05, PRD-9-06 (delegated to Phase 2 per pipeline-first architecture)
+Traces: REQ-DISC-008 → DECISION-11, ADD-5.2.2-04, PRD-9-04, PRD-9-05, PRD-9-06 (delegated to Phase 2 per pipeline-first architecture)
 
 ### 2.9 Populate QuestionAffects via AI + Manual UI (REQ-DISC-009)
 
@@ -510,4 +510,4 @@ None — all scoping decisions resolved during deep dive.
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-04-10 | Initial spec | Created via `/bef:deep-dive 3`. All 14 gaps addressed. REVIEWED replaced with IMPACT_ASSESSED. Two impact assessment functions unified. Four new files created (gap detection, readiness assessment, tag-question-affects tool, blocking priority query). |
-| 2026-04-14 | Wave 2 audit fixes | Applied 15 gap fixes per `docs/bef/audits/2026-04-13/phase-03-audit.md`. Resolves Wave 0 contradiction A: §2.8 collapsed to a status-advancement listener; Phase 2 Answer Logging Pipeline owns Stage 4 (cites pipeline-first lock per AUDIT_DECISIONS DECISION-01 derivation and Addendum v1 §2). Health Score deferred to Phase 7 (PRD-8-25). Blocked Work Items component added (PRD-8-23). PRD-9-10 clarity validation, PRD-9-02 scope-required, PRD-19-13 duplicate-answer 409, embedding hash gate, partial unique indexes for QuestionAffects, and reasoning field on follow-up cards added. New §2.14 wires the Answer Logging Pipeline contract. Trace lines added to all §2.x blocks. |
+| 2026-04-14 | Wave 2 audit fixes | Applied 15 gap fixes per `docs/bef/audits/2026-04-13/phase-03-audit.md`. Resolves Wave 0 contradiction A: §2.8 collapsed to a status-advancement listener; Phase 2 Answer Logging Pipeline owns Stage 4 (cites AUDIT_DECISIONS DECISION-11 and Addendum v1 §2). Health Score deferred to Phase 7 (PRD-8-25). Blocked Work Items component added (PRD-8-23). PRD-9-10 clarity validation, PRD-9-02 scope-required, PRD-19-13 duplicate-answer 409, embedding hash gate, partial unique indexes for QuestionAffects, and reasoning field on follow-up cards added. New §2.14 wires the Answer Logging Pipeline contract. Trace lines added to all §2.x blocks. |

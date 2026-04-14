@@ -261,7 +261,7 @@ File 2: `src/lib/agent-harness/tasks/dashboard-synthesis.ts` line 39 — remove 
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Resolve Wave 0 contradiction A (cites pipeline-first lock per AUDIT_DECISIONS DECISION-01 derivation and Addendum v1 §2). Phase 3 no longer owns impact assessment. Delete `questionImpactFunction`, `questionImpactAssessmentFunction`, and the `question-impact.ts` agent task. Create a thin `question-impact-completed-listener` Inngest function that subscribes to `QUESTION_IMPACT_COMPLETED` (emitted by Phase 2 Answer Logging Pipeline) and advances `Question.status` to `IMPACT_ASSESSED`, persisting the pipeline's `summary` to `Question.impactAssessment`. |
+| **Scope** | Resolve Wave 0 contradiction A (cites AUDIT_DECISIONS DECISION-11 and Addendum v1 §2). Phase 3 no longer owns impact assessment. Delete `questionImpactFunction`, `questionImpactAssessmentFunction`, and the `question-impact.ts` agent task. Create a thin `question-impact-completed-listener` Inngest function that subscribes to `QUESTION_IMPACT_COMPLETED` (emitted by Phase 2 Answer Logging Pipeline) and advances `Question.status` to `IMPACT_ASSESSED`, persisting the pipeline's `summary` to `Question.impactAssessment`. |
 | **Depends On** | Task 1, Task 14 |
 | **Complexity** | S |
 | **Status** | Not Started |
