@@ -1,6 +1,7 @@
 # PRD + Addendum Requirement Index
 
 **Generated:** 2026-04-13
+**Last Updated:** 2026-04-15 (Phase 6 split into 6a Five-Layer Org KB + 6b Org Health Assessment; phase-hint column retagged)
 **Sources:** docs/bef/00-prd/PRD.md, docs/bef/00-prd/PRD-ADDENDUM-v1-Intelligence-Layer.md
 
 ## ID Scheme
@@ -25,7 +26,7 @@
 | PRD-3-05 | PRD | §3 Product Vision and Scope | Claude integration is built as a cleanly separated module so a second provider could be added in V2. | — | 11, 2 |
 | PRD-3-06 | PRD | §3 Product Vision and Scope | AI operates in distinct task modes (discovery processing, story generation, briefings, document generation, developer context assembly). | — | 2 |
 | PRD-3-07 | PRD | §3 Product Vision and Scope | The web application does not create or manage Git repositories. | — | Cross-cutting |
-| PRD-3-08 | PRD | §3 Product Vision and Scope | Each project connects to a single shared Salesforce sandbox for org knowledge. | — | 6 |
+| PRD-3-08 | PRD | §3 Product Vision and Scope | Each project connects to a single shared Salesforce sandbox for org knowledge. | — | 6a |
 | PRD-4-01 | PRD | §4 Target Users | The Solution Architect role can set up projects, connect the sandbox, configure settings, and grant/revoke member access. | — | 1 (out-of-scope, audit-only) |
 | PRD-4-02 | PRD | §4 Target Users | The Developer role picks up assigned tickets in the web app and executes them in Claude Code. | — | 5 |
 | PRD-4-03 | PRD | §4 Target Users | The Project Manager role uses the web app for sprints, dashboards, deliverables, and AI briefings without touching code. | — | 4, 7 |
@@ -38,10 +39,10 @@
 | PRD-5-04 | PRD | §5.1 High-Level Components | An AI Agent Harness server-side module manages all AI interactions including prompt construction, tool definitions, execution, and validation. | ADD-5.1-01..05 | 2 |
 | PRD-5-05 | PRD | §5.1 High-Level Components | Background job infrastructure runs on Inngest over Vercel serverless functions for all asynchronous work. | — | 11 |
 | PRD-5-06 | PRD | §5.1 High-Level Components | All state changes emit Inngest events and job handlers subscribe to relevant events. | — | 11, 8 |
-| PRD-5-07 | PRD | §5.1 High-Level Components | Inngest step functions with checkpoints allow long-running jobs to resume from the last successful step on failure. | — | 6, 11 |
+| PRD-5-07 | PRD | §5.1 High-Level Components | Inngest step functions with checkpoints allow long-running jobs to resume from the last successful step on failure. | — | 6a, 6b, 11 |
 | PRD-5-08 | PRD | §5.1 High-Level Components | Claude Code skills are maintained external to the web app and call its REST API for context. | — | 5 |
-| PRD-5-09 | PRD | §5.1 High-Level Components | The Salesforce org connection is read-only against one shared team sandbox per project. | — | 6 |
-| PRD-5-10 | PRD | §5.2.1 Core Entities | The data model includes Project, ProjectMember, Epic, EpicPhase, Feature, Story, Question, Decision, Requirement, Risk, Milestone, Sprint, TestCase, TestExecution, Defect, OrgComponent, OrgRelationship, DomainGrouping, BusinessContextAnnotation, GeneratedDocument, Transcript, SessionLog, Attachment, VersionHistory, BusinessProcess, KnowledgeArticle, Conversation, ChatMessage, Notification. | ADD-7-01..15 | 11, 2, 3, 4, 6 |
+| PRD-5-09 | PRD | §5.1 High-Level Components | The Salesforce org connection is read-only against one shared team sandbox per project. | — | 6a |
+| PRD-5-10 | PRD | §5.2.1 Core Entities | The data model includes Project, ProjectMember, Epic, EpicPhase, Feature, Story, Question, Decision, Requirement, Risk, Milestone, Sprint, TestCase, TestExecution, Defect, OrgComponent, OrgRelationship, DomainGrouping, BusinessContextAnnotation, GeneratedDocument, Transcript, SessionLog, Attachment, VersionHistory, BusinessProcess, KnowledgeArticle, Conversation, ChatMessage, Notification. | ADD-7-01..15 | 11, 2, 3, 4, 6a, 6b |
 | PRD-5-11 | PRD | §5.2.1 Core Entities | EpicPhase tracks per-epic status (NOT_STARTED/IN_PROGRESS/COMPLETE/SKIPPED) across Discovery, Design, Build, Test, Deploy phases. | — | 4 |
 | PRD-5-12 | PRD | §5.2.1 Core Entities | Stories may exist in Draft with incomplete mandatory fields; validation enforces on transition to Ready. | — | 4 |
 | PRD-5-13 | PRD | §5.2.1 Core Entities | Developer-created atomic implementation tasks within a Claude Code session are not persisted in the web application. | — | 5 |
@@ -49,8 +50,8 @@
 | PRD-5-15 | PRD | §5.2.1 Core Entities | Sprint carryover history between sprints is not tracked in V1. | — | 5 |
 | PRD-5-16 | PRD | §5.2.1 Core Entities | TestCase is a separate record per test scenario, not a JSON array on the story. | — | 9 |
 | PRD-5-17 | PRD | §5.2.1 Core Entities | Defect lifecycle is Open → Assigned → Fixed → Verified → Closed with explicit role ownership for each transition. | — | 9 |
-| PRD-5-18 | PRD | §5.2.1 Core Entities | KnowledgeArticle stores type, title, markdown content, one-line summary, confidence, version, staleness fields, author type, and vector embedding. | ADD-4.5-01, ADD-4.5-02 | 6 |
-| PRD-5-19 | PRD | §5.2.1 Core Entities | KnowledgeArticle references multiple entities via a polymorphic KnowledgeArticleReference join table. | — | 6 |
+| PRD-5-18 | PRD | §5.2.1 Core Entities | KnowledgeArticle stores type, title, markdown content, one-line summary, confidence, version, staleness fields, author type, and vector embedding. | ADD-4.5-01, ADD-4.5-02 | 6a |
+| PRD-5-19 | PRD | §5.2.1 Core Entities | KnowledgeArticle references multiple entities via a polymorphic KnowledgeArticleReference join table. | — | 6a |
 | PRD-5-20 | PRD | §5.2.1 Core Entities | Each project has one auto-created general chat Conversation plus on-demand task-specific sessions. | — | 3 |
 | PRD-5-21 | PRD | §5.2.1 Core Entities | Chat messages are append-only. | — | 3 |
 | PRD-5-22 | PRD | §5.2.1 Core Entities | Every task session maps to exactly one SessionLog for cost tracking. | — | 2, 11 |
@@ -58,15 +59,15 @@
 | PRD-5-24 | PRD | §5.2.1 Core Entities | Notification stores type, title, optional body, entity reference, and read status; V1 is in-app only. | — | 8 |
 | PRD-5-25 | PRD | §5.2.1 Core Entities | Attachments are supported on defects, stories, questions, and other entities with entityType + entityId reference. | — | 4, 9 |
 | PRD-5-26 | PRD | §5.2.1 Core Entities | VersionHistory captures previous entity state (JSON snapshot) to support optimistic concurrency conflict resolution. | — | 1 (out-of-scope, audit-only), 4 |
-| PRD-5-27 | PRD | §5.2.1 Core Entities | BusinessProcess entities carry status DISCOVERED/DOCUMENTED/CONFIRMED/DEPRECATED with complexity rating LOW/MEDIUM/HIGH/CRITICAL. | — | 6 |
+| PRD-5-27 | PRD | §5.2.1 Core Entities | BusinessProcess entities carry status DISCOVERED/DOCUMENTED/CONFIRMED/DEPRECATED with complexity rating LOW/MEDIUM/HIGH/CRITICAL. | — | 6a |
 | PRD-5-28 | PRD | §5.2.2 Computed Views | Milestone progress percentage is AI-derived from linked story completion and blocking question resolution, not stored. | — | 7 |
 | PRD-5-29 | PRD | §5.2.2 Computed Views | Project health score is computed from stale questions, blocked items, and risk thresholds. | — | 7 |
 | PRD-5-30 | PRD | §5.2.2 Computed Views | "Current Focus" narrative and "Recommended Focus" prioritization are AI-synthesized. | ADD-5.2.4-01 | 7, 2 |
 | PRD-5-31 | PRD | §5.2.2 Computed Views | Sprint conflict alerts are detected from overlapping impacted components across in-flight stories. | — | 5 |
-| PRD-5-32 | PRD | §5.2.3 Join Tables | Many-to-many relationships use explicit join tables including QuestionBlocksStory/Epic/Feature, QuestionAffects, DecisionQuestion, DecisionScope, RequirementEpic, RequirementStory, RiskEpic, StoryComponent, MilestoneStory, BusinessProcessComponent, BusinessProcessDependency, KnowledgeArticleReference. | — | 3, 4, 6 |
+| PRD-5-32 | PRD | §5.2.3 Join Tables | Many-to-many relationships use explicit join tables including QuestionBlocksStory/Epic/Feature, QuestionAffects, DecisionQuestion, DecisionScope, RequirementEpic, RequirementStory, RiskEpic, StoryComponent, MilestoneStory, BusinessProcessComponent, BusinessProcessDependency, KnowledgeArticleReference. | — | 3, 4, 6a |
 | PRD-5-33 | PRD | §5.2.3 Join Tables | StoryComponent records carry impactType CREATE/MODIFY/DELETE. | — | 4 |
 | PRD-5-34 | PRD | §5.3 API Design | GET /api/projects/:projectId/context-package/:storyId returns the assembled story context package for Claude Code. | ADD-4.6-03..05 | 5 |
-| PRD-5-35 | PRD | §5.3 API Design | GET /api/projects/:projectId/org/query returns filtered org metadata from the knowledge base on demand. | ADD-4.6-06 | 5, 6 |
+| PRD-5-35 | PRD | §5.3 API Design | GET /api/projects/:projectId/org/query returns filtered org metadata from the knowledge base on demand. | ADD-4.6-06 | 5, 6a |
 | PRD-5-36 | PRD | §5.3 API Design | PATCH /api/projects/:projectId/stories/:storyId/status updates story status from Claude Code. | — | 5 |
 | PRD-5-37 | PRD | §5.3 API Design | POST /api/projects/:projectId/org/component-report accepts developer reports of components created or modified for a story. | — | 5 |
 | PRD-5-38 | PRD | §5.3 API Design | GET /api/projects/:projectId/summary returns the compact Tier 1 project summary. | — | 5 |
@@ -100,7 +101,7 @@
 | PRD-6-25 | PRD | §6.6 Ambiguity Handling | In background jobs, the AI makes a best guess and flags the item (no user to ask). | — | 11, 2 |
 | PRD-6-26 | PRD | §6.6 Ambiguity Handling | Question, Decision, Requirement, and Risk entities carry confidence (HIGH/MEDIUM/LOW), needsReview, and reviewReason fields. | — | 2, 3 |
 | PRD-7-01 | PRD | §7.1 Project Creation | A solution architect creates a project by providing client, engagement type, team members, and sandbox connection details. | — | 9 |
-| PRD-7-02 | PRD | §7.1 Project Creation | Project creation provisions the data space, creates default epic templates by engagement type, and triggers initial org metadata sync. | — | 9, 6 |
+| PRD-7-02 | PRD | §7.1 Project Creation | Project creation provisions the data space, creates default epic templates by engagement type, and triggers initial org metadata sync. | — | 9, 6a |
 | PRD-7-03 | PRD | §7.1 Project Creation | There is no structured onboarding interview; the AI brain accumulates knowledge through progressive discovery. | — | 3 |
 | PRD-7-04 | PRD | §7.2 Standard Phases | Every project progresses through Discovery, Requirements/Story Definition, Solution Design, Build, Testing, Deployment, Hypercare/Handoff, Archive. | — | 9 |
 | PRD-7-05 | PRD | §7.2 Standard Phases | The active phase determines which dashboard views are emphasized and which AI capabilities are highlighted. | — | 7, 9 |
@@ -114,7 +115,7 @@
 | PRD-8-04 | PRD | §8.1 Discovery Core | The AI must check whether a new answer changes any existing technical design or assumption. | ADD-5.2.2-04 | 3, 2 |
 | PRD-8-05 | PRD | §8.1 Discovery Core | The AI must check whether a new answer unblocks any work items. | ADD-5.2.2-04 | 3 |
 | PRD-8-06 | PRD | §8.1 Discovery Core | The AI must check whether a new answer raises new questions. | ADD-5.2.2-04 | 3 |
-| PRD-8-07 | PRD | §8.1 Discovery Core | The AI must update the knowledge base when discovery information is recorded. | ADD-5.2.2-05 | 3, 6 |
+| PRD-8-07 | PRD | §8.1 Discovery Core | The AI must update the knowledge base when discovery information is recorded. | ADD-5.2.2-05 | 3, 6a |
 | PRD-8-08 | PRD | §8.2 Information Input | A single general project chat Conversation exists per project, shared among members with chat permission. | — | 3 |
 | PRD-8-09 | PRD | §8.2 Information Input | Each general chat message triggers an independent harness call with no conversational memory of prior messages. | — | 3, 2 |
 | PRD-8-10 | PRD | §8.2 Information Input | The general chat context injection loads the most recent 50 messages or last 7 days, whichever is smaller (per-project configurable). | — | 3 |
@@ -153,9 +154,9 @@
 | PRD-10-07 | PRD | §10.3 Mandatory Story Fields | Stories must have Estimated Story Points populated before sprint entry (AI suggest, human confirm). | — | 4 |
 | PRD-10-08 | PRD | §10.3 Mandatory Story Fields | Stories must have at least one TestCase defined; the AI generates stubs from acceptance criteria. | ADD-5.2.3-02 | 4, 9 |
 | PRD-10-09 | PRD | §10.3 Mandatory Story Fields | Stories must list Impacted Salesforce Components supporting both free-text entries and linked OrgComponent references. | — | 4 |
-| PRD-10-10 | PRD | §10.3 Mandatory Story Fields | When org connectivity is established, the AI suggests linking free-text component entries to matching OrgComponents. | — | 4, 6 |
+| PRD-10-10 | PRD | §10.3 Mandatory Story Fields | When org connectivity is established, the AI suggests linking free-text component entries to matching OrgComponents. | — | 4, 6a |
 | PRD-10-11 | PRD | §10.4 Story Generation Workflow | AI story generation must analyze the requirement, epic context, and related discovery knowledge. | ADD-5.2.3-01 | 4, 2 |
-| PRD-10-12 | PRD | §10.4 Story Generation Workflow | AI story generation must cross-reference the org knowledge base and flag conflicts with existing components. | ADD-5.2.3-04, ADD-5.2.3-05 | 4, 6 |
+| PRD-10-12 | PRD | §10.4 Story Generation Workflow | AI story generation must cross-reference the org knowledge base and flag conflicts with existing components. | ADD-5.2.3-04, ADD-5.2.3-05 | 4, 6a |
 | PRD-10-13 | PRD | §10.4 Story Generation Workflow | AI story generation must run mandatory field validation before allowing a story to be marked Ready. | ADD-5.2.3-03 | 4 |
 | PRD-10-14 | PRD | §10.5 Story Statuses | Story statuses progress Draft → Ready → Sprint Planned → In Progress → In Review → QA → Done. | — | 4 |
 | PRD-11-01 | PRD | §11.1 Sprint Planning | The AI provides Execution Mapping that orders candidate stories by dependencies across impacted components. | — | 5 |
@@ -169,42 +170,42 @@
 | PRD-12-03 | PRD | §12.2 Context Architecture | The Tier 1 summary covers architectural patterns, naming conventions, key decisions, the six guardrails, current sprint focus, and a map of how to request more detail. | — | 5 |
 | PRD-12-04 | PRD | §12.2 Context Architecture | When a developer picks up a ticket, Claude Code calls the Context Package API to receive a Tier 2 scoped package. | ADD-4.6-03 | 5 |
 | PRD-12-05 | PRD | §12.2 Context Architecture | The Tier 2 package includes the full story, acceptance criteria, test case stubs, parent epic/feature context, business processes, top knowledge articles, related discovery notes and decisions, and in-flight story conflict flags. | ADD-4.6-04 | 5 |
-| PRD-12-06 | PRD | §12.2 Context Architecture | The web app performs relevance filtering for the context package via impacted-components traversal and semantic search. | ADD-4.6-04, ADD-5.4-01 | 5, 6 |
-| PRD-12-07 | PRD | §12.2 Context Architecture | Tier 3a business intelligence lookups are served by the web app's REST API (org queries, knowledge articles, cross-story context). | ADD-4.6-06 | 5, 6 |
+| PRD-12-06 | PRD | §12.2 Context Architecture | The web app performs relevance filtering for the context package via impacted-components traversal and semantic search. | ADD-4.6-04, ADD-5.4-01 | 5, 6a |
+| PRD-12-07 | PRD | §12.2 Context Architecture | Tier 3a business intelligence lookups are served by the web app's REST API (org queries, knowledge articles, cross-story context). | ADD-4.6-06 | 5, 6a |
 | PRD-12-08 | PRD | §12.2 Context Architecture | Tier 3b live org inspection uses SF CLI from the developer's authenticated sandbox. | — | 5 |
 | PRD-12-09 | PRD | §12.3 Developer Workflow | The developer workflow is: view ticket → open Claude Code → invoke start skill → load context package → inspect sandbox → architect plan → review → execute tasks → test → update status → code review → deploy. | — | 5 |
-| PRD-12-10 | PRD | §12.3 Developer Workflow | After code is merged to the shared sandbox the web app ingests it on the next org sync. | — | 6 |
+| PRD-12-10 | PRD | §12.3 Developer Workflow | After code is merged to the shared sandbox the web app ingests it on the next org sync. | — | 6a |
 | PRD-12-11 | PRD | §12.4 Claude Code Scope | Claude Code can generate any metadata type deployable via Salesforce CLI. | — | 5 |
-| PRD-13-01 | PRD | §13.1 Connection Model | Each project connects to exactly one Salesforce sandbox environment. | — | 6 |
-| PRD-13-02 | PRD | §13.1 Connection Model | The sandbox connection is established using OAuth 2.0 JWT Bearer Flow or Web Server Flow and credentials are encrypted per-project. | — | 6 |
-| PRD-13-03 | PRD | §13.2 Read-Only Constraint | The web app and all its processes must never perform write operations against the connected Salesforce org. | — | 6 |
-| PRD-13-04 | PRD | §13.3 Metadata Sync | Metadata sync covers custom/standard objects, Apex classes/triggers (inventory only), Flows/PBs/Workflows/Validation Rules, LWC/Aura, Permission Sets/Profiles/Groups, Connected Apps, Named Credentials, Remote Site Settings, installed packages, and all other SF CLI metadata types. | ADD-4.2-01 | 6 |
-| PRD-13-05 | PRD | §13.3 Metadata Sync | Incremental sync runs Phases 1-2 (Parse + Classify) on the configured interval (default 4h) at near-zero AI cost. | ADD-4.7-02 | 6 |
-| PRD-13-06 | PRD | §13.3 Metadata Sync | Full knowledge refresh runs Phases 3-4 (Synthesize + Articulate) manually or weekly (default Sunday 2am UTC) on unassigned components and stale articles only. | — | 6 |
-| PRD-13-07 | PRD | §13.3 Metadata Sync | The initial sync at project creation runs all 4 phases. | ADD-4.8-02 | 6 |
-| PRD-13-08 | PRD | §13.4 Org KB Structure | The org KB stores one row per metadata component in an Org Components table with type, parent, namespace, API version, status, and timestamps. | ADD-4.2-01 | 6, 11 |
-| PRD-13-09 | PRD | §13.4 Org KB Structure | The org KB stores an Org Relationships table including relationship fields and trigger/flow-to-object associations. | ADD-4.2-02 | 6, 11 |
-| PRD-13-10 | PRD | §13.4 Org KB Structure | The org KB stores a Domain Groupings table with AI-suggested clusters confirmed or adjusted by the architect. | ADD-4.4-01 | 6 |
-| PRD-13-11 | PRD | §13.4 Org KB Structure | The org KB stores a Business Context Annotations table for human-provided context on org components. | ADD-4.5-01 | 6 |
-| PRD-13-12 | PRD | §13.5 Progressive Updates | On sandbox sync new components are added, modified components updated, and removed components flagged (not deleted) to preserve history. | ADD-4.7-01 | 6 |
-| PRD-13-13 | PRD | §13.5 Progressive Updates | Business context annotations accumulate as the team learns what org components are used for. | — | 6 |
-| PRD-13-14 | PRD | §13.5 Progressive Updates | Stories referencing components not yet in the knowledge base trigger creation of placeholder "planned" entries. | — | 4, 6 |
-| PRD-13-15 | PRD | §13.6 Brownfield Ingestion | Brownfield initial sync performs a comprehensive metadata pull through four phases: Parse, Classify, Synthesize, Articulate. | ADD-4.8-02 | 6 |
-| PRD-13-16 | PRD | §13.6 Brownfield Ingestion | Phase 3 generates BusinessProcess + BusinessProcessComponent suggestion records. | ADD-4.4-03 | 6 |
-| PRD-13-17 | PRD | §13.6 Brownfield Ingestion | Phase 4 writes initial KnowledgeArticle drafts synthesizing each process and each domain. | — | 6 |
-| PRD-13-18 | PRD | §13.6 Brownfield Ingestion | Phases 3-4 run as a single AI call because they need the same context. | — | 6 |
-| PRD-13-19 | PRD | §13.6 Brownfield Ingestion | All AI-generated ingestion entities require human review before being treated as trusted context. | ADD-4.4-04 | 6 |
-| PRD-13-20 | PRD | §13.6 Brownfield Ingestion | BusinessProcess suggestions default to isAiSuggested=true, isConfirmed=false, status=DISCOVERED. | — | 6 |
-| PRD-13-21 | PRD | §13.6 Brownfield Ingestion | AI-drafted KnowledgeArticles default to authorType=AI_GENERATED and confidence LOW or MEDIUM. | — | 6 |
-| PRD-13-22 | PRD | §13.6 Brownfield Ingestion | For rescue/takeover engagements, the AI generates an Org Health Assessment covering code quality, security, technical debt, and a remediation backlog. | ADD-4.8-01 | 6 |
-| PRD-13-23 | PRD | §13.7 Three-Layer Knowledge | Layer 1 provides queryable structured relationships via BusinessProcess ↔ OrgComponent join tables and BusinessProcessDependency. | ADD-4.2-01..02 | 6 |
-| PRD-13-24 | PRD | §13.7 Three-Layer Knowledge | Layer 2 provides AI-curated KnowledgeArticle synthesis with versioning and references. | — | 6 |
-| PRD-13-25 | PRD | §13.7 Three-Layer Knowledge | Layer 3 provides pgvector embeddings on KnowledgeArticle, OrgComponent, and other searchable entities for semantic retrieval. | ADD-4.3-01..05 | 11, 6 |
-| PRD-13-26 | PRD | §13.7 Three-Layer Knowledge | KnowledgeArticle staleness is flagged inline by agents via a DB update (staleReason, staleSince) with no synthesis during the agent loop. | — | 6, 11 |
-| PRD-13-27 | PRD | §13.7 Three-Layer Knowledge | A background Inngest job performs deep KnowledgeArticle refresh (re-read referenced entities, rewrite content, update version and embedding). | — | 6, 11 |
-| PRD-13-28 | PRD | §13.7 Three-Layer Knowledge | At the end of every agent loop, the engine queries which articles reference entities the agent modified and sets isStale=true + staleReason. | — | 2, 6 |
-| PRD-13-29 | PRD | §13.7 Three-Layer Knowledge | Context retrieval follows a two-pass pattern: load summaries, embed the task/query, then load full content of top-N articles. | ADD-4.6-07 | 6, 2 |
-| PRD-14-01 | PRD | §14.1 Required Environments | Every project assumes one shared team sandbox as the single source of truth for org metadata. | — | 6 |
+| PRD-13-01 | PRD | §13.1 Connection Model | Each project connects to exactly one Salesforce sandbox environment. | — | 6a |
+| PRD-13-02 | PRD | §13.1 Connection Model | The sandbox connection is established using OAuth 2.0 JWT Bearer Flow or Web Server Flow and credentials are encrypted per-project. | — | 6a |
+| PRD-13-03 | PRD | §13.2 Read-Only Constraint | The web app and all its processes must never perform write operations against the connected Salesforce org. | — | 6a |
+| PRD-13-04 | PRD | §13.3 Metadata Sync | Metadata sync covers custom/standard objects, Apex classes/triggers (inventory only), Flows/PBs/Workflows/Validation Rules, LWC/Aura, Permission Sets/Profiles/Groups, Connected Apps, Named Credentials, Remote Site Settings, installed packages, and all other SF CLI metadata types. | ADD-4.2-01 | 6a |
+| PRD-13-05 | PRD | §13.3 Metadata Sync | Incremental sync runs Phases 1-2 (Parse + Classify) on the configured interval (default 4h) at near-zero AI cost. | ADD-4.7-02 | 6a |
+| PRD-13-06 | PRD | §13.3 Metadata Sync | Full knowledge refresh runs Phases 3-4 (Synthesize + Articulate) manually or weekly (default Sunday 2am UTC) on unassigned components and stale articles only. | — | 6a |
+| PRD-13-07 | PRD | §13.3 Metadata Sync | The initial sync at project creation runs all 4 phases. | ADD-4.8-02 | 6a |
+| PRD-13-08 | PRD | §13.4 Org KB Structure | The org KB stores one row per metadata component in an Org Components table with type, parent, namespace, API version, status, and timestamps. | ADD-4.2-01 | 6a, 11 |
+| PRD-13-09 | PRD | §13.4 Org KB Structure | The org KB stores an Org Relationships table including relationship fields and trigger/flow-to-object associations. | ADD-4.2-02 | 6a, 11 |
+| PRD-13-10 | PRD | §13.4 Org KB Structure | The org KB stores a Domain Groupings table with AI-suggested clusters confirmed or adjusted by the architect. | ADD-4.4-01 | 6a |
+| PRD-13-11 | PRD | §13.4 Org KB Structure | The org KB stores a Business Context Annotations table for human-provided context on org components. | ADD-4.5-01 | 6a |
+| PRD-13-12 | PRD | §13.5 Progressive Updates | On sandbox sync new components are added, modified components updated, and removed components flagged (not deleted) to preserve history. | ADD-4.7-01 | 6a |
+| PRD-13-13 | PRD | §13.5 Progressive Updates | Business context annotations accumulate as the team learns what org components are used for. | — | 6a |
+| PRD-13-14 | PRD | §13.5 Progressive Updates | Stories referencing components not yet in the knowledge base trigger creation of placeholder "planned" entries. | — | 4, 6a |
+| PRD-13-15 | PRD | §13.6 Brownfield Ingestion | Brownfield initial sync performs a comprehensive metadata pull through four phases: Parse, Classify, Synthesize, Articulate. | ADD-4.8-02 | 6a |
+| PRD-13-16 | PRD | §13.6 Brownfield Ingestion | Phase 3 generates BusinessProcess + BusinessProcessComponent suggestion records. | ADD-4.4-03 | 6a |
+| PRD-13-17 | PRD | §13.6 Brownfield Ingestion | Phase 4 writes initial KnowledgeArticle drafts synthesizing each process and each domain. | — | 6a |
+| PRD-13-18 | PRD | §13.6 Brownfield Ingestion | Phases 3-4 run as a single AI call because they need the same context. | — | 6a |
+| PRD-13-19 | PRD | §13.6 Brownfield Ingestion | All AI-generated ingestion entities require human review before being treated as trusted context. | ADD-4.4-04 | 6a |
+| PRD-13-20 | PRD | §13.6 Brownfield Ingestion | BusinessProcess suggestions default to isAiSuggested=true, isConfirmed=false, status=DISCOVERED. | — | 6a |
+| PRD-13-21 | PRD | §13.6 Brownfield Ingestion | AI-drafted KnowledgeArticles default to authorType=AI_GENERATED and confidence LOW or MEDIUM. | — | 6a |
+| PRD-13-22 | PRD | §13.6 Brownfield Ingestion | For rescue/takeover engagements, the AI generates an Org Health Assessment covering code quality, security, technical debt, and a remediation backlog. | ADD-4.8-01 | 6b |
+| PRD-13-23 | PRD | §13.7 Three-Layer Knowledge | Layer 1 provides queryable structured relationships via BusinessProcess ↔ OrgComponent join tables and BusinessProcessDependency. | ADD-4.2-01..02 | 6a |
+| PRD-13-24 | PRD | §13.7 Three-Layer Knowledge | Layer 2 provides AI-curated KnowledgeArticle synthesis with versioning and references. | — | 6a |
+| PRD-13-25 | PRD | §13.7 Three-Layer Knowledge | Layer 3 provides pgvector embeddings on KnowledgeArticle, OrgComponent, and other searchable entities for semantic retrieval. | ADD-4.3-01..05 | 11, 6a |
+| PRD-13-26 | PRD | §13.7 Three-Layer Knowledge | KnowledgeArticle staleness is flagged inline by agents via a DB update (staleReason, staleSince) with no synthesis during the agent loop. | — | 6a, 11 |
+| PRD-13-27 | PRD | §13.7 Three-Layer Knowledge | A background Inngest job performs deep KnowledgeArticle refresh (re-read referenced entities, rewrite content, update version and embedding). | — | 6a, 11 |
+| PRD-13-28 | PRD | §13.7 Three-Layer Knowledge | At the end of every agent loop, the engine queries which articles reference entities the agent modified and sets isStale=true + staleReason. | — | 2, 6a |
+| PRD-13-29 | PRD | §13.7 Three-Layer Knowledge | Context retrieval follows a two-pass pattern: load summaries, embed the task/query, then load full content of top-N articles. | ADD-4.6-07 | 6a, 2 |
+| PRD-14-01 | PRD | §14.1 Required Environments | Every project assumes one shared team sandbox as the single source of truth for org metadata. | — | 6a |
 | PRD-14-02 | PRD | §14.1 Required Environments | Every developer uses one isolated development environment (Developer sandbox, Pro, Partial, or scratch org) for in-progress work. | — | 5 |
 | PRD-14-03 | PRD | §14.2 Environment Type Guidance | Sandbox type recommendations vary by engagement type (Greenfield/Brownfield/Rescue). | — | 9 |
 | PRD-14-04 | PRD | §14.3 Brownfield Warning | When a brownfield project has a scratch-org developer environment the app must surface a warning about missing existing customizations. | — | 5 |
@@ -267,7 +268,7 @@
 | PRD-19-06 | PRD | §19.1 RBAC | Assigning a story to a sprint auto-transitions its status to Sprint Planned. | — | 5, 4 |
 | PRD-19-07 | PRD | §19.1 RBAC | QAs can create user stories only in Draft and cannot transition them past Draft. | — | 1 (out-of-scope, audit-only), 4 |
 | PRD-19-08 | PRD | §19.1 RBAC | Sprint assignment and story content editing are separately permissioned. | — | 1 (out-of-scope, audit-only), 4 |
-| PRD-19-09 | PRD | §19.1 RBAC | Only SA and BA can create/edit business context annotations. | — | 1 (out-of-scope, audit-only), 6 |
+| PRD-19-09 | PRD | §19.1 RBAC | Only SA and BA can create/edit business context annotations. | — | 1 (out-of-scope, audit-only), 6a |
 | PRD-19-10 | PRD | §19.1 RBAC | Only SA and PM can view Usage & Costs data; individual users cannot see other users' consumption. | — | 7, 1 (out-of-scope, audit-only) |
 | PRD-19-11 | PRD | §19.2 Concurrent Editing | Concurrent edits on the same entity use optimistic concurrency control; the second saver is notified with a diff and may merge or overwrite. | — | 4, 1 (out-of-scope, audit-only) |
 | PRD-19-12 | PRD | §19.2 Concurrent Editing | The application never silently overwrites another user's changes. | — | 4 |
@@ -280,7 +281,7 @@
 | PRD-21-01 | PRD | §21.1 Archive Process | Archiving sets the project to read-only with no new stories, edits, or AI interactions. | — | 9 |
 | PRD-21-02 | PRD | §21.1 Archive Process | Archive generates a final project summary document cataloging artifacts, decisions, and final org knowledge state. | — | 9, 8 |
 | PRD-21-03 | PRD | §21.1 Archive Process | Archive preserves all project data and generated documents in their final state. | — | 9 |
-| PRD-21-04 | PRD | §21.1 Archive Process | Archive revokes and deletes the Salesforce org connection credentials. | — | 9, 6 |
+| PRD-21-04 | PRD | §21.1 Archive Process | Archive revokes and deletes the Salesforce org connection credentials. | — | 9, 6a |
 | PRD-21-05 | PRD | §21.1 Archive Process | Archive disconnects any client Jira sync. | — | 9 |
 | PRD-21-06 | PRD | §21.1 Archive Process | Access logs are retained per the configured retention period (default 2 years) after archive. | — | 9, 1 (out-of-scope, audit-only) |
 | PRD-21-07 | PRD | §21.2 Reactivation | An archived project can be reactivated by creating a new project instance inheriting knowledge, org, decisions, and requirements. | — | 9 |
@@ -288,15 +289,15 @@
 | PRD-22-01 | PRD | §22.2 Data Isolation | Every project is fully isolated; there is no shared data or cross-project learning. | — | 1 (out-of-scope, audit-only), Cross-cutting |
 | PRD-22-02 | PRD | §22.3 AI Provider Data Handling | Claude API usage must ensure client data is not retained or used for model training. | ADD-3.2-01 | Cross-cutting |
 | PRD-22-03 | PRD | §22.4 Access Logging | All access to project data must be logged (who, what, when, action) and retained per the configured period. | — | 1 (out-of-scope, audit-only), 7 |
-| PRD-22-04 | PRD | §22.5 Credential Management | Salesforce org credentials are encrypted at rest, scoped per project, and revoked on archive. | — | 6, 9 |
+| PRD-22-04 | PRD | §22.5 Credential Management | Salesforce org credentials are encrypted at rest, scoped per project, and revoked on archive. | — | 6a, 9 |
 | PRD-22-05 | PRD | §22.6 AI Content Sanitization | All text fields written via AI tool calls must be server-side sanitized of HTML and script tags before Prisma write. | — | 1 (out-of-scope, audit-only), 2 |
 | PRD-22-06 | PRD | §22.6 AI Content Sanitization | Use of Prisma $queryRawUnsafe is banned; raw SQL must use parameterized tagged template literals. | — | Cross-cutting |
 | PRD-22-07 | PRD | §22.6 AI Content Sanitization | All AI-generated UI content uses React JSX escaping or DOMPurify for markdown/HTML bodies. | — | Cross-cutting |
 | PRD-22-08 | PRD | §22.6 AI Content Sanitization | dangerouslySetInnerHTML must never be used on AI or user-provided content without DOMPurify sanitization. | — | Cross-cutting |
 | PRD-22-09 | PRD | §22.7 Prompt Injection Defense | Transcript processing system prompt must treat transcript body as data, not commands. | — | 1 (out-of-scope, audit-only), 2 |
 | PRD-22-10 | PRD | §22.7 Prompt Injection Defense | The AI must flag suspicious transcript content as a risk and extract only factual information. | — | 2 |
-| PRD-22-11 | PRD | §22.8 Per-Project Token Encryption | Salesforce org credentials are encrypted with per-project derived keys using HKDF-SHA256 with the project UUID as salt. | — | 1 (out-of-scope, audit-only), 6 |
-| PRD-22-12 | PRD | §22.8 Per-Project Token Encryption | Key rotation is supported via a keyVersion field on the project. | — | 6, 1 (out-of-scope, audit-only) |
+| PRD-22-11 | PRD | §22.8 Per-Project Token Encryption | Salesforce org credentials are encrypted with per-project derived keys using HKDF-SHA256 with the project UUID as salt. | — | 1 (out-of-scope, audit-only), 6a |
+| PRD-22-12 | PRD | §22.8 Per-Project Token Encryption | Key rotation is supported via a keyVersion field on the project. | — | 6a, 1 (out-of-scope, audit-only) |
 | PRD-22-13 | PRD | §22.8 Per-Project Token Encryption | Serialization helpers must strip token fields from JSON output to prevent leakage in API responses, errors, or logs. | — | 1 (out-of-scope, audit-only), 5 |
 | PRD-22-14 | PRD | §22.9 API Rate Limiting | REST API endpoints consumed by Claude Code must be rate-limited per API key per minute. | — | 5 |
 | PRD-22-15 | PRD | §22.9 API Rate Limiting | API keys are scoped per project and cannot access other projects' data. | — | 5, 1 (out-of-scope, audit-only) |
@@ -310,84 +311,84 @@
 | PRD-23-07 | PRD | §23.4 Usage & Costs Dashboard | The dashboard shows breakdown by team member visible only to SA and PM. | — | 7, 1 (out-of-scope, audit-only) |
 | PRD-23-08 | PRD | §23.4 Usage & Costs Dashboard | The dashboard shows a trend chart of daily/weekly token usage. | — | 7 |
 | PRD-23-09 | PRD | §23.4 Usage & Costs Dashboard | Cost = inputTokens*inputRate + outputTokens*outputRate aggregated from SessionLog; pricing configured as a TypeScript constant in V1. | — | 7, 2 |
-| PRD-23-10 | PRD | §23.5 Inngest Event Volume | Sync intervals are configurable per project (sfOrgSyncIntervalHours) with recommended defaults per phase. | — | 6, 11 |
+| PRD-23-10 | PRD | §23.5 Inngest Event Volume | Sync intervals are configurable per project (sfOrgSyncIntervalHours) with recommended defaults per phase. | — | 6a, 11 |
 | PRD-23-11 | PRD | §23.5 Inngest Event Volume | Embedding generation uses batched events (one batch per agent invocation) to reduce event count. | — | 11 |
 | PRD-23-12 | PRD | §23.5 Inngest Event Volume | The Usage & Costs dashboard includes an Inngest event volume metric alongside token costs. | — | 7 |
 | PRD-25-01 | PRD | §25.1 Core Stack | The core stack is Next.js App Router on Vercel, PostgreSQL via Prisma, Clerk auth, S3/R2 storage, Claude API, Inngest jobs, pgvector, tsvector, and Claude Code for dev execution. | ADD-3.1-01..03 | Cross-cutting |
 | PRD-25-02 | PRD | §25.2 Architecture Decisions | No Git involvement from the web application; structured data in Postgres and files in S3 only. | — | Cross-cutting |
 | PRD-25-03 | PRD | §25.2 Architecture Decisions | No real-time collaborative editing; concurrency is handled via optimistic control with eventual consistency. | — | 4 |
-| PRD-25-04 | PRD | §25.2 Architecture Decisions | Single read-only Salesforce connection per project; no per-developer sandbox connections. | — | 6 |
+| PRD-25-04 | PRD | §25.2 Architecture Decisions | Single read-only Salesforce connection per project; no per-developer sandbox connections. | — | 6a |
 | PRD-25-05 | PRD | §25.2 Architecture Decisions | Claude Code is the execution layer and the REST API is the boundary with the web app. | — | 5 |
 | PRD-25-06 | PRD | §25.3 UI Tooling | UI must be built using the frontend-design skill, ui-ux-pro-max skill, and 21st.dev MCP server together (locked for V1). | — | 10 |
 | PRD-26-01 | PRD | §26 Build Sequence | Phase 1 delivers the knowledge brain: schema, pgvector/tsvector, Clerk, project creation, question CRUD with confidence/review, AI transcript processing, AI question answering, chat, Inngest jobs, notifications, search, and discovery dashboard. | ADD-6.1-01..07 | 11, 3, 2 |
 | PRD-26-02 | PRD | §26 Build Sequence | Phase 2 delivers epic/feature/story CRUD, mandatory field validation, AI story generation, sprint management, sprint analysis, and sprint dashboard. | — | 4, 5 |
-| PRD-26-03 | PRD | §26 Build Sequence | Phase 3 delivers Salesforce OAuth, metadata sync and parsing, org knowledge base tables, Context Package API, Org Query API, Story Status API, and Claude Code skill updates. | — | 6, 5 |
+| PRD-26-03 | PRD | §26 Build Sequence | Phase 3 delivers Salesforce OAuth, metadata sync and parsing, org knowledge base tables, Context Package API, Org Query API, Story Status API, and Claude Code skill updates. | — | 6a, 5 |
 | PRD-26-04 | PRD | §26 Build Sequence | Phase 4 delivers document generation, template system, S3 storage, QA test tracking, defect management, Jira sync, archive workflow, and PM dashboard. | — | 8, 9, 7 |
-| ADD-2-01 | Addendum | §2 Newly Locked Decisions | The org knowledge base must be implemented as a five-layer model (component graph, semantic embeddings, business domains, business context annotations, query interface). | PRD-13-08..11, PRD-13-23..25 | 6, 11 |
-| ADD-2-02 | Addendum | §2 Newly Locked Decisions | Postgres with pgvector is the sole storage substrate for the org KB (no graph DB, no separate vector store). | — | 11, 6 |
-| ADD-2-03 | Addendum | §2 Newly Locked Decisions | Salesforce durable metadata IDs must be the primary identity key for components; api_name is an indexed attribute. | — | 6 |
+| ADD-2-01 | Addendum | §2 Newly Locked Decisions | The org knowledge base must be implemented as a five-layer model (component graph, semantic embeddings, business domains, business context annotations, query interface). | PRD-13-08..11, PRD-13-23..25 | 6a, 11 |
+| ADD-2-02 | Addendum | §2 Newly Locked Decisions | Postgres with pgvector is the sole storage substrate for the org KB (no graph DB, no separate vector store). | — | 11, 6a |
+| ADD-2-03 | Addendum | §2 Newly Locked Decisions | Salesforce durable metadata IDs must be the primary identity key for components; api_name is an indexed attribute. | — | 6a |
 | ADD-2-04 | Addendum | §2 Newly Locked Decisions | The project management AI layer must be built as four deterministic pipelines plus one narrow freeform agent (no "Big Agent"). | PRD-6-01..08 | 2 |
 | ADD-2-05 | Addendum | §2 Newly Locked Decisions | A hybrid retrieval primitive (BM25 + vector similarity with reciprocal rank fusion) must be implemented once and shared across all pipelines, the agent, and the org KB. | — | 11 |
 | ADD-2-06 | Addendum | §2 Newly Locked Decisions | Model routing must be centralized and explicit: intent-based resolution with Haiku for extract, Sonnet for synthesis, Opus for deep reasoning. | — | 11 |
 | ADD-2-07 | Addendum | §2 Newly Locked Decisions | No pipeline stage or agent code may hardcode a specific Claude model name. | — | 11, 2 |
 | ADD-2-08 | Addendum | §2 Newly Locked Decisions | An evaluation harness is a V1 deliverable with fixtures and a CI gate for every pipeline. | — | 11, 2 |
-| ADD-2-09 | Addendum | §2 Newly Locked Decisions | Claude Managed Agents must be used only for Org Health Assessment and initial brownfield domain proposal (no request-scoped or pipeline work). | — | 6 |
+| ADD-2-09 | Addendum | §2 Newly Locked Decisions | Claude Managed Agents must be used only for Org Health Assessment and initial brownfield domain proposal (no request-scoped or pipeline work). | — | 6a, 6b |
 | ADD-3.1-01 | Addendum | §3.1 Tech Stack Additions | pgvector must be enabled on the Postgres instance with HNSW indexes for ANN search. | — | 11 |
 | ADD-3.1-02 | Addendum | §3.1 Tech Stack Additions | The embedding provider must be Voyage AI (voyage-3-lite) or OpenAI (text-embedding-3-small), selected at Phase 11 start based on a quality test. | — | 11 |
 | ADD-3.1-03 | Addendum | §3.1 Tech Stack Additions | The eval harness must be custom and lightweight with JSON fixtures per pipeline and a `pnpm eval [pipeline]` runner. | — | 11 |
 | ADD-3.1-04 | Addendum | §3.1 Tech Stack Additions | The background job runner must provide durable workflows with retries (Inngest selected; Vercel cron is insufficient). | — | 11 |
 | ADD-3.2-01 | Addendum | §3.2 Data Handling | The embeddings provider must carry the same no-retention, no-training contractual posture as Claude before production use. | PRD-22-02 | 11 |
-| ADD-4.1-01 | Addendum | §4.1 Architecture Overview | Data flows upward through the five layers by ID reference; mixing responsibilities across layers is a design violation. | — | 6 |
-| ADD-4.1-02 | Addendum | §4.1 Architecture Overview | A Layer 1 deletion must cascade as a soft-archive through Layers 2-4, never as a hard delete. | — | 6 |
-| ADD-4.2-01 | Addendum | §4.2 Layer 1 Component Graph | `org_components` must store id, project_id, salesforce_metadata_id, api_name, label, component_type enum, parent_component_id, namespace, api_version, status, raw_metadata jsonb, timestamps, and metadata_hash. | PRD-13-08 | 6, 11 |
-| ADD-4.2-02 | Addendum | §4.2 Layer 1 Component Graph | `component_edges` must store project_id, source/target component IDs, edge_type enum, edge_metadata jsonb, unresolved_reference_text, and timestamps. | PRD-13-09 | 11, 6 |
-| ADD-4.2-03 | Addendum | §4.2 Layer 1 Component Graph | Forward, reverse, and domain traversals must be supported via SQL recursive CTEs over component_edges. | — | 6 |
-| ADD-4.3-01 | Addendum | §4.3 Layer 2 Embeddings | `component_embeddings` must store component_id, embedded_text, embedded_text_hash, embedding vector, embedding_model, and embedded_at. | — | 11, 6 |
-| ADD-4.3-02 | Addendum | §4.3 Layer 2 Embeddings | `embedded_text` must be a deterministic concatenation of api_name, label, description, help_text, inline_help, and type-specific fields (Apex first 50 lines + comments, flow elements, VR errors). | — | 6 |
-| ADD-4.3-03 | Addendum | §4.3 Layer 2 Embeddings | On sync, components are re-embedded only when embedded_text_hash differs from stored hash. | — | 6 |
-| ADD-4.3-04 | Addendum | §4.3 Layer 2 Embeddings | Embeddings must be indexed via HNSW with cosine distance, tuned during Phase 6. | — | 6, 11 |
-| ADD-4.3-05 | Addendum | §4.3 Layer 2 Embeddings | Each embedding row must persist the originating embedding_model for future migration. | — | 11, 6 |
-| ADD-4.4-01 | Addendum | §4.4 Layer 3 Domains | `domains` must store id, project_id, name, description, source enum, status enum, created_by, and timestamps. | PRD-13-10 | 6 |
-| ADD-4.4-02 | Addendum | §4.4 Layer 3 Domains | `domain_memberships` must support many-to-many (component can belong to multiple domains) with rationale, source, and confidence. | — | 6 |
-| ADD-4.4-03 | Addendum | §4.4 Layer 3 Domains | Domains must be flat (no hierarchy) in V1. | PRD-13-16 | 6 |
-| ADD-4.4-04 | Addendum | §4.4 Layer 3 Domains | When an architect rejects an AI-proposed membership, it is marked status=archived and not re-proposed unless the component's metadata materially changes. | PRD-13-19 | 6 |
-| ADD-4.4-05 | Addendum | §4.4 Layer 3 Domains | Brownfield initial domain proposal runs as a Claude Managed Agents session and writes proposals for architect review. | — | 6 |
-| ADD-4.4-06 | Addendum | §4.4 Layer 3 Domains | Greenfield domains are created manually by the architect with AI suggestions for new components. | — | 6 |
-| ADD-4.4-07 | Addendum | §4.4 Layer 3 Domains | A lighter domain-review pass runs every 2 weeks (or on architect trigger) over recently changed/new components. | — | 6 |
-| ADD-4.5-01 | Addendum | §4.5 Layer 4 Annotations | `annotations` must store entity_type, entity_id, content, content_type enum, source enum, created_by, timestamps, and status via a polymorphic FK pattern. | PRD-13-11 | 6 |
-| ADD-4.5-02 | Addendum | §4.5 Layer 4 Annotations | `annotation_embeddings` must support annotation search independently from component search. | — | 6, 11 |
-| ADD-4.5-03 | Addendum | §4.5 Layer 4 Annotations | Polymorphic consistency must be enforced via check constraint on application writes. | — | 6 |
-| ADD-4.5-04 | Addendum | §4.5 Layer 4 Annotations | When the annotated entity is soft-archived, annotations are soft-archived as a cascade and remain queryable for history. | — | 6 |
-| ADD-4.5-05 | Addendum | §4.5 Layer 4 Annotations | Annotations are never hard-deleted except on project archive. | — | 6, 9 |
-| ADD-4.6-01 | Addendum | §4.6 Layer 5 Query Interface | `search_org_kb(project_id, query, options)` must be the single entry point for "find relevant org knowledge for X". | PRD-5-35 | 6 |
-| ADD-4.6-02 | Addendum | §4.6 Layer 5 Query Interface | `search_org_kb` must implement hybrid search: BM25 tsvector over api_name/label/raw_metadata/annotations + pgvector cosine over embeddings, fused via reciprocal rank fusion (k=60). | — | 6, 11 |
+| ADD-4.1-01 | Addendum | §4.1 Architecture Overview | Data flows upward through the five layers by ID reference; mixing responsibilities across layers is a design violation. | — | 6a |
+| ADD-4.1-02 | Addendum | §4.1 Architecture Overview | A Layer 1 deletion must cascade as a soft-archive through Layers 2-4, never as a hard delete. | — | 6a |
+| ADD-4.2-01 | Addendum | §4.2 Layer 1 Component Graph | `org_components` must store id, project_id, salesforce_metadata_id, api_name, label, component_type enum, parent_component_id, namespace, api_version, status, raw_metadata jsonb, timestamps, and metadata_hash. | PRD-13-08 | 6a, 11 |
+| ADD-4.2-02 | Addendum | §4.2 Layer 1 Component Graph | `component_edges` must store project_id, source/target component IDs, edge_type enum, edge_metadata jsonb, unresolved_reference_text, and timestamps. | PRD-13-09 | 11, 6a |
+| ADD-4.2-03 | Addendum | §4.2 Layer 1 Component Graph | Forward, reverse, and domain traversals must be supported via SQL recursive CTEs over component_edges. | — | 6a |
+| ADD-4.3-01 | Addendum | §4.3 Layer 2 Embeddings | `component_embeddings` must store component_id, embedded_text, embedded_text_hash, embedding vector, embedding_model, and embedded_at. | — | 11, 6a |
+| ADD-4.3-02 | Addendum | §4.3 Layer 2 Embeddings | `embedded_text` must be a deterministic concatenation of api_name, label, description, help_text, inline_help, and type-specific fields (Apex first 50 lines + comments, flow elements, VR errors). | — | 6a |
+| ADD-4.3-03 | Addendum | §4.3 Layer 2 Embeddings | On sync, components are re-embedded only when embedded_text_hash differs from stored hash. | — | 6a |
+| ADD-4.3-04 | Addendum | §4.3 Layer 2 Embeddings | Embeddings must be indexed via HNSW with cosine distance, tuned during Phase 6. | — | 6a, 11 |
+| ADD-4.3-05 | Addendum | §4.3 Layer 2 Embeddings | Each embedding row must persist the originating embedding_model for future migration. | — | 11, 6a |
+| ADD-4.4-01 | Addendum | §4.4 Layer 3 Domains | `domains` must store id, project_id, name, description, source enum, status enum, created_by, and timestamps. | PRD-13-10 | 6a |
+| ADD-4.4-02 | Addendum | §4.4 Layer 3 Domains | `domain_memberships` must support many-to-many (component can belong to multiple domains) with rationale, source, and confidence. | — | 6a |
+| ADD-4.4-03 | Addendum | §4.4 Layer 3 Domains | Domains must be flat (no hierarchy) in V1. | PRD-13-16 | 6a |
+| ADD-4.4-04 | Addendum | §4.4 Layer 3 Domains | When an architect rejects an AI-proposed membership, it is marked status=archived and not re-proposed unless the component's metadata materially changes. | PRD-13-19 | 6a |
+| ADD-4.4-05 | Addendum | §4.4 Layer 3 Domains | Brownfield initial domain proposal runs as a Claude Managed Agents session and writes proposals for architect review. | — | 6a |
+| ADD-4.4-06 | Addendum | §4.4 Layer 3 Domains | Greenfield domains are created manually by the architect with AI suggestions for new components. | — | 6a |
+| ADD-4.4-07 | Addendum | §4.4 Layer 3 Domains | A lighter domain-review pass runs every 2 weeks (or on architect trigger) over recently changed/new components. | — | 6a |
+| ADD-4.5-01 | Addendum | §4.5 Layer 4 Annotations | `annotations` must store entity_type, entity_id, content, content_type enum, source enum, created_by, timestamps, and status via a polymorphic FK pattern. | PRD-13-11 | 6a |
+| ADD-4.5-02 | Addendum | §4.5 Layer 4 Annotations | `annotation_embeddings` must support annotation search independently from component search. | — | 6a, 11 |
+| ADD-4.5-03 | Addendum | §4.5 Layer 4 Annotations | Polymorphic consistency must be enforced via check constraint on application writes. | — | 6a |
+| ADD-4.5-04 | Addendum | §4.5 Layer 4 Annotations | When the annotated entity is soft-archived, annotations are soft-archived as a cascade and remain queryable for history. | — | 6a |
+| ADD-4.5-05 | Addendum | §4.5 Layer 4 Annotations | Annotations are never hard-deleted except on project archive. | — | 6a, 9 |
+| ADD-4.6-01 | Addendum | §4.6 Layer 5 Query Interface | `search_org_kb(project_id, query, options)` must be the single entry point for "find relevant org knowledge for X". | PRD-5-35 | 6a |
+| ADD-4.6-02 | Addendum | §4.6 Layer 5 Query Interface | `search_org_kb` must implement hybrid search: BM25 tsvector over api_name/label/raw_metadata/annotations + pgvector cosine over embeddings, fused via reciprocal rank fusion (k=60). | — | 6a, 11 |
 | ADD-4.6-03 | Addendum | §4.6 Layer 5 Query Interface | Context Package Assembly must be a deterministic pipeline ending in a single Sonnet summarization call (no agent loop). | PRD-5-34, PRD-12-04 | 5 |
-| ADD-4.6-04 | Addendum | §4.6 Layer 5 Query Interface | Context Package Assembly must fetch story + AC + parent epic/feature, impacted components with 1-hop neighbors, domain memberships, annotations, related discovery Q&A via hybrid search, in-flight story coordination flags, and apply a 20k-token budget. | PRD-12-05 | 5, 6 |
+| ADD-4.6-04 | Addendum | §4.6 Layer 5 Query Interface | Context Package Assembly must fetch story + AC + parent epic/feature, impacted components with 1-hop neighbors, domain memberships, annotations, related discovery Q&A via hybrid search, in-flight story coordination flags, and apply a 20k-token budget. | PRD-12-05 | 5, 6a |
 | ADD-4.6-05 | Addendum | §4.6 Layer 5 Query Interface | Context Package Assembly must hit a <3s p95 latency target with the only LLM call being the 200-word context brief. | — | 5 |
-| ADD-4.6-06 | Addendum | §4.6 Layer 5 Query Interface | The Org Query API is a thin wrapper over search_org_kb with optional LLM synthesis for narrative answers. | PRD-5-35, PRD-12-07 | 5, 6 |
+| ADD-4.6-06 | Addendum | §4.6 Layer 5 Query Interface | The Org Query API is a thin wrapper over search_org_kb with optional LLM synthesis for narrative answers. | PRD-5-35, PRD-12-07 | 5, 6a |
 | ADD-4.6-07 | Addendum | §4.6 Layer 5 Query Interface | Token budget trimming must prefer lowest semantic similarity to the story description when over budget. | PRD-6-07 | 5 |
-| ADD-4.7-01 | Addendum | §4.7 Freshness & Change Propagation | Sync reconciliation must match by salesforce_metadata_id first, then by (api_name, component_type, parent_component_id) as fallback, else create new. | PRD-13-12 | 6 |
-| ADD-4.7-02 | Addendum | §4.7 Freshness & Change Propagation | Missing durable Salesforce IDs must log a warning per project per sync. | PRD-13-05 | 6 |
-| ADD-4.7-03 | Addendum | §4.7 Freshness & Change Propagation | Renames must be recorded in `component_history` with annotations, domain memberships, and edges preserved. | — | 6 |
-| ADD-4.7-04 | Addendum | §4.7 Freshness & Change Propagation | Components not seen in the current sync are soft-archived (status=archived) along with their annotations and edges. | — | 6 |
-| ADD-4.7-05 | Addendum | §4.7 Freshness & Change Propagation | Embedding cost must be kept proportional to actual change by re-embedding only on hash change. | — | 6, 11 |
-| ADD-4.7-06 | Addendum | §4.7 Freshness & Change Propagation | Renames must preserve domain memberships via salesforce_metadata_id matching. | — | 6 |
-| ADD-4.7-07 | Addendum | §4.7 Freshness & Change Propagation | Adding new fields to an object whose fields belong to a domain must trigger a "domain review nudge" to the architect. | — | 6 |
-| ADD-4.7-08 | Addendum | §4.7 Freshness & Change Propagation | Archived domain memberships are preserved but excluded from active queries. | — | 6 |
-| ADD-4.7-09 | Addendum | §4.7 Freshness & Change Propagation | Annotations must follow entities by ID so renames do not break them. | — | 6 |
-| ADD-4.7-10 | Addendum | §4.7 Freshness & Change Propagation | Unresolved references (dynamic SOQL, dynamic Apex, external callouts) are stored as edges with target_component_id=null and flagged in Org Health. | — | 6 |
-| ADD-4.7-11 | Addendum | §4.7 Freshness & Change Propagation | Components with a non-null namespace are excluded from AI-proposed domain memberships by default, overridable via project setting. | — | 6 |
-| ADD-4.7-12 | Addendum | §4.7 Freshness & Change Propagation | Annotations on managed package components are supported. | — | 6 |
-| ADD-4.7-13 | Addendum | §4.7 Freshness & Change Propagation | For large orgs (>10k custom fields or >500 Apex classes), sync runs in chunks with pagination and embedding is batched (50 components per API call). | — | 6 |
-| ADD-4.7-14 | Addendum | §4.7 Freshness & Change Propagation | Initial brownfield ingestion of a large org may take 30-90 minutes and is acceptable as a Managed Agents workload. | — | 6 |
-| ADD-4.8-01 | Addendum | §4.8 Managed Agents Scope | Org Health Assessment must run as a Claude Managed Agents session performing test coverage, governor-limit pattern detection, sharing review, FLS compliance, hardcoded ID detection, and technical debt inventory, producing an `org_health_reports` record and a Word deliverable. | PRD-13-22 | 6, 8 |
-| ADD-4.8-02 | Addendum | §4.8 Managed Agents Scope | Brownfield initial domain proposal runs once per project via Managed Agents writing domains + memberships with source=ai_proposed, status=proposed. | PRD-13-07, PRD-13-15 | 6 |
-| ADD-4.8-03 | Addendum | §4.8 Managed Agents Scope | Managed Agents workloads must not run on any user-facing request path. | — | 6 |
-| ADD-4.9-01 | Addendum | §4.9 Edge Cases & Non-Goals | Cross-project knowledge sharing is explicitly forbidden. | PRD-22-01 | 6 |
-| ADD-4.9-02 | Addendum | §4.9 Edge Cases & Non-Goals | Real-time metadata sync is explicitly out of V1 scope (periodic + manual only). | — | 6 |
-| ADD-4.9-03 | Addendum | §4.9 Edge Cases & Non-Goals | Apex source is stored and embedded at the class/trigger level (first 50 lines + comments) only; full-body analysis is an Org Health task. | — | 6 |
-| ADD-4.9-04 | Addendum | §4.9 Edge Cases & Non-Goals | Line-level component source diffing across syncs is not provided in V1 (metadata_hash change detection only). | — | 6 |
-| ADD-4.9-05 | Addendum | §4.9 Edge Cases & Non-Goals | Multi-org sandboxes are out of scope; one sandbox per project. | — | 6 |
+| ADD-4.7-01 | Addendum | §4.7 Freshness & Change Propagation | Sync reconciliation must match by salesforce_metadata_id first, then by (api_name, component_type, parent_component_id) as fallback, else create new. | PRD-13-12 | 6a |
+| ADD-4.7-02 | Addendum | §4.7 Freshness & Change Propagation | Missing durable Salesforce IDs must log a warning per project per sync. | PRD-13-05 | 6a |
+| ADD-4.7-03 | Addendum | §4.7 Freshness & Change Propagation | Renames must be recorded in `component_history` with annotations, domain memberships, and edges preserved. | — | 6a |
+| ADD-4.7-04 | Addendum | §4.7 Freshness & Change Propagation | Components not seen in the current sync are soft-archived (status=archived) along with their annotations and edges. | — | 6a |
+| ADD-4.7-05 | Addendum | §4.7 Freshness & Change Propagation | Embedding cost must be kept proportional to actual change by re-embedding only on hash change. | — | 6a, 11 |
+| ADD-4.7-06 | Addendum | §4.7 Freshness & Change Propagation | Renames must preserve domain memberships via salesforce_metadata_id matching. | — | 6a |
+| ADD-4.7-07 | Addendum | §4.7 Freshness & Change Propagation | Adding new fields to an object whose fields belong to a domain must trigger a "domain review nudge" to the architect. | — | 6a |
+| ADD-4.7-08 | Addendum | §4.7 Freshness & Change Propagation | Archived domain memberships are preserved but excluded from active queries. | — | 6a |
+| ADD-4.7-09 | Addendum | §4.7 Freshness & Change Propagation | Annotations must follow entities by ID so renames do not break them. | — | 6a |
+| ADD-4.7-10 | Addendum | §4.7 Freshness & Change Propagation | Unresolved references (dynamic SOQL, dynamic Apex, external callouts) are stored as edges with target_component_id=null and flagged in Org Health. | — | 6a |
+| ADD-4.7-11 | Addendum | §4.7 Freshness & Change Propagation | Components with a non-null namespace are excluded from AI-proposed domain memberships by default, overridable via project setting. | — | 6a |
+| ADD-4.7-12 | Addendum | §4.7 Freshness & Change Propagation | Annotations on managed package components are supported. | — | 6a |
+| ADD-4.7-13 | Addendum | §4.7 Freshness & Change Propagation | For large orgs (>10k custom fields or >500 Apex classes), sync runs in chunks with pagination and embedding is batched (50 components per API call). | — | 6a |
+| ADD-4.7-14 | Addendum | §4.7 Freshness & Change Propagation | Initial brownfield ingestion of a large org may take 30-90 minutes and is acceptable as a Managed Agents workload. | — | 6a |
+| ADD-4.8-01 | Addendum | §4.8 Managed Agents Scope | Org Health Assessment must run as a Claude Managed Agents session performing test coverage, governor-limit pattern detection, sharing review, FLS compliance, hardcoded ID detection, and technical debt inventory, producing an `org_health_reports` record and a Word deliverable. | PRD-13-22 | 6b, 8 |
+| ADD-4.8-02 | Addendum | §4.8 Managed Agents Scope | Brownfield initial domain proposal runs once per project via Managed Agents writing domains + memberships with source=ai_proposed, status=proposed. | PRD-13-07, PRD-13-15 | 6a |
+| ADD-4.8-03 | Addendum | §4.8 Managed Agents Scope | Managed Agents workloads must not run on any user-facing request path. | — | 6a, 6b |
+| ADD-4.9-01 | Addendum | §4.9 Edge Cases & Non-Goals | Cross-project knowledge sharing is explicitly forbidden. | PRD-22-01 | 6a |
+| ADD-4.9-02 | Addendum | §4.9 Edge Cases & Non-Goals | Real-time metadata sync is explicitly out of V1 scope (periodic + manual only). | — | 6a |
+| ADD-4.9-03 | Addendum | §4.9 Edge Cases & Non-Goals | Apex source is stored and embedded at the class/trigger level (first 50 lines + comments) only; full-body analysis is an Org Health task. | — | 6a |
+| ADD-4.9-04 | Addendum | §4.9 Edge Cases & Non-Goals | Line-level component source diffing across syncs is not provided in V1 (metadata_hash change detection only). | — | 6a |
+| ADD-4.9-05 | Addendum | §4.9 Edge Cases & Non-Goals | Multi-org sandboxes are out of scope; one sandbox per project. | — | 6a |
 | ADD-5.1-01 | Addendum | §5.1 PM AI Architecture | The project management AI layer must consist of four deterministic pipelines, one narrow freeform agent, one shared hybrid retrieval primitive, and one centralized model router. | PRD-6-01, PRD-6-04, PRD-6-15, PRD-6-16 | 2, 11 |
 | ADD-5.1-02 | Addendum | §5.1 PM AI Architecture | The "Big Agent" pattern (one LLM with dozens of tools reasoning through every interaction) is explicitly rejected. | PRD-8-11 | 2 |
 | ADD-5.2.1-01 | Addendum | §5.2.1 Transcript Processing Pipeline | The Transcript Processing pipeline accepts raw transcript + source metadata (meeting type, attendees, date, project_id). | — | 2 |
@@ -406,12 +407,12 @@
 | ADD-5.2.2-03 | Addendum | §5.2.2 Answer Logging Pipeline | Stage 2 uses Sonnet to pick the best matching question or declare the input a standalone decision. | PRD-8-02 | 2 |
 | ADD-5.2.2-04 | Addendum | §5.2.2 Answer Logging Pipeline | Stage 4 uses Sonnet to identify unblocked stories, contradicted decisions, and new questions to raise. | PRD-8-04, PRD-8-05, PRD-8-06, PRD-8-18, PRD-9-04, PRD-9-05, PRD-9-06 | 2, 3 |
 | ADD-5.2.2-05 | Addendum | §5.2.2 Answer Logging Pipeline | Stage 5 applies impacts deterministically and creates `conflicts_flagged` records for human review. | PRD-8-07 | 2, 3 |
-| ADD-5.2.2-06 | Addendum | §5.2.2 Answer Logging Pipeline | Stage 6 uses Sonnet to propose annotations on Layer 4 when the answer mentions Salesforce components, for human confirmation. | — | 2, 6 |
+| ADD-5.2.2-06 | Addendum | §5.2.2 Answer Logging Pipeline | Stage 6 uses Sonnet to propose annotations on Layer 4 when the answer mentions Salesforce components, for human confirmation. | — | 2, 6a |
 | ADD-5.2.2-07 | Addendum | §5.2.2 Answer Logging Pipeline | The eval harness ships 10 answer/question pairs with match accuracy and no-hallucination/no-missed-contradiction metrics. | — | 11, 2 |
 | ADD-5.2.3-01 | Addendum | §5.2.3 Story Generation Pipeline | Stage 1 assembles parent epic/feature, linked requirements, related discovery Q&A (via hybrid search), and candidate impacted components (via search_org_kb). | PRD-10-11 | 2, 4 |
 | ADD-5.2.3-02 | Addendum | §5.2.3 Story Generation Pipeline | Stage 2 uses Sonnet to draft a story matching the PRD §10.3 mandatory field schema as structured output. | PRD-10-08 | 2, 4 |
 | ADD-5.2.3-03 | Addendum | §5.2.3 Story Generation Pipeline | Stage 3 deterministically validates that every mandatory field is present and well-formed. | PRD-10-13 | 4, 2 |
-| ADD-5.2.3-04 | Addendum | §5.2.3 Story Generation Pipeline | Stage 4 cross-references impacted components against existing org components via hybrid search. | PRD-10-12 | 4, 6 |
+| ADD-5.2.3-04 | Addendum | §5.2.3 Story Generation Pipeline | Stage 4 cross-references impacted components against existing org components via hybrid search. | PRD-10-12 | 4, 6a |
 | ADD-5.2.3-05 | Addendum | §5.2.3 Story Generation Pipeline | Stage 5 uses Sonnet only when stage 4 flagged conflicts, proposing resolution for extend-vs-replace decisions. | PRD-10-12 | 2, 4 |
 | ADD-5.2.3-06 | Addendum | §5.2.3 Story Generation Pipeline | Stage 6 deterministically validates typography/branding per firm rules. | PRD-6-05 | 2 |
 | ADD-5.2.3-07 | Addendum | §5.2.3 Story Generation Pipeline | Stage 7 persists the story draft in `draft` status for UI review before promotion to `ready`. | — | 4, 2 |
@@ -448,7 +449,7 @@
 | ADD-6.1-06 | Addendum | §6.1 Phase 1 Amended Scope | The eval harness scaffold + 10 fixtures each for Transcript Processing and Answer Logging pipelines must ship in Phase 1/11. | — | 11, 2 |
 | ADD-6.1-07 | Addendum | §6.1 Phase 1 Amended Scope | Layer 1 schema only (org_components, component_edges) must ship in Phase 1/11 with no ingestion yet. | — | 11 |
 | ADD-6.5-01 | Addendum | §6.5 Cross-Phase | The freeform agent is built at the end of Phase 2, not in Phase 1. | — | 2 |
-| ADD-7-01 | Addendum | §7 Data Model Additions | Org KB must add component_edges, component_embeddings, component_history, domains, domain_memberships, annotations, annotation_embeddings, org_health_reports, and an unresolved_references materialized view. | PRD-5-10 | 6, 11 |
+| ADD-7-01 | Addendum | §7 Data Model Additions | Org KB must add component_edges, component_embeddings, component_history, domains, domain_memberships, annotations, annotation_embeddings, org_health_reports, and an unresolved_references materialized view. | PRD-5-10 | 6a, 6b, 11 |
 | ADD-7-02 | Addendum | §7 Data Model Additions | Retrieval/AI infrastructure must add question_embeddings, decision_embeddings, requirement_embeddings, risk_embeddings, and story_embeddings. | — | 11, 2 |
 | ADD-7-03 | Addendum | §7 Data Model Additions | Observability tables pipeline_runs and pipeline_stage_runs must record pipeline execution and per-stage traces. | — | 11, 2 |
 | ADD-7-04 | Addendum | §7 Data Model Additions | A `pending_review` table must hold pipeline items awaiting human confirmation. | — | 2 |

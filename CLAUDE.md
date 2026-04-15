@@ -27,6 +27,20 @@ These are the source of truth. Read them before making architecture or implement
 | `docs/bef/01-architecture/TECHNICAL_SPEC.md` | Database schema, AI agent harness architecture, context window budget, dashboard implementation. The "how." |
 | `docs/bef/02-phase-plan/PHASE_PLAN.md` | Master phase plan with dependencies. |
 | `docs/bef/03-phases/phase-NN-*/` | Per-phase PHASE_SPEC.md and TASKS.md. |
+| `docs/bef/REQUIREMENT_INDEX.md` | Master flat catalog of all 442 atomic requirements (311 PRD + 131 Addendum) with `PRD-<section>-<nn>` / `ADD-<section>-<nn>` IDs and a Phase-hint column. |
+
+### Requirement Traceability
+
+The chain of custody for every requirement:
+
+1. **PRD.md + Addendum** — source of truth for business/technical requirements.
+2. **REQUIREMENT_INDEX.md** — master flat catalog of atomic requirements with stable IDs (`PRD-x-yy`, `ADD-x-yy`) and owning-phase hints (e.g., `6a`, `6b`, `6a, 6b`, `Cross-cutting`).
+3. **PHASE_SPEC.md** — scope per phase; each phase cites the PRD/Addendum IDs it owns.
+4. **TASKS.md** — execution units within a phase; commit messages reference PRD/Addendum IDs.
+
+Phase specs cite `PRD-x-yy` / `ADD-x-yy` IDs for requirement traceability. Phase-internal shortcut IDs (`REQ-HARNESS-*`, `REQ-PIPELINE-*`, `REQ-ORG-*`, etc.) are local scaffolding only; they must each map back to one or more canonical PRD/Addendum IDs.
+
+**Hard rule:** Any change to a `PHASE_SPEC.md` or `TASKS.md` must trace back to at least one `PRD-x-yy` or `ADD-x-yy` ID in `REQUIREMENT_INDEX.md`. If the index is stale relative to a PRD/Addendum edit, update the index in the same change.
 
 ## PRD + Addendum as Source of Truth (Global)
 
