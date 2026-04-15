@@ -2,7 +2,8 @@
 
 > Parent Spec: [PHASE_SPEC.md](./PHASE_SPEC.md)
 > Last Updated: 2026-04-14
-> Status: Ready for execute (deep-dive complete via 2026-04-14 audit-fix wave)
+> Status: Ready for execute (re-dive complete 2026-04-14)
+> Note: Org Health Assessment tasks (previously 21, 22, 23) and biweekly review (12c) moved to [Phase 6b](../phase-06b-org-health-assessment/TASKS.md) or cut entirely during the re-dive. See PHASE_SPEC.md §7 for re-dive decisions.
 
 ---
 
@@ -66,15 +67,15 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Back-fill `component_embeddings` (schema from Phase 11) from the inline `OrgComponent.embedding` column. Dual-write window. Cut over readers. Drop column. |
+| **Scope** | Back-fill `component_embeddings` (schema from Phase 11) from the inline `OrgComponent.embedding` column. Cycle-bound dual-write window (re-dive 2026-04-14). Cut over readers. Drop column. |
 | **Depends On** | Phase 11 migration complete |
 | **Complexity** | L |
 
 **Acceptance:**
 - [ ] All non-null `OrgComponent.embedding` values migrated with `embedded_text` + hash.
-- [ ] Dual-write period verified (sync writes to both locations).
-- [ ] Readers (`search_org_kb`, smart retrieval) cut over.
-- [ ] `OrgComponent.embedding` column dropped.
+- [ ] Dual-write writes to both stores until cut-over gate clears.
+- [ ] Cut-over gate: one full sync cycle row-count- and hash-consistent across both stores AND readers (`search_org_kb`, smart retrieval) deployed against new table. No calendar clock (re-dive decision §7).
+- [ ] `OrgComponent.embedding` column dropped after cut-over.
 
 ---
 
@@ -82,34 +83,34 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Create `knowledge_article_embeddings` parallel table mirroring `component_embeddings` shape (`vector(512)` per DECISION-02). Back-fill from existing inline `KnowledgeArticle.embedding` column (build `embedded_text` from `title + summary + content`, hash). 7-day max dual-write window. Cut over Task 34 readers. Drop inline column. Closes GAP-02. |
+| **Scope** | Create `knowledge_article_embeddings` parallel table mirroring `component_embeddings` shape (`vector(512)` per DECISION-02). Back-fill from existing inline `KnowledgeArticle.embedding` column (build `embedded_text` from `title + summary + content`, hash). Cycle-bound dual-write (re-dive 2026-04-14). Cut over Task 34 readers. Drop inline column. Closes GAP-02. |
 | **Depends On** | Phase 11 schema (or Phase 6 owns the migration if Phase 11 schema is closed) |
 | **Complexity** | M |
 
 **Acceptance:**
 - [ ] `knowledge_article_embeddings` table exists with `vector(512)` embedding column and HNSW cosine index.
 - [ ] All non-null `KnowledgeArticle.embedding` values back-filled into the new table with hashes.
-- [ ] Dual-write verified for ≤ 7 days.
+- [ ] Dual-write cut-over gated by (a) one full refresh cycle row- and hash-consistent across stores AND (b) Task 34 readers deployed. No calendar window (re-dive decision §7).
 - [ ] Task 34 (two-pass retrieval) reads from new table.
 - [ ] `KnowledgeArticle.embedding` column dropped after cut-over.
 
 ---
 
-### Task 5: Create new tables (`component_history`, `annotation_embeddings`, `org_health_reports`, `article_entity_refs`) + Phase 11 schema reconciliation
+### Task 5: Create new tables (`component_history`, `annotation_embeddings`, `article_entity_refs`) + Phase 11 schema reconciliation
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Add Prisma models + migrations for net-new tables. `domain_memberships` covered in Task 1. `knowledge_article_embeddings` covered in Task 4. **Reconcile Phase 11 schema** to add `component_edges.edge_metadata jsonb` (closes GAP-08a) and extend `component_type` enum with LWC, AURA, PERMSET, PROFILE, PERMSET_GROUP, CONNECTED_APP, NAMED_CREDENTIAL, REMOTE_SITE, INSTALLED_PACKAGE (closes GAP-01). |
+| **Scope** | Add Prisma models + migrations for net-new tables. `domain_memberships` covered in Task 1. `knowledge_article_embeddings` covered in Task 4. **`org_health_reports` moved to Phase 6b.** **Reconcile Phase 11 schema** to add `component_edges.edge_metadata jsonb` (closes GAP-08a) and extend `component_type` enum with LWC, AURA, PERMSET, PROFILE, PERMSET_GROUP, CONNECTED_APP, NAMED_CREDENTIAL, REMOTE_SITE, INSTALLED_PACKAGE (closes GAP-01). |
 | **Depends On** | None |
 | **Complexity** | M |
 
 **Acceptance:**
 - [ ] `component_history` created with `component_id`, `change_type`, old/new value columns, `source`, `created_at`.
 - [ ] `annotation_embeddings` created mirroring `component_embeddings` shape with `vector(512)` (cites DECISION-02).
-- [ ] `org_health_reports` created with summary, findings JSON, remediation backlog, cost, duration, status fields.
 - [ ] **`article_entity_refs` table created** (carry-forward decision #3) with columns `(id, article_id, entity_type, entity_id, ref_kind, created_at)`, UNIQUE constraint, polymorphic trigger, and `(entity_type, entity_id)` index. Phase 2 staleness hook (Tasks 11/12) depends on this.
 - [ ] `component_edges.edge_metadata jsonb` column present in Phase 11 schema.
 - [ ] `component_type` enum extended; reconciliation note in Phase 11 changelog.
+- [ ] `org_health_reports` NOT created here (owned by Phase 6b).
 
 ---
 
@@ -131,6 +132,7 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] Existing fixtures pass; new rename fixture passes.
 - [ ] Large-org chunked mode triggers when SF returns > 10,000 custom fields OR > 500 Apex classes; page size 500, 1-second inter-page sleep (closes GAP-18).
 - [ ] On each sync, count components SF returned without durable metadata IDs; if > 0 emit single `sync.durable_id_missing` warning log + `SYNC_DATA_QUALITY` notification once per run (closes GAP-16, ADD-4.7-02).
+- [ ] **Re-dive (2026-04-14): ID-reuse heuristic.** When a match-by-ID hits an archived row AND `archived_at > now() - interval '30 days'` is FALSE (archive is older than 30 days) AND Levenshtein distance between stored and incoming `api_name` exceeds 50% of the longer name's length, treat the incoming component as NEW (create fresh row, leave archived row archived). Otherwise treat as legitimate rename. Fixture `rename_collision` (Task 36) covers all three branches.
 
 ---
 
@@ -154,6 +156,7 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] Installed-package namespace linked via `installed_by` edges.
 - [ ] Managed-package edges recorded (but flagged).
 - [ ] Acceptance fixture: a sandbox with one of each metadata family fully populates `org_components` + `component_edges`.
+- [ ] **Re-dive (2026-04-14): Apex parser uses SF Tooling API** (`SymbolTable`, `ApexClassLocalMember`, `ApexTriggerLocalMember`) for symbol resolution. No custom regex Apex parser in `graph-builder.ts`. Regex-based extraction acceptable only for Flow XML, validation rule formulas, and LWC template text.
 
 ---
 
@@ -224,7 +227,8 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] Membership add/remove supported.
 - [ ] Bulk confirm available.
 - [ ] Reject sets `status='archived', archived_reason='rejected_by_architect', archived_at=now()` (closes GAP-10, ADD-4.4-04).
-- [ ] Project Settings → Salesforce → "Include managed-package components in AI domain proposals" toggle exposed (default OFF) per §7 item 3 (closes GAP-20-3).
+- [ ] Project Settings → Salesforce → "Include managed-package components in AI domain proposals" toggle exposed (default OFF).
+- [ ] **Re-dive (2026-04-14): toggle UX.** Flipping OFF→ON does NOT auto re-run brownfield proposal. Domain review UI surfaces a "Propose domains for managed-package components" affordance that dispatches a scoped Managed Agent run over only the newly-included components.
 
 ---
 
@@ -244,7 +248,10 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] Architect review UI surfaces proposals.
 - [ ] Re-runs honor rejection-suppression rule (skip `(component_id, domain_id)` pairs archived as `rejected_by_architect` unless `org_components.metadata_hash` changed since `archived_at`) (closes GAP-10).
 - [ ] No invocation runs on user-facing HTTP path; verified via Inngest dispatch (closes GAP-19, ADD-4.8-03).
-- [ ] V1 default: manual review for ALL proposals (no auto-confirm) per §7 item 5 (closes GAP-20-5).
+- [ ] V1 default: manual review for ALL proposals (no auto-confirm).
+- [ ] **Re-dive (2026-04-14): hard timeout 20 minutes.** On timeout, persist whatever rows were proposed, mark `pipeline_runs` entry as `partial`, emit partial-completion notification to architect.
+- [ ] **Re-dive (2026-04-14): cost ceiling $15 per run** (separate from Org Health's $25). Overrun hard-stops and persists partial results identically to timeout.
+- [ ] **Re-dive (2026-04-14): deterministic fallback on full failure.** If the Managed Agent run fails entirely (timeout with zero rows, cost overrun before any rows, provider error), seed a single `Unclassified` domain for the project and notify architect. Brownfield setup is never blocked by an agent failure.
 
 ---
 
@@ -345,6 +352,8 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 - [ ] `direction='both'` supports domain-walk pattern.
 - [ ] Archived components excluded.
 - [ ] Phase 11 function-signature contract amended to include `traverse_component_graph` (or Phase 6 owns the function explicitly).
+- [ ] **Re-dive (2026-04-14): cycle detection.** Recursive CTE tracks `path uuid[]` and skips any component already in the path. Fixture with a known A→B→A Apex class cycle terminates without stack overflow or runaway recursion.
+- [ ] **Re-dive (2026-04-14): Phase 5 caller contract documented.** Phase 5 Context Package Assembly must pass `edge_types: ['lookup','master_detail','references']` and `depth ≤ 2` when invoking `expand_neighbors` via `search_org_kb`. Enforced in Phase 5 code; contract noted in PHASE_SPEC §2.8.
 
 ---
 
@@ -401,54 +410,9 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 ---
 
-## Org Health Assessment
+## Org Health Assessment — MOVED to Phase 6b
 
-### Task 21: Deterministic health analyzers
-
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | Six analyzers in `src/lib/salesforce/health-analyzers/`: test-coverage, governor-limit-risk, sharing-model, fls-compliance, hardcoded-ids, tech-debt. Each reads org data and produces structured findings JSON. |
-| **Depends On** | Task 6 (sync must be reliable) |
-| **Complexity** | XL |
-
-**Acceptance:**
-- [ ] **Seven** analyzers (test-coverage, governor, sharing, fls, hardcoded-ids, tech-debt, **unresolved-references**) — closes GAP-17, ADD-4.7-10.
-- [ ] Unresolved-references analyzer reads the `unresolved_references` materialized view; produces structured findings (severity = info|warn based on count).
-- [ ] Each analyzer runs independently and returns structured findings.
-- [ ] Analyzers are pure functions over fetched org data (no AI calls).
-- [ ] Unit-tested with sample fixtures.
-
----
-
-### Task 22: Managed Agent synthesis + Word output
-
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | `synthesize-health-report.ts` Managed Agent task (Opus 4.6, `reason_deeply`) takes analyzer outputs and produces narrative + prioritized remediation backlog. Generate Word document via Phase 8 document pipeline. Store to S3. Write `org_health_reports` record. |
-| **Depends On** | Task 21 |
-| **Complexity** | L |
-
-**Acceptance:**
-- [ ] Synthesis produces narrative and remediation backlog.
-- [ ] Word document generated and stored.
-- [ ] `org_health_reports` row persisted with summary, findings, backlog, cost, duration.
-
----
-
-### Task 23: Trigger, cost ceiling, and status UI
-
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | Architect trigger action (SA only). Cost ceiling ($25 default, architect-override). Hard-stop on overrun, persist partial results. Progress UI page. Completion notification. `pipeline_runs` entry. |
-| **Depends On** | Task 22 |
-| **Complexity** | M |
-
-**Acceptance:**
-- [ ] Architect can trigger run + override ceiling via input field in trigger dialog (default $25 pre-filled) — closes GAP-20-6.
-- [ ] Overrun hard-stops with partial report (`status=partial`).
-- [ ] Progress UI shows step-by-step status with polling (1s interval, 60s timeout backoff).
-- [ ] Notification emitted on completion.
-- [ ] Cost tracked in `pipeline_runs`.
+Tasks 21, 22, 23 moved to [Phase 6b TASKS.md](../phase-06b-org-health-assessment/TASKS.md) (Tasks 3, 4, 5 there). Tech-debt analyzer cut during re-dive (see §7).
 
 ---
 
@@ -488,16 +452,16 @@ Preserved features (Tasks 27–32) — parallelizable, independent
 
 ---
 
-### Task 26: Cost tracking for Managed Agent invocations
+### Task 26: Cost tracking for Managed Agent invocations (Phase 6a scope)
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Ensure domain proposal (Task 12) and health synthesis (Task 22) write `pipeline_runs` + `pipeline_stage_runs` entries with token usage, dollar cost, and duration. |
-| **Depends On** | Tasks 12, 22 |
+| **Scope** | Ensure brownfield domain proposal (Task 12) and scoped managed-pkg re-proposal (Task 11 affordance) write `pipeline_runs` + `pipeline_stage_runs` entries with token usage, dollar cost, and duration. Org Health synthesis tracking owned by Phase 6b Task 6. |
+| **Depends On** | Task 12 |
 | **Complexity** | S |
 
 **Acceptance:**
-- [ ] Every Managed Agent run produces observability rows.
+- [ ] Every Managed Agent run in Phase 6a produces observability rows.
 - [ ] Cost tallies visible in Phase 7 Usage & Costs tab.
 
 ---
@@ -591,19 +555,9 @@ Unchanged. Depends on Task 18 + Task 4 decision (KnowledgeArticle embedding fate
 
 ---
 
-### Task 12c: Biweekly domain review pass (closes GAP-11, ADD-4.4-07)
+### Task 12c: Biweekly domain review pass — CUT from V1 (2026-04-14 re-dive)
 
-| Attribute | Details |
-|-----------|---------|
-| **Scope** | Inngest cron `{ cron: "0 3 */14 * *" }` runs a Managed Agents session scoped to components whose `metadata_hash` changed in the last 14 days OR were added in the last 14 days. Emits proposal diffs for architect review. Respects suppression rule (Task 11b). |
-| **Depends On** | Task 12, Task 11b |
-| **Complexity** | M |
-
-**Acceptance:**
-- [ ] Cron registered.
-- [ ] Scope filter limits Managed Agents input to recently-changed/added components.
-- [ ] Proposal diffs surfaced in domain review UI.
-- [ ] Cost logged in `pipeline_runs`.
+Narrow supersession of ADD-4.4-07. Rationale: compounds cost + notification fatigue; brownfield one-shot + per-sync greenfield suggestions cover new-field drift. Revisit in V2 with production data. See PHASE_SPEC §2.6 and §7.
 
 ---
 
@@ -647,12 +601,12 @@ Unchanged. Depends on Task 18 + Task 4 decision (KnowledgeArticle embedding fate
 | 18 | Phase 4 Articulate in ingestion | 12 | L |
 | 19 | Full knowledge refresh (Layer 3/4 aware) | 18 | L |
 | 20 | BusinessProcessDependency persistence | — | S |
-| 21 | Deterministic health analyzers (6) | 6 | XL |
-| 22 | Managed Agent synthesis + Word output | 21 | L |
-| 23 | Health trigger + cost ceiling + status UI | 22 | M |
+| ~~21~~ | ~~Deterministic health analyzers~~ → Phase 6b Task 3 | — | — |
+| ~~22~~ | ~~Managed Agent synthesis + Word output~~ → Phase 6b Task 4 | — | — |
+| ~~23~~ | ~~Health trigger + cost ceiling + status UI~~ → Phase 6b Task 5 | — | — |
 | 24 | NLP query → `search_org_kb` | 17 | M |
 | 25 | Context loader: annotations + 1-hop edges | 14, 7 | M |
-| 26 | Cost tracking for Managed Agent runs | 12, 22 | S |
+| 26 | Cost tracking for Managed Agent runs (6a scope only) | 12 | S |
 | 27 | PKCE OAuth (preserved) | — | S |
 | 28 | Sync cron base behavior (preserved) | — | M |
 | 29 | Sync schedule UI (preserved) | 28 | S |
@@ -666,7 +620,7 @@ Unchanged. Depends on Task 18 + Task 4 decision (KnowledgeArticle embedding fate
 | 6b | Soft-archive cascade implementation | 5, 6 | M |
 | 11b | Domain re-proposal suppression rule | 11, 12 | S |
 | 12b | Greenfield AI membership suggestions (Sonnet) | 6, 11, 11b | S |
-| 12c | Biweekly domain review pass (Inngest cron + Managed Agents) | 12, 11b | M |
+| ~~12c~~ | ~~Biweekly domain review pass~~ CUT from V1 (re-dive §2.6) | — | — |
 | 17b | `traverse_component_graph` recursive-CTE function | 7 | M |
 | 18b | BusinessProcess + BusinessProcessComponent persistence | 12 | M |
 

@@ -2,9 +2,9 @@
 
 ## Status
 
-**Active step:** Phase 6 re-dive prep. Step 4b verifier sweep COMPLETE (2026-04-14) — verdict PROCEED after 3-commit micro-wave (`3b42bd4`, `17cde05`, `0c19525`) closed the cross-phase blockers from Verifier D. See `.claude/threads/2026-04-13-prd-traceability-audit.md` for the full 4-verifier consolidation and micro-wave notes.
+**Active step:** Stage 4 COMPLETE. Phase 6 re-dive completed 2026-04-14 — scope split into Phase 6a (five-layer org KB) and Phase 6b (Org Health Assessment). Stage 5 (Execute) ready to start. All 12 phases (including new 6b) verifier-approved or re-dive-approved.
 **Last updated:** 2026-04-14
-**Visual companion:** `docs/bef/PROJECT_STATE_VISUAL.md` — Mermaid diagrams of pipeline, phase graph, and current focus. Keep in sync when editing this file.
+**Visual companion:** `docs/bef/PROJECT_STATE_VISUAL.md` — Mermaid diagrams of pipeline, phase graph, and current focus. Keep in sync when editing this file. **Needs update for Phase 6a/6b split.**
 
 ### Start here (fresh session)
 
@@ -15,21 +15,23 @@
 
 ### What's next, in order
 
-1. **Phase 6 re-dive (ACTIVE).** Five-Layer Org KB. Depends on Phase 11 + Phase 2 (both locked) and Step 4b verdict (PROCEED, 2026-04-14). Resolve `KnowledgeArticle.embedding` migration path before Task 1.
-2. **Stage 5 execution start.** All 11 phases now verifier-approved. Execution order per PHASE_PLAN.md.
+1. **Stage 5 execution start (ACTIVE).** All 12 phases verifier-approved. Execution order per PHASE_PLAN.md. Next phase to execute: Phase 11 (AI Infrastructure Foundation), after Voyage 50-pair quality test (DECISION-03 gate).
 
-Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for deep-dive" section:
+Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for deep-dive" section (all RESOLVED):
 
-- **Phase 11:** RESOLVED — Voyage `voyage-3-lite` (512-dim) locked; pgvector extension + 13 tables in Task 1; golden-corpus snapshot guards search refactor; HNSW defaults (m=16, ef_construction=64); RRF k=60 with post-Phase 2 retune window; fixture inputs in Phase 11, expectations completed in Phase 2.
-- **Phase 2:** RESOLVED (deep-dive 2026-04-13) — Unified (no 2a/2b split); 9 orphan TaskTypes dispositioned + removed in new Task 18 with grep CI check; per-stage error behavior locked (non-blocking: Transcript s6, Answer s4, Story s5); Transcript strict > 0.85 auto-apply; Answer tiered 0.70/0.85; Story Gen no confidence gate; 8 freeform read tools (added get_recent_sessions + get_milestone_progress); Transcript=async, Answer=sync, Story=async, Briefing=sync+5min-cache; hybrid cost cap (80% soft alert + 100% hard 429, daily hard 100); cross-pipeline matrix documented in SPEC §8.2; Task 11/12 ACs extended to complete the 20 Phase 11 eval stubs with real expectations; Task 17 adds 10 Briefing fixtures. 18 tasks total.
-- **Phase 6:** KA.embedding migration, rename-collision fixture, managed-package override UX, domain proposal threshold, Org Health cost ceiling UX, Managed Agents progress/polling, edge circular-ref detection.
-- **Phase 3, 5, 7, 8, 9:** see each phase's `PHASE_SPEC.md` "Outstanding for deep-dive" section.
+- **Phase 11:** RESOLVED.
+- **Phase 2:** RESOLVED (deep-dive 2026-04-13).
+- **Phase 6a:** RESOLVED (re-dive 2026-04-14). All 6 outstanding items closed; scope split into 6a/6b; new decisions on Apex Tooling API, cycle detection, ID-reuse heuristic, cycle-bound dual-write, brownfield circuit breaker, Phase 5 edge-type contract. Biweekly domain review cron CUT from V1.
+- **Phase 6b:** Scope lifted from Phase 6 §2.15, minus tech-debt analyzer, plus snapshot-isolation addition. Ready for execute.
+- **Phase 3, 5, 7, 8, 9, 10:** all RESOLVED — see each phase's PHASE_SPEC.md.
 
 ### Quick fixes (do anytime, ~5 min each)
 
 - _None open._
 
 ## Recently Completed
+
+- **Phase 6 re-dive** (2026-04-14). Interactive re-dive interview (Claude Opus 4.6 self-recommendations) produced 12 design deltas vs. the audit-fix-wave spec. Major: scope split into Phase 6a (five-layer org KB, 33 tasks) and Phase 6b (Org Health Assessment, 6 tasks). Medium: biweekly domain review cron CUT from V1 (narrow ADD-4.4-07 supersession); tech-debt analyzer cut from Org Health. Small: cycle-bound dual-write migration; SF Tooling API for Apex parsing; ID-reuse rename heuristic (30-day + Levenshtein); brownfield proposal circuit breaker (20-min timeout + $15 cost ceiling + "Unclassified" fallback); managed-pkg toggle OFF→ON does not auto-run; cycle detection in `traverse_component_graph`; `component_snapshot_id` isolation for Org Health; Phase 5 edge-type allowlist contract (`lookup|master_detail|references`, depth ≤ 2). Files: `docs/bef/03-phases/phase-06-org-knowledge/{PHASE_SPEC,TASKS}.md`, new `docs/bef/03-phases/phase-06b-org-health-assessment/{PHASE_SPEC,TASKS}.md`, `docs/bef/02-phase-plan/PHASE_PLAN.md`. No commits yet.
 
 - **GAP-WORK-006 close-out verified** (2026-04-14). Phase 4 PHASE_SPEC.md §2.3 and TASKS.md Task 3 already author all 6 SF dev guardrails verbatim (Governor Limits, Bulkification, Test Class Requirements, Naming Conventions, Security Patterns, Sharing Model Enforcement), define the `SF_DEV_GUARDRAILS` module artifact at `src/lib/agent-harness/prompts/salesforce-guardrails.ts`, and pin three injection points (Phase 2 Stage 2 Sonnet prompt, `storyEnrichmentTask`, Tier-1 `getProjectSummary`). Trace confirmed against PRD §15.1-15.6 and Addendum line 711. Gap originally resolved by Wave 2 audit-fix commit `51faeb3` (2026-04-14); stale "Quick fixes" and "What's next" bullets removed. No longer a blocker for Phase 5/6.
 
@@ -61,25 +63,21 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
   - [x] Step 2 (arch portion): Integrate addendum into `docs/bef/01-architecture/TECHNICAL_SPEC.md`
 - [x] Stage 3: Phase Plan — Complete. All 11 phases reflect addendum; verifier sweep produced PROCEED verdict (consolidated report retired 2026-04-14).
   - [x] Step 2 (phase-plan portion): Execute integration plan across `docs/bef/03-phases/*` + 4-verifier agent team sweep — verdict: PROCEED with 7 critical findings carried into Step 3
-- [~] Stage 4: Phase Deep Dive — In Progress (active stage; Phase 6 re-dive remaining)
-  - [~] Step 3: Deep-dive sessions for affected phases — 2/3 done
+- [x] Stage 4: Phase Deep Dive — COMPLETE (2026-04-14)
+  - [x] Step 3: Deep-dive sessions for affected phases — 3/3 done
     - [x] Phase 11 deep-dive (2026-04-13)
     - [x] Phase 2 deep-dive (2026-04-13)
-    - [ ] Phase 6 re-dive (ACTIVE — blocker: resolve `KnowledgeArticle.embedding` migration path)
+    - [x] Phase 6 re-dive (2026-04-14) — split into 6a + 6b
   - [x] Step 3b: PRD traceability audit + gap closure — all 137 gaps closed
-    - [x] Wave 0: user-decision queue from cross-phase summary
-    - [x] Wave 1: Phase 11 + Phase 2 audit fixes merged (2026-04-14)
-    - [x] Wave 2: Phase 3 + 4 + 6 audit fixes merged (2026-04-14, 48 gaps closed)
-    - [x] Wave 3: Phase 5 + 7 + 8 + 9 + 10 audit fixes merged (2026-04-14, 58 gaps closed)
-  - [x] Step 4a: Initial verifier sweep (2026-04-13) — verdict PROCEED with 7 critical findings
-  - [x] Step 4b: Post-gap-closure verifier sweep (2026-04-14) — verdict PROCEED after micro-wave (commits `3b42bd4`, `17cde05`, `0c19525`)
-- [ ] Stage 5: Execute — Blocked on Stage 4 (Phase 1 previously complete before Addendum replan)
+  - [x] Step 4a: Initial verifier sweep (2026-04-13) — PROCEED
+  - [x] Step 4b: Post-gap-closure verifier sweep (2026-04-14) — PROCEED
+- [~] Stage 5: Execute — READY TO START
   - [ ] Step 5: Execute phase code with agent teams (wave-based, per phase)
   - [ ] Step 6: Iterate until shipped
 
 ## Phase Overview
 
-> Phase plan is locked through Step 2 verification (2026-04-13). Phases 2, 6, 11 still need Step 3 deep-dives before execution; other phases are deep-dived but may receive small adjustments based on deep-dive outcomes.
+> Phase plan is locked. All 12 phases deep-dived and ready for execute.
 
 | # | Phase | Depends On | Gaps | Spec | Tasks | Execution |
 |---|-------|-----------|------|------|-------|-----------|
@@ -87,13 +85,14 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
 | 11 | AI Infrastructure Foundation | Phase 1 | New | Done | Done (10 tasks) | Not Started |
 | 10 | Work Tab UI Overhaul | Phase 1 | — | Done | Done (12 tasks) | Not Started |
 | 2 | Harness Hardening + Core Pipelines | Phase 11 | 10+ | Done | Done (18 tasks) | Not Started |
-| 3 | Discovery, Questions | Phase 2 | 14 | Amended per addendum | Done (14 tasks) | Not Started |
-| 4 | Work Management | Phase 2, 3 | 11 | Amended per addendum | Done (10 tasks) | Not Started |
-| 6 | Org, Knowledge (Five-Layer Model) | Phase 11, 2 | 16+ | Populated from integration plan (re-dive pending) | Populated (34 tasks) | Not Started |
-| 5 | Sprint, Developer API | Phase 4, 6 | 14 | Amended per addendum | Done (14 tasks) | Not Started |
-| 7 | Dashboards, Search | Phase 3, 4, 5, 6 | 26+3 | Amended per addendum | Done (16 tasks) | Not Started |
-| 8 | Documents, Notifications | Phase 1, 2, 7 | 21 | Amended per addendum | Done (10 tasks) | Not Started |
-| 9 | QA, Jira, Archival, Lifecycle | Phase 1, 4, 8 | 22 | Reviewed per addendum | Done (11 tasks) | Not Started |
+| 3 | Discovery, Questions | Phase 2 | 14 | Done | Done (14 tasks) | Not Started |
+| 4 | Work Management | Phase 2, 3 | 11 | Done | Done (10 tasks) | Not Started |
+| 6a | Org, Knowledge (Five-Layer Model) | Phase 11, 2 | 16+ | Done (re-dive 2026-04-14) | Done (33 tasks) | Not Started |
+| 5 | Sprint, Developer API | Phase 4, 6a | 14 | Done | Done (14 tasks) | Not Started |
+| 7 | Dashboards, Search | Phase 3, 4, 5, 6a | 26+3 | Done | Done (16 tasks) | Not Started |
+| 8 | Documents, Notifications | Phase 1, 2, 7 | 21 | Done | Done (10 tasks) | Not Started |
+| 9 | QA, Jira, Archival, Lifecycle | Phase 1, 4, 8 | 22 | Done | Done (11 tasks) | Not Started |
+| 6b | Org Health Assessment | Phase 6a, 8, 9 | split from 6 | Done (2026-04-14) | Done (6 tasks) | Not Started |
 
 ## Bug Tracking
 
@@ -140,4 +139,5 @@ Per-phase deep-dive items live in each phase's `PHASE_SPEC.md` "Outstanding for 
 | 2026-04-13 | Step 2 architecture pass complete. TECHNICAL_SPEC.md fully integrated with addendum (pipeline-first harness, five-layer org KB, 11 new schema entities, model router, hybrid retrieval, eval harness). Layer 5 identity (Query Interface vs. Org Health) reconciled across architecture and phase docs. |
 | 2026-04-13 | Phase 2 deep-dive complete. Unified phase (2a/2b split rejected). 10 outstanding decisions resolved: (1) 9 orphan TaskType values dispositioned and removed in new Task 18 with grep CI check; (2) per-pipeline error behavior locked with non-blocking stages explicitly identified (Transcript s6, Answer s4, Story s5); (3) confidence thresholds — Transcript strict > 0.85, Answer tiered 0.85/0.70; (4) freeform agent tool set = 8 read + 3 write, added `get_recent_sessions` and `get_milestone_progress`, rejected `get_org_component_detail` and `get_question_thread`; (5) orchestration — Transcript=async, Answer=sync, Story=async, Briefing=sync+5min-cache; (6) cost cap hybrid — 80% soft event emit + 100% hard 429 + daily hard limit 100/user/project; (7) pipeline schema ownership clarified as Phase 11; Phase 2 only adds Project.aiDailyLimit + aiMonthlyCostCap; (8) Story Gen eval similarity cosine ≥ 0.80; (9) cross-pipeline integration matrix documented in SPEC §8.2; (10) Task 11/12 ACs now complete the 20 Phase 11 fixture stubs with real expectations; Task 17 adds 10 Briefing fixtures. Task count: 17 → 18. Added global project rule in `CLAUDE.md`: all phase work must trace to PRD + PRD Addendum v1 requirements. |
 | 2026-04-13 | Phase 11 deep-dive complete. All 5 open decisions resolved: (1) Voyage `voyage-3-lite` (512-dim) locked as embedding provider — 50-pair quality test skipped as low-value for V1; swap path via `embedding_model` column + migration playbook; (2) golden-corpus snapshot required before hybrid retrieval refactor; (3) HNSW defaults `m=16, ef_construction=64`; (4) RRF `k=60` locked with post-Phase 2 retune window; (5) fixture authorship split — Phase 11 authors inputs + `TODO(phase-2)` stubs, Phase 2 pipeline tasks complete real expectations. Addendum coverage re-verified: 5 gaps closed — `CREATE EXTENSION IF NOT EXISTS vector;` made explicit; `agent_conversations` + `agent_messages` added to Task 1 (schema table count 11 → 13); Voyage data handling contract (no retention, no training) added as gating AC on Task 2; CI cost ceiling $0.50 added to Task 10; all embedding columns corrected from `vector(1536)` to `vector(512)` to match Voyage. `OrgComponent` confirmed already in `prisma/schema.prisma:815` (Layer 1 completed by `component_edges` alone). |
+| 2026-04-14 | Phase 6 re-dive. Split into Phase 6a (five-layer org KB, 33 tasks) + Phase 6b (Org Health Assessment, 6 tasks). 12 design deltas vs. audit-fix-wave spec. Major: scope split. Medium: biweekly domain review cron CUT from V1 (narrow ADD-4.4-07 supersession); Org Health tech-debt analyzer cut. Small: cycle-bound dual-write migration; SF Tooling API Apex parser (no regex); ID-reuse rename heuristic (30-day + Levenshtein 50%); brownfield proposal 20-min timeout + $15 cost ceiling + "Unclassified" deterministic fallback; managed-pkg toggle OFF→ON does not auto re-run; cycle detection in `traverse_component_graph`; `component_snapshot_id` isolation for Org Health; Phase 5 edge-type allowlist contract. PHASE_PLAN.md updated (new 6b node + dependency edges). Stage 4 marked COMPLETE. Stage 5 ready to start. |
 | 2026-04-13 | Step 2 verification sweep complete. Four parallel verifier agents cross-checked PRD (27 §) + Addendum v1 (10 §) vs. PHASE_PLAN.md, all 11 phase folders (PHASE_SPEC + TASKS), and TECHNICAL_SPEC.md. ~245 atomic requirements verified. Verdict: PROCEED to Step 3. Zero MISMATCHes (no phase contradicts PRD/addendum). All 11 schema entities, 4 pipelines, 5 org KB layers, 14 notification types, 8 locked decisions, 6 personas individually accounted for. Phase ordering compliant with Addendum §6. 7 critical findings carried into Step 3: Phase 4 dev guardrails escalation (GAP-WORK-006), KA.embedding migration, embedding provider gate, brownfield scratch-org warning UX, PHASE_PLAN graph edge fix, Phase 2 split decision, 6 minor PRD-mention gaps. Per-verifier matrices and consolidated report retired on 2026-04-14; audit trail in `.claude/threads/2026-04-13-prd-traceability-audit.md`. |

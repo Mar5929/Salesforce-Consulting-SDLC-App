@@ -1,7 +1,7 @@
 # Phase Plan: Gap Closure
 
-> Last Updated: 2026-04-13
-> Total Phases: 11 (Phase 11 added; Addendum v1 incorporated April 13, 2026)
+> Last Updated: 2026-04-14
+> Total Phases: 12 (Phase 11 added; Addendum v1 incorporated April 13, 2026; Phase 6b split off from Phase 6 during 2026-04-14 re-dive)
 > Total Gaps: 153 (22 Critical, 77 Significant, 54 Minor) + Phase 10 UI overhaul + Phase 11 AI infrastructure
 
 ---
@@ -14,14 +14,17 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
   │     └── Phase 2 (Harness Hardening + Core Pipelines) ─── pipelines + freeform agent
   │           ├── Phase 3 (Discovery/Questions) ─── uses Answer Logging Pipeline
   │           ├── Phase 4 (Work Management) ─── uses Story Generation Pipeline
-  │           │     └── Phase 5 (Sprint/Developer) ─── depends on Phase 4 + Phase 6
-  │           └── Phase 6 (Org/Knowledge Five-Layer) ─── depends on Phase 11 + Phase 2
+  │           │     └── Phase 5 (Sprint/Developer) ─── depends on Phase 4 + Phase 6a
+  │           └── Phase 6a (Org/Knowledge Five-Layer) ─── depends on Phase 11 + Phase 2
   │                 └── Phase 5 (Sprint/Developer) ─── search_org_kb needed
-  │                       └── Phase 7 (Dashboards/Search) ─── depends on Phase 5 + Phase 6
+  │                       └── Phase 7 (Dashboards/Search) ─── depends on Phase 5 + Phase 6a
   │                             ├── Phase 8 (Docs/Notifications) ─── pipeline notifications
-  │                             │     └── Phase 9 (QA/Jira/Archival)
+  │                             │     ├── Phase 9 (QA/Jira/Archival)
+  │                             │     └── Phase 6b (Org Health Assessment) ─── needs Phase 8 Word gen
   └── Phase 10 (Work Tab UI Overhaul) ─── parallel with Phase 11, shared layout patterns
 ```
+
+**Split note (2026-04-14 re-dive):** Phase 6 was split into Phase 6a (five-layer org KB, 33 tasks remaining after split) and Phase 6b (Org Health Assessment, 6 tasks). 6a keeps the folder `phase-06-org-knowledge`; 6b lives in `phase-06b-org-health-assessment`. 6b depends on 6a (substrate) + Phase 8 (Word gen); runs parallel with Phase 7 or Phase 9.
 
 ---
 
@@ -154,27 +157,48 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 
 ---
 
-### Phase 6: Org, Knowledge — Five-Layer Model *(scope updated — needs new deep-dive)*
+### Phase 6a: Org, Knowledge — Five-Layer Model *(re-dive complete 2026-04-14)*
 
 | Attribute | Details |
 |-----------|---------|
-| **Scope** | Implement the five-layer org knowledge model from PRD Addendum §4. Layer 1: populate `component_edges` during sync, sync reconciliation algorithm (salesforce_metadata_id-first match, rename tracking, soft-archive). Layer 2: component embeddings on sync (re-embed on hash change). Layer 3: `domains` + `domain_memberships` (extends DomainGrouping), brownfield domain proposal via Claude Managed Agents. Layer 4: `annotations` + `annotation_embeddings` (polymorphic, extends BusinessContextAnnotation). Layer 5: `search_org_kb()` function (BM25 + pgvector RRF). Also: PKCE OAuth, automated sync cron, KnowledgeArticle confirmation model, planned component creation, Org Health Assessment via Claude Managed Agents. |
+| **Scope** | Implement the five-layer org knowledge model from PRD Addendum §4. Layer 1: `component_edges` during sync, sync reconciliation with rename detection and ID-reuse heuristic. Layer 2: component embeddings on sync (re-embed on hash change). Layer 3: `domains` + `domain_memberships`, brownfield domain proposal via Claude Managed Agents with circuit breaker + deterministic fallback. Layer 4: polymorphic `annotations` + `annotation_embeddings`. Layer 5: `search_org_kb()` (BM25 + pgvector RRF) + `traverse_component_graph` recursive CTE with cycle detection. Preserved: PKCE OAuth, sync cron, KnowledgeArticle confirmation model, planned component creation. Knowledge refresh + articulation pipeline. NLP org query rewrite. Biweekly domain review cron CUT from V1. |
 | **Depends On** | Phase 11, Phase 2 |
-| **Unlocks** | Phase 5, Phase 7 |
+| **Unlocks** | Phase 5, Phase 7, Phase 6b |
 | **Parallel With** | Phase 3 (partially) |
 | **Complexity** | XL |
-| **Tasks** | 34 (populated; re-dive pending) |
+| **Tasks** | 33 (was 34; biweekly Task 12c cut; Org Health Tasks 21–23 moved to Phase 6b) |
 
 **Key Deliverables:**
-- Layer 1: `component_edges` population, sync reconciliation algorithm, rename tracking
-- Layer 2: component embeddings on sync, HNSW index, hash-based re-embed
-- Layer 3: domain + domain_membership CRUD, brownfield domain proposal (Managed Agents)
+- Layer 1: `component_edges` population, sync reconciliation algorithm, rename tracking with ID-reuse heuristic, Apex Tooling API parser
+- Layer 2: component embeddings on sync, HNSW index, hash-based re-embed, cycle-bound dual-write migration
+- Layer 3: domain + domain_membership CRUD, brownfield domain proposal (Managed Agents) with 20-min timeout + $15 cost ceiling + "Unclassified" fallback
 - Layer 4: polymorphic annotations + annotation embeddings, Answer Logging Pipeline integration
-- Layer 5: `search_org_kb()` — the org knowledge query interface used by Context Package Assembly and freeform agent
-- Org Health Assessment (Managed Agents, long-running, rescue engagements)
+- Layer 5: `search_org_kb()` + `traverse_component_graph` with cycle detection
 - KnowledgeArticle creation, confirmation model, refresh pipeline
+- NLP org query rewired through `search_org_kb`
 
-**Addendum reference:** PRD Addendum §4 supersedes PRD §13.4 in substance. §13.3 (sync semantics) and §13.6 (brownfield ingestion) are preserved and clarified.
+**Addendum reference:** PRD Addendum §4 supersedes PRD §13.4 in substance. §13.3 (sync semantics) and §13.6 (brownfield ingestion) preserved. Biweekly review §4.4-07 narrowly superseded for V1.
+
+---
+
+### Phase 6b: Org Health Assessment *(new — split from Phase 6 during 2026-04-14 re-dive)*
+
+| Attribute | Details |
+|-----------|---------|
+| **Scope** | Long-running diagnostic for rescue/takeover engagements. Six deterministic analyzers (test coverage, governor-limit risk, sharing model, FLS compliance, hardcoded IDs, unresolved references). Managed Agent synthesis (Opus 4.6, `reason_deeply`). Word document output via Phase 8. Snapshot-at-kickoff isolation. Trigger UI + cost ceiling ($25 default + architect override). Tech-debt analyzer CUT during re-dive. |
+| **Depends On** | Phase 6a (substrate: `component_edges`, `unresolved_references` MV, reconciliation), Phase 8 (Word doc pipeline), Phase 9 (`assertProjectWritable`) |
+| **Unlocks** | None |
+| **Parallel With** | Phase 7 or Phase 9 (after Phase 8 lands) |
+| **Complexity** | M |
+| **Tasks** | 6 |
+
+**Key Deliverables:**
+- Six deterministic analyzers
+- Snapshot-isolation mechanism
+- Managed Agent synthesis
+- Word document output (Phase 8 pipeline)
+- Trigger + cost ceiling + progress UI
+- Cost tracking in `pipeline_runs`
 
 ---
 
@@ -268,11 +292,12 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 3. **Phase 10:** Work Tab UI Overhaul — parallel with Phase 11 (no AI dependencies)
 4. **Phase 2:** Harness Hardening + Core Pipelines — after Phase 11
 5. **Phase 3:** Discovery/Questions + **Phase 4:** Work Management — parallel (both after Phase 2)
-6. **Phase 6:** Org/Knowledge Five-Layer Model — after Phase 11 + Phase 2
-7. **Phase 5:** Sprint/Developer API — after Phase 4 AND Phase 6 (needs search_org_kb)
-8. **Phase 7:** Dashboards/Search — after Phase 5 + Phase 6
+6. **Phase 6a:** Org/Knowledge Five-Layer Model — after Phase 11 + Phase 2
+7. **Phase 5:** Sprint/Developer API — after Phase 4 AND Phase 6a (needs search_org_kb)
+8. **Phase 7:** Dashboards/Search — after Phase 5 + Phase 6a
 9. **Phase 8:** Documents/Notifications — after Phase 7
 10. **Phase 9:** QA/Jira/Archival — after Phase 8
+11. **Phase 6b:** Org Health Assessment — parallel with Phase 9 (after Phase 6a + Phase 8 + Phase 9 `assertProjectWritable`)
 
 ---
 
@@ -280,8 +305,9 @@ Phase 1 (RBAC/Security) ─── foundational, unblocks all
 
 - **Phase 11 (AI Foundation):** Embedding provider decision is a gate. Run quality test before deep-dive. Hybrid retrieval tuning (RRF k constant, HNSW parameters) requires labeled test pairs — plan for at least 50 component-to-query pairs.
 - **Phase 2 (Pipelines):** XL complexity now that pipelines are added. Four pipeline implementations + freeform agent is significant scope. Consider splitting into Phase 2a (harness hardening) and Phase 2b (pipelines) during deep-dive if needed.
-- **Phase 6 (Five-Layer Model):** Most architecturally complex phase. Claude Managed Agents integration (brownfield domain proposal + Org Health Assessment) is new territory. Allow time for Managed Agents evaluation before deep-dive.
-- **Phase 5 (Sprint/Dev API):** Now depends on Phase 6 for `search_org_kb`. This moves Phase 5 later in the sequence than originally planned. Context Package Assembly latency target (<3s p95) requires attention to query optimization.
+- **Phase 6a (Five-Layer Model):** Most architecturally complex phase. Claude Managed Agents integration (brownfield domain proposal) is new territory. Re-dive 2026-04-14 added circuit breaker (20-min timeout, $15 cost ceiling, deterministic fallback) to de-risk first run. Tooling-API-based Apex parsing avoids regex edge cases.
+- **Phase 6b (Org Health Assessment):** Split out 2026-04-14. Depends on Phase 6a + Phase 8. Tech-debt analyzer cut; snapshot isolation added to stabilize findings across sync runs. No downstream consumers so scheduling is flexible.
+- **Phase 5 (Sprint/Dev API):** Now depends on Phase 6a for `search_org_kb`. This moves Phase 5 later in the sequence than originally planned. Context Package Assembly latency target (<3s p95) requires attention to query optimization. Must pass `edge_types: ['lookup','master_detail','references']` and `depth ≤ 2` to `expand_neighbors` (Phase 6a contract).
 - **Phase 3 (Discovery):** Gap detection and readiness assessment are XL AI features. These are the PRD's headline capabilities and have the highest implementation uncertainty.
 - **Phase 7 (Dashboards):** Largest phase by gap count (26+3). May need splitting during deep-dive.
 - **Phase 9 (QA/Jira/Archival):** Covers 4 distinct subsystems. May benefit from splitting during deep-dive.
