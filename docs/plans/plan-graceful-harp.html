@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plan: Build the SDLC App UI from the Claude Design Handoff</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            },
+            colors: {
+              ink: {
+                900: '#0F172A',
+                800: '#1E293B',
+                700: '#334155',
+                500: '#64748B',
+                400: '#94A3B8',
+              },
+              surface: {
+                50: '#F8FAFC',
+                100: '#F1F5F9',
+                200: '#E2E8F0',
+              },
+              accent: { DEFAULT: '#4F46E5', dark: '#4338CA', light: '#EEF2FF' },
+              ok: '#16A34A',
+              warn: '#F59E0B',
+              danger: '#EF4444',
+              violet: { soft: '#FAFAFF', edge: '#DDD6FE' },
+            },
+            boxShadow: {
+              card: '0 1px 2px rgba(15, 23, 42, 0.03)',
+              menu: '0 8px 20px rgba(15, 23, 42, 0.12)',
+              drawer: '-10px 0 30px rgba(15, 23, 42, 0.08)',
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: 'Inter', ui-sans-serif, system-ui;
+        font-size: 13px;
+        color: #0f172a;
+        background: #f8fafc;
+      }
+      .mono {
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+      }
+      .label {
+        font-size: 10.5px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: #64748b;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 18px;
+      }
+      .ai-card {
+        background: linear-gradient(135deg, #fafaff, #f5f3ff);
+        border: 1px solid #ddd6fe;
+        border-radius: 8px;
+        padding: 18px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11.5px;
+        font-weight: 500;
+        padding: 3px 9px;
+        border-radius: 999px;
+      }
+      .pill-indigo {
+        background: #eef2ff;
+        color: #4338ca;
+        border: 1px solid #e0e7ff;
+      }
+      .pill-slate {
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+      }
+      .pill-amber {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+      }
+      .pill-green {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+      }
+      .pill-red {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        display: inline-block;
+      }
+      .gradient-logo {
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+      }
+      .wave-card {
+        position: relative;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 16px 18px 18px;
+      }
+      .wave-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 8px 0 0 8px;
+      }
+      .wave-0::before {
+        background: #94a3b8;
+      }
+      .wave-1::before {
+        background: #4f46e5;
+      }
+      .wave-2::before {
+        background: #a855f7;
+      }
+      .wave-3::before {
+        background: #16a34a;
+      }
+      .agent-tile {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 10px 12px;
+      }
+      .agent-tile h4 {
+        font-size: 12px;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 4px;
+      }
+      .agent-tile p {
+        font-size: 11.5px;
+        color: #64748b;
+        line-height: 1.5;
+      }
+      .tree {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11.5px;
+        color: #334155;
+        line-height: 1.6;
+      }
+      .tree .dim {
+        color: #94a3b8;
+      }
+      .tree .leaf {
+        color: #4338ca;
+      }
+      .tree .folder {
+        color: #0f172a;
+        font-weight: 600;
+      }
+      details > summary {
+        cursor: pointer;
+        list-style: none;
+      }
+      details > summary::-webkit-details-marker {
+        display: none;
+      }
+      details[open] .chev {
+        transform: rotate(90deg);
+      }
+      .chev {
+        transition: transform 0.15s ease;
+      }
+      .ck {
+        width: 14px;
+        height: 14px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 3px;
+        display: inline-block;
+        flex: none;
+      }
+      .grid-fade {
+        background-image: linear-gradient(
+          to right,
+          #e2e8f0 1px,
+          transparent 1px
+        );
+        background-size: 12.5% 100%;
+      }
+      .arrow-right::after {
+        content: '\2192';
+        margin: 0 8px;
+        color: #94a3b8;
+      }
+      .kbd {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10.5px;
+        padding: 1px 6px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        color: #475569;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <!-- Topbar -->
+    <header class="bg-ink-900 text-white">
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
+        <div
+          class="gradient-logo w-8 h-8 rounded-md flex items-center justify-center font-semibold"
+        >
+          R
+        </div>
+        <div class="flex-1">
+          <div class="text-xs text-ink-400 mono">PLAN · graceful-harp</div>
+          <h1 class="text-base font-semibold">
+            Build the SDLC App UI from the Claude Design Handoff
+          </h1>
+        </div>
+        <span class="pill pill-green !bg-green-500/15 !text-green-300 !border-green-500/30"
+          ><span class="dot bg-ok"></span>Approved</span
+        >
+        <span class="pill pill-slate !bg-white/5 !text-ink-400 !border-white/10 mono"
+          >2026-04-25</span
+        >
+      </div>
+    </header>
+
+    <!-- Hero context -->
+    <section class="max-w-7xl mx-auto px-6 mt-6">
+      <div class="ai-card">
+        <div class="flex items-start gap-3">
+          <svg
+            viewBox="0 0 24 24"
+            class="w-5 h-5 mt-0.5 text-violet-600 flex-none"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path
+              d="M12 3l1.7 4.7L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7z"
+            />
+          </svg>
+          <div>
+            <div class="label mb-1">Why this plan exists</div>
+            <p class="text-ink-700 leading-relaxed">
+              Pivot off "spec-only, no code" discipline. A
+              <span class="font-semibold">Claude Design</span> export landed at
+              <span class="mono text-xs">visuals/claude-design-exports/</span>
+              that captures the app end to end. We use it as the concrete
+              starting point for the real code instead of writing 17 more
+              PRODUCT_SPEC sections. Spec work on §§1–7 continues in a parallel
+              plan; this one covers
+              <span class="font-semibold">UI code build only</span>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scope -->
+    <section class="max-w-7xl mx-auto px-6 mt-5 grid md:grid-cols-2 gap-4">
+      <div class="card">
+        <div class="label mb-3">In scope</div>
+        <ul class="space-y-2 text-ink-700">
+          <li class="flex gap-2">
+            <span class="dot bg-ok mt-1.5"></span>Next.js 15 + TypeScript + Tailwind front-end
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-ok mt-1.5"></span>Pixel-perfect port of all 10 tabs and 13 settings screens
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-ok mt-1.5"></span>Mock data sourced from
+            <span class="mono text-xs">data.js</span> as a typed module
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-ok mt-1.5"></span>Playwright screenshot verification per route
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-ok mt-1.5"></span>Seeding
+            <span class="mono text-xs">docs/Solution Design/</span>
+          </li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="label mb-3">Out of scope</div>
+        <ul class="space-y-2 text-ink-700">
+          <li class="flex gap-2">
+            <span class="dot bg-danger mt-1.5"></span>Backend, API, database
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-danger mt-1.5"></span>Authentication, role gating, real RBAC
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-danger mt-1.5"></span>Real AI calls (banners are static)
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-danger mt-1.5"></span>Salesforce or Jira integrations
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-danger mt-1.5"></span>Edits to PRODUCT_SPEC.md or its subfiles
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Tech stack -->
+    <section class="max-w-7xl mx-auto px-6 mt-5">
+      <div class="card">
+        <div class="flex items-center justify-between mb-3">
+          <div class="label">Tech stack — decided</div>
+          <span class="pill pill-indigo">Locked</span>
+        </div>
+        <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div class="agent-tile">
+            <h4>Framework</h4>
+            <p class="mono">Next.js 15 · App Router · TS</p>
+          </div>
+          <div class="agent-tile">
+            <h4>Styling</h4>
+            <p class="mono">Tailwind v4</p>
+          </div>
+          <div class="agent-tile">
+            <h4>Icons</h4>
+            <p class="mono">Inline SVG (26 ported)</p>
+          </div>
+          <div class="agent-tile">
+            <h4>Fonts</h4>
+            <p class="mono">Inter + JetBrains Mono</p>
+          </div>
+          <div class="agent-tile">
+            <h4>State</h4>
+            <p class="mono">useState + Context</p>
+          </div>
+          <div class="agent-tile">
+            <h4>Routing</h4>
+            <p class="mono">App Router</p>
+          </div>
+          <div class="agent-tile">
+            <h4>Data</h4>
+            <p class="mono">data.ts static module</p>
+          </div>
+          <div class="agent-tile">
+            <h4>Testing</h4>
+            <p class="mono">Playwright screenshots</p>
+          </div>
+          <div class="agent-tile">
+            <h4>Lint</h4>
+            <p class="mono">ESLint + Prettier</p>
+          </div>
+          <div class="agent-tile">
+            <h4>Pkg mgr</h4>
+            <p class="mono">pnpm</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Wave timeline -->
+    <section class="max-w-7xl mx-auto px-6 mt-5">
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="label">Execution timeline</div>
+            <h2 class="text-base font-semibold mt-1">
+              4 waves · ~12 agent invocations
+            </h2>
+          </div>
+          <div class="flex gap-2 items-center">
+            <span class="pill pill-slate"
+              ><span class="dot" style="background: #94a3b8"></span>Sequential</span
+            >
+            <span class="pill pill-indigo"
+              ><span class="dot" style="background: #4f46e5"></span>Parallel ×3</span
+            >
+            <span class="pill" style="background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff"
+              ><span class="dot" style="background: #a855f7"></span>Parallel ×8</span
+            >
+            <span class="pill pill-green"
+              ><span class="dot" style="background: #16a34a"></span>Verification</span
+            >
+          </div>
+        </div>
+
+        <!-- Lane diagram -->
+        <div class="grid grid-cols-12 gap-3">
+          <!-- Wave 0 -->
+          <div class="col-span-12 lg:col-span-2">
+            <div class="wave-card wave-0 h-full">
+              <div class="flex items-center justify-between mb-2">
+                <span class="mono text-xs text-ink-500">WAVE 0</span>
+                <span class="pill pill-slate">1 agent</span>
+              </div>
+              <h3 class="font-semibold mb-1">Foundation</h3>
+              <p class="text-xs text-ink-500 leading-relaxed">
+                Sequential bootstrap — must finish before Wave 1 starts.
+              </p>
+              <div class="mt-3 space-y-2">
+                <div class="agent-tile">
+                  <h4>Bootstrap</h4>
+                  <p>
+                    Scaffold <span class="mono">web/</span>, port design tokens
+                    + fonts, port <span class="mono">data.js → data.ts</span>,
+                    set up Playwright.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wave 1 -->
+          <div class="col-span-12 lg:col-span-3">
+            <div class="wave-card wave-1 h-full">
+              <div class="flex items-center justify-between mb-2">
+                <span class="mono text-xs text-ink-500">WAVE 1</span>
+                <span class="pill pill-indigo">3 parallel</span>
+              </div>
+              <h3 class="font-semibold mb-1">Shell + primitives</h3>
+              <p class="text-xs text-ink-500 leading-relaxed">
+                Single message, 3 concurrent <span class="mono">Agent</span>
+                calls.
+              </p>
+              <div class="mt-3 space-y-2">
+                <div class="agent-tile">
+                  <h4>1A · Primitives</h4>
+                  <p>
+                    Avatar, Chip, Readiness, Icon (×26), Drawer, Card, Button,
+                    Table.
+                  </p>
+                </div>
+                <div class="agent-tile">
+                  <h4>1B · App shell</h4>
+                  <p>Rail, Topbar, ProjectHeader, LifecycleStages, routing.</p>
+                </div>
+                <div class="agent-tile">
+                  <h4>1C · Context</h4>
+                  <p>ViewingAsProvider, DrawerProvider, DrawerHost.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wave 2 -->
+          <div class="col-span-12 lg:col-span-5">
+            <div class="wave-card wave-2 h-full">
+              <div class="flex items-center justify-between mb-2">
+                <span class="mono text-xs text-ink-500">WAVE 2</span>
+                <span
+                  class="pill"
+                  style="
+                    background: #f3e8ff;
+                    color: #6b21a8;
+                    border: 1px solid #e9d5ff;
+                  "
+                  >8 parallel</span
+                >
+              </div>
+              <h3 class="font-semibold mb-1">Feature tabs</h3>
+              <p class="text-xs text-ink-500 leading-relaxed">
+                Single message, 8 concurrent <span class="mono">Agent</span>
+                calls. Each runs its own screenshot loop.
+              </p>
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                <div class="agent-tile">
+                  <h4>2A · Home</h4>
+                  <p>home.jsx</p>
+                </div>
+                <div class="agent-tile">
+                  <h4>2B · Work core</h4>
+                  <p>WorkHome · Admin · Roadmap</p>
+                </div>
+                <div class="agent-tile">
+                  <h4>2C · Items + Sprints</h4>
+                  <p>Tree · Board · Timeline · Sprints</p>
+                </div>
+                <div class="agent-tile">
+                  <h4>2D · Tabs</h4>
+                  <p>Discovery · Questions · Knowledge · Org</p>
+                </div>
+                <div class="agent-tile">
+                  <h4>2E · Chat</h4>
+                  <p>chat.jsx</p>
+                </div>
+                <div class="agent-tile">
+                  <h4>2F · Dashboards</h4>
+                  <p>PM · Sprint · Roadmap · QA · Usage · Health</p>
+                </div>
+                <div class="agent-tile">
+                  <h4>2G · Settings</h4>
+                  <p>13 screens (project + firm)</p>
+                </div>
+                <div class="agent-tile">
+                  <h4>2H · Drawers</h4>
+                  <p>WorkItem · Question · Reproposal · Readiness</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wave 3 -->
+          <div class="col-span-12 lg:col-span-2">
+            <div class="wave-card wave-3 h-full">
+              <div class="flex items-center justify-between mb-2">
+                <span class="mono text-xs text-ink-500">WAVE 3</span>
+                <span class="pill pill-green">verify</span>
+              </div>
+              <h3 class="font-semibold mb-1">Integration + QA</h3>
+              <p class="text-xs text-ink-500 leading-relaxed">
+                Top-level agent only. Sequential pass.
+              </p>
+              <div class="mt-3 space-y-2">
+                <div class="agent-tile">
+                  <h4>Sweep + diff</h4>
+                  <p>
+                    Full-route screenshots, visual diff vs. prototype, fix
+                    cycle, lint/typecheck/build/test green gate.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flow arrows -->
+        <div
+          class="hidden lg:flex items-center justify-between mt-2 px-2 text-ink-400 text-xs"
+        >
+          <span class="flex-1 text-center">Wave 0</span>
+          <span class="arrow-right"></span>
+          <span class="flex-1 text-center">Wave 1</span>
+          <span class="arrow-right"></span>
+          <span class="flex-1 text-center">Wave 2</span>
+          <span class="arrow-right"></span>
+          <span class="flex-1 text-center">Wave 3</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Project structure + Open questions -->
+    <section
+      class="max-w-7xl mx-auto px-6 mt-5 grid lg:grid-cols-3 gap-4"
+    >
+      <div class="card lg:col-span-2">
+        <div class="label mb-3">Project structure ·
+          <span class="mono normal-case tracking-normal">web/</span>
+        </div>
+        <div class="tree">
+          <div><span class="folder">web/</span></div>
+          <div>├─ <span class="folder">app/</span></div>
+          <div>│&nbsp;&nbsp;├─ layout.tsx <span class="dim"># root shell</span></div>
+          <div>│&nbsp;&nbsp;├─ globals.css</div>
+          <div>│&nbsp;&nbsp;├─ page.tsx <span class="dim"># → /home</span></div>
+          <div>│&nbsp;&nbsp;└─ <span class="folder">(app)/</span></div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ home/page.tsx</div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ discovery/page.tsx</div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ questions/page.tsx</div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ <span class="folder">work/</span></div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;├─ home · admin · roadmap · sprints</div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;└─ <span class="folder">items/</span> <span class="leaf">tree · board · timeline</span></div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ knowledge · org · chat · documents</div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ <span class="folder">dashboards/</span> <span class="leaf">pm · sprint · roadmap · qa · usage · health</span></div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="folder">settings/</span> <span class="leaf">13 screens</span></div>
+          <div>├─ <span class="folder">components/</span> <span class="dim">primitives · shell · drawers · widgets</span></div>
+          <div>├─ <span class="folder">lib/</span> <span class="dim">data.ts · types.ts · context.tsx</span></div>
+          <div>├─ tailwind.config.ts</div>
+          <div>├─ <span class="folder">tests/screenshots/</span></div>
+          <div>└─ package.json · tsconfig.json · next.config.ts</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label mb-3">Open questions before kickoff</div>
+        <ol class="space-y-3 text-ink-700">
+          <li class="flex gap-2">
+            <span class="mono text-xs text-accent flex-none mt-0.5">Q1</span>
+            <div>
+              <div class="font-semibold">App location</div>
+              <p class="text-xs text-ink-500">
+                <span class="mono">web/</span> · <span class="mono">apps/web/</span> · root
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-2">
+            <span class="mono text-xs text-accent flex-none mt-0.5">Q2</span>
+            <div>
+              <div class="font-semibold">Solution Design folder name</div>
+              <p class="text-xs text-ink-500">
+                <span class="mono">Solution Design</span> · Architecture · Technical Design
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-2">
+            <span class="mono text-xs text-accent flex-none mt-0.5">Q3</span>
+            <div>
+              <div class="font-semibold">Package manager</div>
+              <p class="text-xs text-ink-500">pnpm · npm · yarn</p>
+            </div>
+          </li>
+          <li class="flex gap-2">
+            <span class="mono text-xs text-accent flex-none mt-0.5">Q4</span>
+            <div>
+              <div class="font-semibold">Production strength now or Wave 4?</div>
+              <p class="text-xs text-ink-500">
+                ARIA + keyboard + focus mgmt now, or defer to dedicated pass
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-2">
+            <span class="mono text-xs text-accent flex-none mt-0.5">Q5</span>
+            <div>
+              <div class="font-semibold">data.js port fidelity</div>
+              <p class="text-xs text-ink-500">
+                Bug-for-bug copy or clean obvious inconsistencies
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-2">
+            <span class="mono text-xs text-accent flex-none mt-0.5">Q6</span>
+            <div>
+              <div class="font-semibold">Commit cadence</div>
+              <p class="text-xs text-ink-500">
+                Per wave · per agent · single
+              </p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Verification gate -->
+    <section class="max-w-7xl mx-auto px-6 mt-5">
+      <div class="card">
+        <div class="flex items-center justify-between mb-3">
+          <div class="label">Wave 3 gate · verification checklist</div>
+          <span class="pill pill-slate mono">all must pass</span>
+        </div>
+        <div class="grid md:grid-cols-2 gap-x-6 gap-y-2.5 text-ink-700">
+          <div class="flex items-start gap-2"><span class="ck"></span><span>Lint + typecheck + build clean</span></div>
+          <div class="flex items-start gap-2"><span class="ck"></span><span>Every route renders without console errors</span></div>
+          <div class="flex items-start gap-2"><span class="ck"></span><span>Every <span class="mono text-xs">styles.css</span> token in tailwind config</span></div>
+          <div class="flex items-start gap-2"><span class="ck"></span><span>Every primitive in <span class="mono text-xs">components.jsx</span> has counterpart</span></div>
+          <div class="flex items-start gap-2"><span class="ck"></span><span>Rail, Topbar, ProjectHeader, LifecycleStages identical to prototype</span></div>
+          <div class="flex items-start gap-2"><span class="ck"></span><span>All 4 drawers open/close correctly (backdrop, Esc)</span></div>
+          <div class="flex items-start gap-2"><span class="ck"></span><span>Role switcher updates Home widgets per <span class="mono text-xs">data.js</span> rules</span></div>
+          <div class="flex items-start gap-2"><span class="ck"></span><span>Playwright screenshot sweep complete</span></div>
+          <div class="flex items-start gap-2"><span class="ck"></span><span>Visual diff vs. reference PNGs has no outstanding bugs</span></div>
+          <div class="flex items-start gap-2"><span class="ck"></span><span><span class="mono text-xs">docs/Solution Design/</span> seeded with 6 files</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Critical reads + Memory -->
+    <section
+      class="max-w-7xl mx-auto px-6 mt-5 grid lg:grid-cols-2 gap-4"
+    >
+      <div class="card">
+        <div class="label mb-3">Critical reads · new session entry point</div>
+        <ol class="space-y-2 text-ink-700">
+          <li class="flex gap-2"><span class="mono text-xs text-ink-400 flex-none">01</span>This plan</li>
+          <li class="flex gap-2"><span class="mono text-xs text-ink-400 flex-none">02</span>Project <span class="mono text-xs">CLAUDE.md</span></li>
+          <li class="flex gap-2"><span class="mono text-xs text-ink-400 flex-none">03</span>User-global <span class="mono text-xs">~/.claude/CLAUDE.md</span> + rules</li>
+          <li class="flex gap-2"><span class="mono text-xs text-ink-400 flex-none">04</span>Handoff <span class="mono text-xs">README.md</span></li>
+          <li class="flex gap-2"><span class="mono text-xs text-ink-400 flex-none">05</span><span class="mono text-xs">project/index.html</span> top to bottom</li>
+          <li class="flex gap-2"><span class="mono text-xs text-ink-400 flex-none">06</span><span class="mono text-xs">project/styles.css</span> (1361 lines)</li>
+          <li class="flex gap-2"><span class="mono text-xs text-ink-400 flex-none">07</span><span class="mono text-xs">components.jsx</span></li>
+          <li class="flex gap-2"><span class="mono text-xs text-ink-400 flex-none">08</span><span class="mono text-xs">data.js</span></li>
+          <li class="flex gap-2"><span class="mono text-xs text-ink-400 flex-none">09</span>All other <span class="mono text-xs">.jsx</span> in <span class="mono text-xs">project/</span></li>
+        </ol>
+      </div>
+      <div class="card">
+        <div class="label mb-3">Memory updates the new session must make</div>
+        <ul class="space-y-2 text-ink-700">
+          <li class="flex gap-2">
+            <span class="dot bg-accent mt-1.5"></span>
+            <span>
+              Update <span class="mono text-xs">MEMORY.md</span>,
+              <span class="mono text-xs">project_overview.md</span>,
+              <span class="mono text-xs">session_history.md</span>: phase
+              changed from "spec-only" to "spec §§1–7 maintenance + UI build
+              Wave 1".
+            </span>
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-accent mt-1.5"></span>
+            <span>
+              Append to
+              <span class="mono text-xs">feedback_no_design_styling_in_spec.md</span>:
+              design content now lives in <span class="mono text-xs">docs/Solution Design/</span>.
+              Spec rule unchanged — design has a documented home.
+            </span>
+          </li>
+          <li class="flex gap-2">
+            <span class="dot bg-ink-500 mt-1.5"></span>
+            <span>
+              Leave untouched:
+              <span class="mono text-xs">feedback_schema_first</span> ·
+              <span class="mono text-xs">feedback_quality_bar</span> ·
+              <span class="mono text-xs">feedback_ui_screenshot_loop</span>.
+              All still apply.
+            </span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Handoff prompt -->
+    <section class="max-w-7xl mx-auto px-6 mt-5 mb-12">
+      <div class="card">
+        <div class="flex items-center justify-between mb-3">
+          <div class="label">Handoff prompt · paste into fresh session</div>
+          <span class="pill pill-amber">copy this</span>
+        </div>
+        <pre class="bg-ink-900 text-ink-400 mono text-xs leading-relaxed p-4 rounded-md overflow-auto whitespace-pre-wrap">Read C:/Users/michael.rihm/.claude/plans/i-have-mvp-requirements-graceful-harp.md in full before doing anything else.
+
+Also read, in this order:
+1. C:/Users/michael.rihm/Documents/Claude_Projects/Salesforce-Consulting-SDLC-App/CLAUDE.md
+2. ~/.claude/CLAUDE.md and the rule files under ~/.claude/rules/
+3. The memory index for this project
+
+Then:
+- Ask me the six open questions in §"Open questions" of the plan. Use AskUserQuestion. Defaults are fine if I say so.
+- Execute Wave 0 (Bootstrap) yourself directly — sequential foundation, no parallelism.
+- After Wave 0 exit criterion, spawn Wave 1 as three parallel Agent calls in a single message.
+- After Wave 1 exit criterion, spawn Wave 2 as eight parallel Agent calls in a single message.
+- After Wave 2, run Wave 3 (integration + verification) yourself.
+
+Quality bar: no merge without clean lint + typecheck + build. Every UI change screenshot-verified via Playwright. data.ts is the source of truth in this pass.
+
+Don't start any work outside this plan. If you think the plan is wrong, tell me before deviating.</pre>
+      </div>
+    </section>
+
+    <footer
+      class="max-w-7xl mx-auto px-6 pb-10 text-xs text-ink-400 flex items-center justify-between"
+    >
+      <span class="mono">plan-graceful-harp.html</span>
+      <span>
+        Source plan:
+        <span class="mono"
+          >C:/Users/michael.rihm/.claude/plans/i-have-mvp-requirements-graceful-harp.md</span
+        >
+      </span>
+    </footer>
+  </body>
+</html>
