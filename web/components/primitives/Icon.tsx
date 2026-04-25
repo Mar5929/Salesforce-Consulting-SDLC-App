@@ -38,7 +38,16 @@ export type IconName =
   | "tune"
   | "target"
   | "shield"
-  | "refresh";
+  | "refresh"
+  | "tag"
+  | "palette"
+  | "lock"
+  | "dollar"
+  | "sync"
+  | "clipboard"
+  | "download"
+  | "info"
+  | "bolt";
 
 export interface IconProps {
   name: IconName;
@@ -96,6 +105,19 @@ const PATHS: Record<IconName, ReactNode> = {
   ),
   shield: <path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z" />,
   refresh: <path d="M3 12a9 9 0 0114-7l4 4M21 12a9 9 0 01-14 7l-4-4M21 3v5h-5M3 21v-5h5" />,
+  tag: <path d="M3 12V4h8l10 10-8 8L3 12zM7.5 7.5h.01" />,
+  palette: (
+    <path d="M12 21a9 9 0 110-18 9 9 0 016 15.5c-1 1-2.5 1-3.5 0-1-1-1-2.5 0-3.5.5-.5.5-1.5 0-2-.5-.5-1.5-.5-2 0-1 1-3 1-4 0M7 9h.01M9.5 6h.01M14 6h.01M16.5 9h.01" />
+  ),
+  lock: <path d="M5 11h14v10H5zM8 11V7a4 4 0 018 0v4" />,
+  dollar: <path d="M12 3v18M16 7H10a3 3 0 000 6h4a3 3 0 010 6H8" />,
+  sync: <path d="M4 4v6h6M20 20v-6h-6M20 9a8 8 0 00-14-3M4 15a8 8 0 0014 3" />,
+  clipboard: (
+    <path d="M9 4h6a1 1 0 011 1v2H8V5a1 1 0 011-1zM6 6h2v2h8V6h2v15a1 1 0 01-1 1H7a1 1 0 01-1-1V6z" />
+  ),
+  download: <path d="M12 4v12M6 12l6 4 6-4M4 20h16" />,
+  info: <path d="M12 8v.01M12 12v5M12 21a9 9 0 100-18 9 9 0 000 18z" />,
+  bolt: <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" />,
 };
 
 export function Icon({ name, size = 14, color }: IconProps) {
