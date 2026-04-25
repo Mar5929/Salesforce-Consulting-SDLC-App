@@ -37,3 +37,6 @@ export type { TableProps, TRProps, THProps, TDProps } from "./Table";
 
 export { Health } from "./Health";
 export type { HealthProps, HealthTone } from "./Health";
+
+export { Toggle } from "./Toggle";
+export type { ToggleProps } from "./Toggle";
