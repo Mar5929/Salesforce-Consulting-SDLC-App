@@ -44,6 +44,11 @@ export function ProjectHeader() {
   const pathname = usePathname() ?? "/";
   const routes = tabRoutes();
 
+  // Firm Admin is firm-scoped, not project-scoped — suppress the project header.
+  if (pathname === "/firm-admin" || pathname.startsWith("/firm-admin/")) {
+    return null;
+  }
+
   return (
     <div className="shrink-0 border-b border-border bg-surface px-[20px] pt-[14px]">
       {/* Title row */}

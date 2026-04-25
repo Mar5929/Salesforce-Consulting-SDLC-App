@@ -19,15 +19,18 @@ function currentTabLabel(pathname: string): string {
 
 export function Topbar() {
   const pathname = usePathname() ?? "/";
+  const isFirmAdmin = pathname === "/firm-admin" || pathname.startsWith("/firm-admin/");
   const tabLabel = currentTabLabel(pathname);
+  const crumbScope = isFirmAdmin ? "Rihm Consulting" : "Acme Manufacturing";
+  const crumbLeaf = isFirmAdmin ? "Firm Admin" : tabLabel;
 
   return (
     <div className="flex h-topbar shrink-0 items-center gap-[14px] border-b border-border bg-surface px-[16px]">
       {/* Breadcrumb */}
       <div className="flex items-center gap-[7px] text-[12.5px] text-ink-3">
-        <span>Acme Manufacturing</span>
+        <span>{crumbScope}</span>
         <span className="text-border-hover">/</span>
-        <span className="font-medium text-ink">{tabLabel}</span>
+        <span className="font-medium text-ink">{crumbLeaf}</span>
       </div>
 
       {/* Mock search */}
